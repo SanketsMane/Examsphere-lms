@@ -160,8 +160,8 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
                         </Label>
                       </div>
                       
-                      {/* Child Categories */}
-                      {categories.filter(c => c.parentId === parent.id).map((child) => (
+                      {/* Child Categories - Only show if parent is selected */}
+                      {filters.categories.includes(parent.label) && categories.filter(c => c.parentId === parent.id).map((child) => (
                         <div key={child.id} className="flex items-center space-x-2 pl-6 py-1 border-l ml-2 border-border/50">
                           <Checkbox
                             id={`cat-${child.id}`}
