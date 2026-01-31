@@ -69,7 +69,7 @@ export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.json|api/auth|public).*)"],
 };
 
-export default async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   // First apply security middleware
   const securityResponse = await securityMiddleware(request);
   if (securityResponse.status !== 200) {

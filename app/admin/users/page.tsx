@@ -8,6 +8,7 @@ import { prisma as db } from "@/lib/db";
 import { UserActions } from "./_components/user-actions";
 import { AddUserDialog } from "./_components/add-user-dialog";
 import { BulkImportDialog } from "./_components/bulk-import-dialog";
+import { BulkExportDialog } from "./_components/bulk-export-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function UsersManagementPage() {
         </div>
         <div className="flex gap-2">
           <BulkImportDialog />
+          <BulkExportDialog />
           <AddUserDialog />
         </div>
       </div>

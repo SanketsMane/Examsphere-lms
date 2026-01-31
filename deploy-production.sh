@@ -76,7 +76,7 @@ npx prisma generate
 
 # Run database migration
 echo "Running database migration..."
-npx prisma db push
+npx prisma migrate deploy
 
 # Build the application
 echo "Building application..."

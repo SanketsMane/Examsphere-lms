@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit } from "lucide-react";
+import { Plus, Edit, X } from "lucide-react";
 import { createCategory, updateCategory } from "@/app/actions/categories";
 import { toast } from "sonner";
 import { Category } from "@prisma/client";
@@ -25,7 +25,20 @@ export function CategoryDialog({ category, parentCategories = [], trigger }: Cat
     const [open, setOpen] = useState(false);
     const [imageUrl, setImageUrl] = useState(category?.image || "");
     const [loading, setLoading] = useState(false);
+    const [subCategories, setSubCategories] = useState<string[]>([""]);
     const router = useRouter();
+
+    const addSubCategory = () => setSubCategories([...subCategories, ""]);
+    const removeSubCategory = (index: number) => {
+        const newSubs = [...subCategories];
+        newSubs.splice(index, 1);
+        setSubCategories(newSubs);
+    };
+    const updateSubCategory = (index: number, value: string) => {
+        const newSubs = [...subCategories];
+        newSubs[index] = value;
+        setSubCategories(newSubs);
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -39,17 +52,13 @@ export function CategoryDialog({ category, parentCategories = [], trigger }: Cat
 
         try {
             const action = category ? updateCategory : createCategory;
-            // We need to match the signature of the server action or call it directly since we aren't using useActionState anymore to simplify state
-            // Let's assume we can call it. But actions return ActionState.
-
-            // Re-wrapping for direct call usage since useActionState is great but complex with dynamic inputs sometimes
-            // To keep it simple, let's just call it.
             const result = await action({}, formData);
 
             if (result.success) {
                 setOpen(false);
                 toast.success(category ? "Category updated" : "Category created");
                 setImageUrl(""); // Reset
+                setSubCategories([""]); // Reset
                 router.refresh();
             } else if (result.error) {
                 toast.error(result.error);
@@ -132,6 +141,43 @@ export function CategoryDialog({ category, parentCategories = [], trigger }: Cat
                             </SelectContent>
                         </Select>
                     </div>
+
+                    {!category && (
+                        <div className="space-y-4 pt-4 border-t">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-base font-semibold">Quick Add Sub-categories</Label>
+                                <Button type="button" variant="outline" size="sm" onClick={addSubCategory}>
+                                    <Plus className="h-4 w-4 mr-1" /> Add
+                                </Button>
+                            </div>
+                            <div className="space-y-3">
+                                {subCategories.map((sub, index) => (
+                                    <div key={index} className="flex gap-2">
+                                        <Input 
+                                            name="subCategoryNames"
+                                            placeholder={`Sub-category ${index + 1} name`}
+                                            value={sub}
+                                            onChange={(e) => updateSubCategory(index, e.target.value)}
+                                        />
+                                        {subCategories.length > 1 && (
+                                            <Button 
+                                                type="button" 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                onClick={() => removeSubCategory(index)}
+                                                className="text-destructive"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                These will be created as children of the category above.
+                            </p>
+                        </div>
+                    )}
 
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

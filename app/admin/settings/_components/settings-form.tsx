@@ -58,8 +58,23 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                 value={logoUrl}
                                 onChange={setLogoUrl}
                                 label="Upload Site Logo"
+                                onFileSelect={async (file) => {
+                                    return new Promise((resolve, reject) => {
+                                        const img = new Image();
+                                        img.src = URL.createObjectURL(file);
+                                        img.onload = () => {
+                                            if (img.width > 512 || img.height > 512) {
+                                                toast.error(`Image too large! Max allowed size is 512x512px. Uploaded: ${img.width}x${img.height}px.`);
+                                                reject(new Error("Image dimensions exceed 512x512px limit"));
+                                            } else {
+                                                resolve(file);
+                                            }
+                                        };
+                                        img.onerror = () => reject(new Error("Invalid image file"));
+                                    });
+                                }}
                             />
-                            <p className="text-xs text-muted-foreground">Recommended size: 200x50px transparent PNG</p>
+                            <p className="text-xs text-muted-foreground">Max size: 512x512px (Locked). Transparent PNG recommended.</p>
                         </div>
                         <div className="space-y-2">
                              <Label htmlFor="maxGroupClassSize">Global Max Group Class Size</Label>

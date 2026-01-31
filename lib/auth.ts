@@ -6,17 +6,17 @@ import { emailOTP } from "better-auth/plugins";
 import { sendEmail } from "./email";
 import { admin } from "better-auth/plugins";
 
+
+
 const authOptions = {
   database: prismaAdapter(prisma, {
     provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
-  secret: process.env.BETTER_AUTH_SECRET || "dummy_secret_for_build_only",
+  secret: process.env.BETTER_AUTH_SECRET || (process.env.NODE_ENV === "production" ? (() => { throw new Error("BETTER_AUTH_SECRET is missing in production"); })() : "dummy_secret_for_dev_only"),
   trustedOrigins: [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://localhost:3003",
-    "http://16.176.20.69",
+    "http://localhost:3000", // Keep localhost for dev
+    ...(process.env.TRUSTED_ORIGINS ? process.env.TRUSTED_ORIGINS.split(",") : []),
+    ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
   ],
   // socialProviders: {

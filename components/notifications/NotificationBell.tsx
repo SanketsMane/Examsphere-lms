@@ -44,8 +44,13 @@ export function NotificationBell() {
   useEffect(() => {
     loadNotifications();
 
-    // Set up polling for real-time updates
-    const interval = setInterval(loadNotifications, 30000); // Check every 30 seconds
+    // Set up polling for real-time updates - Optimized: 2 minutes & visible only
+    const interval = setInterval(() => {
+         if (document.visibilityState === 'visible') {
+             loadNotifications();
+         }
+    }, 120000); 
+
     return () => clearInterval(interval);
   }, []);
 

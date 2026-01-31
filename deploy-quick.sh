@@ -1,54 +1,51 @@
 #!/bin/bash
+
+# Quick deployment script - Skip DB migration, just pull and rebuild
+# Author: Sanket
+
 set -e
 
-HOST="159.198.40.133"
-USER="root"
-PASS="y371W7cpF2ZtEAI7jr"
-APP_PORT="2004"
-APP_NAME="kidokool-lms"
-REMOTE_DIR="/var/www/kidokool-lms"
-ARCHIVE_NAME="deploy-package.zip"
+EC2_IP="16.176.20.69"
+EC2_USER="ubuntu"
+PEM_KEY="/Users/sanket/Documents/Kidokool-LMS/Kidokool-latest-key.pem"
+REMOTE_DIR="/home/ubuntu/kidokool-lms"
 
-run_remote() {
-    sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$USER@$HOST" "$1"
-}
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-echo "1. Zipping..."
-rm -f "$ARCHIVE_NAME"
-# Exclude heavy items
-zip -r "$ARCHIVE_NAME" . -x "node_modules/*" "*/node_modules/*" ".next/*" ".git/*" "deploy*.sh" "AWS/*" "*.zip" "*.log" "cpanel-*/*"
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  Quick Deployment - Email Templates${NC}"
+echo -e "${BLUE}========================================${NC}"
 
-echo "2. Uploading via SSH Stream..."
-run_remote "mkdir -p $REMOTE_DIR"
-# Use cat redirection - robust!
-sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$USER@$HOST" "cat > $REMOTE_DIR/$ARCHIVE_NAME" < "$ARCHIVE_NAME"
+chmod 400 "$PEM_KEY"
 
-echo "3. Deploying..."
-run_remote "
-    cd $REMOTE_DIR
-    echo 'Extracting...'
-    unzip -o $ARCHIVE_NAME > /dev/null
-    rm $ARCHIVE_NAME
-    
-    if [ ! -f /swapfile ]; then
-        echo 'Creating swap...'
-        dd if=/dev/zero of=/swapfile bs=128M count=16
-        chmod 600 /swapfile
-        mkswap /swapfile
-        swapon /swapfile || true
-    fi
+echo -e "${GREEN}Deploying to EC2...${NC}"
+ssh -i "$PEM_KEY" "$EC2_USER@$EC2_IP" << 'ENDSSH'
+cd /home/ubuntu/kidokool-lms
 
-    if [ -f .env ]; then mv .env .env.production; fi
+echo "Pulling latest code..."
+git pull origin main
 
-    echo 'Stopping old container...'
-    docker stop $APP_NAME || true
-    docker rm $APP_NAME || true
+echo "Installing dependencies..."
+npm install
 
-    echo 'Building Docker image...'
-    docker build -t $APP_NAME .
-    
-    echo 'Starting container...'
-    docker run -d --name $APP_NAME --restart unless-stopped -p $APP_PORT:3000 --env-file .env.production $APP_NAME
-"
+echo "Generating Prisma client..."
+npx prisma generate
 
-echo "Done! Check http://$HOST:$APP_PORT"
+echo "Building application..."
+npm run build
+
+echo "Restarting PM2..."
+pm2 restart kidokool-lms
+
+echo "✓ Deployment complete!"
+pm2 status kidokool-lms
+
+ENDSSH
+
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  Deployment Complete!${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${BLUE}Application URL: http://$EC2_IP:3000${NC}"
+echo -e "${GREEN}========================================${NC}"

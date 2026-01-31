@@ -40,6 +40,7 @@ export async function createCategory(prevState: ActionState, formData: FormData)
         const parentId = formData.get("parentId") as string;
         const icon = formData.get("icon") as string;
         const image = formData.get("image") as string;
+        const subCategoryNames = formData.getAll("subCategoryNames") as string[];
 
         if (!name) {
             return { error: "Name is required" };
@@ -56,20 +57,57 @@ export async function createCategory(prevState: ActionState, formData: FormData)
             return { error: "Category with this name already exists" };
         }
 
-        await prisma.category.create({
-            data: {
-                name,
-                slug,
-                description,
-                icon,
-                image,
-                parentId: parentId && parentId !== "null" ? parentId : null,
-            },
+        const subCategories = subCategoryNames.filter(n => n.trim() !== "");
+
+        await prisma.$transaction(async (tx) => {
+            const parent = await tx.category.create({
+                data: {
+                    name,
+                    slug,
+                    description,
+                    icon,
+                    image,
+                    parentId: parentId && parentId !== "null" ? parentId : null,
+                },
+            });
+
+            if (subCategories.length > 0) {
+                for (const subName of subCategories) {
+                    const trimmedName = subName.trim();
+                    if (!trimmedName) continue;
+                    const subSlug = slugify(trimmedName, { lower: true, strict: true });
+                    
+                    // Check if name or slug exists
+                    const subExisting = await tx.category.findFirst({ 
+                        where: { 
+                            OR: [
+                                { slug: subSlug },
+                                { name: trimmedName }
+                            ]
+                        } 
+                    });
+
+                    if (!subExisting) {
+                        console.log("Creating sub-category:", trimmedName);
+                        await tx.category.create({
+                            data: {
+                                name: trimmedName,
+                                slug: subSlug,
+                                parentId: parent.id,
+                                isActive: true
+                            }
+                        });
+                    } else {
+                        console.log("Sub-category name or slug already exists, skipping:", trimmedName);
+                    }
+                }
+            }
         });
 
         revalidatePath("/admin/categories");
         return { success: true, timestamp: Date.now() };
     } catch (error: any) {
+        console.error("Create Category Error:", error);
         return { error: error.message || "Failed to create category" };
     }
 }

@@ -455,6 +455,57 @@ const emailTemplates = {
       </div>
     </body>
     </html>
+  `,
+
+  teacherApproved: (data: TemplateData) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Teacher Profile Approved</title>
+      <style>
+        body { font-family: sans-serif; background-color: #f5f5f5; padding: 40px 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; padding: 40px; }
+        .cta-button { display: inline-block; background: #000000; color: #ffffff; padding: 12px 24px; text-decoration: none; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>You're Approved!</h1>
+        <p>Hi ${data.userName},</p>
+        <p>Your teacher profile has been approved.</p>
+        <div style="text-align: center;">
+          <a href="${data.dashboardUrl}" class="cta-button">Go to Dashboard</a>
+        </div>
+      </div>
+    </body>
+    </html>
+  `,
+
+  teacherRejected: (data: TemplateData) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Teacher Application Update</title>
+      <style>
+        body { font-family: sans-serif; background-color: #f5f5f5; padding: 40px 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; padding: 40px; }
+        .reason { background: #fff0f0; padding: 20px; border-radius: 4px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Application Update</h1>
+        <p>Hi ${data.userName},</p>
+        <p>We are unable to approve your application at this time.</p>
+        <div class="reason">
+          <strong>Reason:</strong><br/>
+          ${data.reason}
+        </div>
+      </div>
+    </body>
+    </html>
   `
 };
 

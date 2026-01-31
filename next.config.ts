@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { NextConfig } from "next";
+
 const nextConfig: NextConfig = {
   output: 'standalone',
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // Increase from default 1mb
+    },
+  },
 
   typescript: {
     ignoreBuildErrors: true,
@@ -49,6 +56,15 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "kidokool-sanket-dev.s3.us-west-2.amazonaws.com",
+      },
+      // Merged from next.config.js
+      {
+          protocol: 'https',
+          hostname: '**.s3.**.amazonaws.com',
+      },
+      {
+          protocol: "https",
+          hostname: "ui-avatars.com",
       }
     ],
   },

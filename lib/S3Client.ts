@@ -21,7 +21,6 @@ export const getS3Client = () => {
 
   return new S3Client({
     region: env.AWS_REGION,
-    // Don't set endpoint - let AWS SDK use correct region-specific endpoint
     credentials: {
       accessKeyId: env.AWS_ACCESS_KEY_ID,
       secretAccessKey: env.AWS_SECRET_ACCESS_KEY,

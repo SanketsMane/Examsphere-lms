@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Layers } from "lucide-react";
 import { CategoryDialog } from "./_components/category-dialog";
+import { CategoryHelp } from "./_components/category-help";
 import { DeleteCategoryButton } from "./_components/delete-category-button";
 import { redirect } from "next/navigation";
 
@@ -47,7 +48,10 @@ export default async function AdminCategoriesPage() {
                     </h1>
                     <p className="text-muted-foreground">Manage course categories and hierarchy</p>
                 </div>
-                <CategoryDialog parentCategories={categories} />
+                <div className="flex items-center gap-2">
+                    <CategoryHelp />
+                    <CategoryDialog parentCategories={categories} />
+                </div>
             </div>
 
             <Card>
@@ -76,25 +80,42 @@ export default async function AdminCategoriesPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                categories.map((category) => (
-                                    <TableRow key={category.id}>
+                                // Flat list but indented for hierarchy
+                                categories
+                                  .filter(c => !c.parentId) // Main categories first
+                                  .flatMap(parent => [
+                                    parent,
+                                    ...categories.filter(c => c.parentId === parent.id)
+                                  ])
+                                  .map((category) => (
+                                    <TableRow key={category.id} className={category.parentId ? "bg-muted/30" : ""}>
                                         <TableCell className="font-medium">
                                             <div className="flex items-center gap-2">
+                                                {category.parentId && <span className="text-muted-foreground ml-4">↳</span>}
                                                 {category.icon && <span className="text-lg">{category.icon}</span>}
                                                 {category.name}
+                                                {category.parentId && <Badge variant="outline" className="text-[10px] py-0 px-1 ml-1 h-4">SUB</Badge>}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">{category.slug}</TableCell>
+                                        <TableCell className="text-muted-foreground text-sm">{category.slug}</TableCell>
                                         <TableCell>
-                                            {category.parent ? <Badge variant="outline">{category.parent.name}</Badge> : "-"}
+                                            {category.parent ? (
+                                                <Badge variant="secondary" className="font-normal">{category.parent.name}</Badge>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Primary</span>
+                                            )}
                                         </TableCell>
                                         <TableCell>
-                                            {category._count.courses} courses
-                                            {category._count.children > 0 && `, ${category._count.children} sub`}
+                                            <span className="font-medium">{category._count.courses}</span> courses
+                                            {!category.parentId && category._count.children > 0 && (
+                                                <span className="text-xs text-muted-foreground block">
+                                                    {category._count.children} sub-categories
+                                                </span>
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <CategoryDialog category={category} parentCategories={categories} />
+                                                <CategoryDialog category={category as any} parentCategories={categories as any} />
                                                 <DeleteCategoryButton id={category.id} name={category.name} />
                                             </div>
                                         </TableCell>

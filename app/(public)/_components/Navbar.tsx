@@ -41,18 +41,28 @@ const navigationItems: IMenu[] = [
   },
 ];
 
-export function Navbar() {
+export function Navbar({ settings }: { settings?: any }) {
   const { data: session, isPending } = authClient.useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const logoSrc = settings?.logo || Logo;
+  const siteName = settings?.siteName || "KIDOKOOL";
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto flex h-16 items-center px-4 md:px-8 gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 mr-4 shrink-0">
-          <Image src={Logo} alt="KIDOKOOL" className="w-8 h-8 md:w-10 md:h-10" />
+            <div className="relative w-8 h-8 md:w-10 md:h-10">
+                <Image 
+                    src={logoSrc} 
+                    alt={siteName} 
+                    fill 
+                    className="object-contain" 
+                />
+            </div>
           <span className="font-bold text-xl text-foreground hidden sm:block">
-            KIDOKOOL
+            {siteName}
           </span>
         </Link>
 

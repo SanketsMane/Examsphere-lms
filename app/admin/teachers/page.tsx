@@ -18,6 +18,8 @@ export default async function TeachersPage() {
     },
     orderBy: { createdAt: 'desc' },
   });
+  const activeTeachers = teachers.filter((t: any) => t.teacherProfile?.isApproved);
+  const pendingTeachers = teachers.filter((t: any) => !t.teacherProfile?.isApproved);
 
   return (
     <div className="space-y-6">
@@ -35,7 +37,7 @@ export default async function TeachersPage() {
             <CardTitle className="text-sm font-medium">Active Teachers</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{teachers.length}</div>
+            <div className="text-2xl font-bold">{activeTeachers.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -43,7 +45,7 @@ export default async function TeachersPage() {
             <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{pendingTeachers.length}</div>
           </CardContent>
         </Card>
         <Card>

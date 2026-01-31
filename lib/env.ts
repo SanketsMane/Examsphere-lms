@@ -36,6 +36,6 @@ export const env = createEnv({
   experimental__runtimeEnv: {
     NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES:
       process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES,
-    NEXT_PUBLIC_AWS_REGION: process.env.AWS_REGION,
+    NEXT_PUBLIC_AWS_REGION: process.env.NEXT_PUBLIC_AWS_REGION,
   },
 });

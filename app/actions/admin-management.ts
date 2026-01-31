@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { sendTemplatedEmail } from "@/lib/email";
 
 // --- User Management ---
 
@@ -87,53 +88,100 @@ export async function deleteCourse(courseId: string) {
 
 export async function approveTeacher(teacherId: string) {
     try {
-        // teacherId here refers to the User ID, not TeacherProfile ID, based on typical UI usage
-        // But let's check. Usually passed ID is row ID.
-        // If passing Profile ID:
-        await prisma.teacherProfile.updateMany({
-            where: { userId: teacherId }, // Assuming we pass User ID
-            data: { isApproved: true }
+        const user = await prisma.user.findUnique({
+             where: { id: teacherId }
         });
 
-        // Also verify the user if not already
-        await prisma.teacherProfile.updateMany({
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        // Update Teacher Profile (Upsert to handle missing profiles for imported users)
+        await prisma.teacherProfile.upsert({
             where: { userId: teacherId },
-            data: { isVerified: true }
+            create: {
+                userId: teacherId,
+                isApproved: true,
+                isVerified: true,
+            },
+            update: {
+                isApproved: true,
+                isVerified: true
+            }
         });
+
+        // Send Email
+        await sendTemplatedEmail(
+            "teacherApproved",
+            user.email,
+            "Congratulations! Your Teacher Profile is Approved",
+            {
+                userName: user.name || "Teacher",
+                dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/teacher/dashboard`
+            }
+        );
 
         revalidatePath("/admin/teachers");
-        return { success: true, message: "Teacher approved successfully" };
-    } catch (error) {
+        return { success: true, message: "Teacher approved & email sent" };
+    } catch (error: any) {
         console.error("Failed to approve teacher:", error);
-        return { success: false, message: "Failed to approve teacher" };
+        return { success: false, message: error.message || "Failed to approve teacher" };
     }
 }
 
 export async function rejectTeacher(teacherUserId: string, reason: string) {
     try {
-        await prisma.teacherProfile.updateMany({
-            where: { userId: teacherUserId },
-            data: { isApproved: false }
+        const user = await prisma.user.findUnique({
+             where: { id: teacherUserId }
         });
 
-        const teacher = await prisma.teacherProfile.findUnique({ where: { userId: teacherUserId } });
-        if (teacher) {
-            await prisma.teacherVerification.update({
-                where: { teacherId: teacher.id },
-                data: {
-                    status: 'Rejected',
-                    rejectionReason: reason,
-                    rejectedAt: new Date(),
-                }
-            });
-
-            // Optionally send email here to notify teacher
+        if (!user) {
+             throw new Error("User not found");
         }
 
+        // Use upsert for TeacherProfile
+        const profile = await prisma.teacherProfile.upsert({
+            where: { userId: teacherUserId },
+            create: {
+                userId: teacherUserId,
+                isApproved: false,
+            },
+            update: {
+                isApproved: false
+            }
+        });
+
+        // Also update or create TeacherVerification
+        await prisma.teacherVerification.upsert({
+            where: { teacherId: profile.id },
+            create: {
+                teacherId: profile.id,
+                status: 'Rejected',
+                rejectionReason: reason,
+                rejectedAt: new Date(),
+            },
+            update: {
+                status: 'Rejected',
+                rejectionReason: reason,
+                rejectedAt: new Date(),
+            }
+        });
+
+        // Send Email
+        await sendTemplatedEmail(
+            "teacherRejected",
+            user.email,
+            "Update regarding your Teacher Application",
+            {
+                userName: user.name || "Applicant",
+                reason: reason
+            }
+        );
+
         revalidatePath("/admin/teachers");
-        return { success: true, message: "Teacher rejected/unapproved" };
-    } catch (error) {
+        return { success: true, message: "Teacher application rejected & email sent" };
+    } catch (error: any) {
         console.error("Failed to reject teacher:", error);
-        return { success: false, message: "Failed to reject teacher" };
+        return { success: false, message: error.message || "Failed to reject teacher" };
     }
 }

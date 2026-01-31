@@ -27,11 +27,12 @@ export async function POST(request: Request) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
   try {
     // Apply rate limiting for file uploads (5 per minute)
     const securityCheck = await protectGeneral(request, session?.user.id as string, {
       maxRequests: 5,
-      windowMs: 60000
+      windowMs: 60000,
     });
 
     if (!securityCheck.success) {
@@ -39,7 +40,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-
     const validation = fileUploadSchema.safeParse(body);
 
     if (!validation.success) {
@@ -49,8 +49,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { fileName, contentType, size } = validation.data;
-
+    const { fileName, contentType } = validation.data;
     const uniqueKey = `${uuidv4()}-${fileName}`;
 
     // Author: Sanket - Include ContentType to ensure proper file serving

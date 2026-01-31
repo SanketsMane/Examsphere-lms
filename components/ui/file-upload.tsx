@@ -13,15 +13,28 @@ interface FileUploadProps {
     onChange: (url: string) => void;
     label?: string;
     disabled?: boolean;
+    onFileSelect?: (file: File) => Promise<File>;
 }
 
-export function FileUpload({ value, onChange, label = "Upload Image", disabled }: FileUploadProps) {
+    export function FileUpload({ value, onChange, label = "Upload Image", disabled, onFileSelect }: FileUploadProps) {
     const [isUploading, setIsUploading] = useState(false);
 
     // Author: Sanket - Use S3 presigned URLs for direct upload (no server proxy, no size limits)
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+        let file = e.target.files?.[0];
         if (!file) return;
+
+        if (onFileSelect) {
+            try {
+                file = await onFileSelect(file);
+            } catch (error) {
+                console.error("File selection cancelled or invalid:", error);
+                // Clear the input so the user can try again with a valid file
+                e.target.value = ""; 
+                return;
+            }
+        }
+
 
         setIsUploading(true);
         try {
@@ -67,7 +80,7 @@ export function FileUpload({ value, onChange, label = "Upload Image", disabled }
             }
 
             // Construct the S3 URL from the key
-            const s3Url = `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.s3.eu-north-1.amazonaws.com/${key}`;
+            const s3Url = `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.s3.${process.env.NEXT_PUBLIC_AWS_REGION || 'eu-north-1'}.amazonaws.com/${key}`;
             onChange(s3Url);
             toast.success("Image uploaded successfully");
         } catch (error: any) {

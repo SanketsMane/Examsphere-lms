@@ -18,8 +18,12 @@ export function MessageNotification() {
   useEffect(() => {
     loadUnreadCount();
 
-    // Set up polling for real-time updates (in production, use WebSockets)
-    const interval = setInterval(loadUnreadCount, 10000); // Check every 10 seconds
+    // Set up polling for real-time updates - Optimized: 2 minutes & visible only
+    const interval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            loadUnreadCount();
+        }
+    }, 120000);
     return () => clearInterval(interval);
   }, []);
 
@@ -63,7 +67,13 @@ export function FloatingMessageButton() {
 
   useEffect(() => {
     loadUnreadCount();
-    const interval = setInterval(loadUnreadCount, 30000); // Check every 30 seconds
+    
+    // Optimized: 2 minutes & visible only
+    const interval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            loadUnreadCount();
+        }
+    }, 120000);
     return () => clearInterval(interval);
   }, []);
 
