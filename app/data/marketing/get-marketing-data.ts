@@ -18,6 +18,7 @@ export type FeaturedCategory = {
     count: number;
     slug: string;
     color?: string; // We can return a tailored color or random
+    parentId?: string | null;
 };
 
 export async function getFeaturedReviews(): Promise<FeaturedReview[]> {
@@ -65,7 +66,8 @@ export async function getTopCategories(): Promise<FeaturedCategory[]> {
         label: c.name,
         count: c._count.courses,
         slug: c.slug,
-        icon: c.icon || undefined
+        icon: c.icon || undefined,
+        parentId: c.parentId
     }));
 }
 
@@ -125,6 +127,7 @@ export async function getAllCategories(): Promise<FeaturedCategory[]> {
         label: c.name,
         count: c._count.courses,
         slug: c.slug,
-        icon: c.icon || undefined
+        icon: c.icon || undefined,
+        parentId: c.parentId
     }));
 }

@@ -39,7 +39,7 @@ const ratings = [
   { label: "3.5 & up", value: "3.5" }
 ];
 
-export function CourseFilters({ categories }: { categories: { id: string; label: string; count: number }[] }) {
+export function CourseFilters({ categories }: { categories: { id: string; label: string; count: number; parentId?: string | null }[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -144,17 +144,50 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
                 Categories
               </AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-3 pt-2">
-                  {categories.map((category) => (
-                    <div key={category.id} className="flex items-center space-x-2">
+                <div className="space-y-1 pt-2">
+                  {/* Parent Categories */}
+                  {categories.filter(c => !c.parentId).map((parent) => (
+                    <div key={parent.id} className="space-y-1">
+                      <div className="flex items-center space-x-2 py-1">
+                        <Checkbox
+                          id={`cat-${parent.id}`}
+                          checked={filters.categories.includes(parent.label)}
+                          onCheckedChange={() => toggleFilter('categories', parent.label)}
+                        />
+                        <Label htmlFor={`cat-${parent.id}`} className="text-sm font-semibold cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 flex justify-between">
+                          <span>{parent.label}</span>
+                          {parent.count > 0 && <span className="text-xs text-muted-foreground">({parent.count})</span>}
+                        </Label>
+                      </div>
+                      
+                      {/* Child Categories */}
+                      {categories.filter(c => c.parentId === parent.id).map((child) => (
+                        <div key={child.id} className="flex items-center space-x-2 pl-6 py-1 border-l ml-2 border-border/50">
+                          <Checkbox
+                            id={`cat-${child.id}`}
+                            checked={filters.categories.includes(child.label)}
+                            onCheckedChange={() => toggleFilter('categories', child.label)}
+                          />
+                          <Label htmlFor={`cat-${child.id}`} className="text-xs font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 flex justify-between">
+                            <span>{child.label}</span>
+                            {child.count > 0 && <span className="text-[10px] text-muted-foreground">({child.count})</span>}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  
+                  {/* Categories without parent (that are not parents themselves) */}
+                  {categories.filter(c => c.parentId && !categories.find(p => p.id === c.parentId)).map((orphan) => (
+                    <div key={orphan.id} className="flex items-center space-x-2 py-1">
                       <Checkbox
-                        id={`cat-${category.id}`}
-                        checked={filters.categories.includes(category.label)}
-                        onCheckedChange={() => toggleFilter('categories', category.label)}
+                        id={`cat-${orphan.id}`}
+                        checked={filters.categories.includes(orphan.label)}
+                        onCheckedChange={() => toggleFilter('categories', orphan.label)}
                       />
-                      <Label htmlFor={`cat-${category.id}`} className="text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 flex justify-between">
-                        <span>{category.label}</span>
-                        {category.count > 0 && <span className="text-xs text-muted-foreground">({category.count})</span>}
+                      <Label htmlFor={`cat-${orphan.id}`} className="text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 flex justify-between">
+                        <span>{orphan.label}</span>
+                        {orphan.count > 0 && <span className="text-xs text-muted-foreground">({orphan.count})</span>}
                       </Label>
                     </div>
                   ))}

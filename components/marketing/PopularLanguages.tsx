@@ -68,14 +68,6 @@ export function PopularLanguages() {
                     ))}
                 </motion.div>
 
-                <div className="text-center mt-12">
-                    <button suppressHydrationWarning className="text-gray-600 dark:text-gray-400 font-semibold flex items-center gap-2 mx-auto hover:text-primary transition-colors group">
-                        <span className="underline underline-offset-4 decoration-gray-300 dark:decoration-gray-700 group-hover:decoration-primary">Explore all languages</span>
-                        <div className="w-8 h-8 rounded-full bg-gray-800 dark:bg-secondary text-white dark:text-secondary-foreground flex items-center justify-center group-hover:bg-primary transition-colors">
-                            <ArrowRight className="w-4 h-4" />
-                        </div>
-                    </button>
-                </div>
             </div>
         </section >
     );

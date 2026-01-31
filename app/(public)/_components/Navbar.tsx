@@ -20,14 +20,6 @@ const navigationItems: IMenu[] = [
     id: 2,
     title: "Courses",
     url: "/courses",
-    dropdown: true,
-    items: [
-      { id: 21, title: "All Courses", url: "/courses" },
-      { id: 22, title: "Programming", url: "/courses?category=Programming" },
-      { id: 23, title: "Business", url: "/courses?category=Business" },
-      { id: 24, title: "Design", url: "/courses?category=Design" },
-      { id: 25, title: "Health & Fitness", url: "/courses?category=Health" },
-    ]
   },
   {
     id: 3,
