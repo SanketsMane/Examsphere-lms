@@ -2,8 +2,25 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Loader2, 
+  Users, 
+  Award, 
+  IndianRupee, 
+  Globe, 
+  ArrowLeft, 
+  CheckCircle2, 
+  Sparkles,
+  Trophy,
+  Rocket,
+  ShieldCheck,
+  X
+} from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,27 +31,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Award, IndianRupee, Globe, ArrowLeft, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 
 export const dynamic = "force-dynamic";
 
 const benefits = [
-  "Earn up to ₹4000/hour teaching students",
-  "Flexible schedule - teach when you want",
-  "Global reach - students worldwide",
-  "Professional tools and support",
-  "Marketing and student acquisition help",
-  "Secure payments and analytics"
+  {
+    title: "High Earnings",
+    description: "Earn up to ₹4000/hour teaching what you love.",
+    icon: IndianRupee,
+  },
+  {
+    title: "Global Reach",
+    description: "Connect with students from across the globe.",
+    icon: Globe,
+  },
+  {
+    title: "Total Flexibility",
+    description: "Set your own schedule and work from anywhere.",
+    icon: Rocket,
+  },
+  {
+    title: "Growth & Support",
+    description: "Access professional tools and marketing help.",
+    icon: Sparkles,
+  },
 ];
 
 export default function TeacherRegisterPage() {
-  // Author: Sanket - All hooks must be declared at the top of the component
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
 
@@ -50,7 +77,6 @@ export default function TeacherRegisterPage() {
   const [metadata, setMetadata] = useState<{ expertise: { id: string, name: string }[], languages: { id: string, name: string }[] }>({ expertise: [], languages: [] });
   const [loadingMetadata, setLoadingMetadata] = useState(true);
 
-  // Load metadata on mount
   useEffect(() => {
     async function loadMetadata() {
       try {
@@ -67,21 +93,19 @@ export default function TeacherRegisterPage() {
     loadMetadata();
   }, []);
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!isPending && !session) {
       router.push("/register");
     }
   }, [isPending, session, router]);
 
-  // Handler functions
   const handleLanguageAddFromSelect = (value: string) => {
     if (value && !formData.languages.includes(value)) {
       setFormData(prev => ({
         ...prev,
         languages: [...prev.languages, value]
       }));
-      setSelectedLanguage(""); // Reset selection
+      setSelectedLanguage("");
     }
   };
 
@@ -91,41 +115,27 @@ export default function TeacherRegisterPage() {
         ...prev,
         expertiseAreas: [...prev.expertiseAreas, value]
       }));
-      setSelectedExpertise(""); // Reset selection
+      setSelectedExpertise("");
     }
   };
 
-
-
-  const handleExpertiseToggle = (area: string) => {
+  const removeExpertise = (area: string) => {
     setFormData(prev => ({
       ...prev,
-      expertiseAreas: prev.expertiseAreas.includes(area)
-        ? prev.expertiseAreas.filter(e => e !== area)
-        : [...prev.expertiseAreas, area]
+      expertiseAreas: prev.expertiseAreas.filter(e => e !== area)
     }));
   };
 
-  const handleLanguageAdd = (language: string) => {
-    if (language && !formData.languages.includes(language)) {
-      setFormData(prev => ({
-        ...prev,
-        languages: [...prev.languages, language]
-      }));
-    }
-  };
-
-  const handleLanguageRemove = (language: string) => {
+  const removeLanguage = (lang: string) => {
     setFormData(prev => ({
       ...prev,
-      languages: prev.languages.filter(l => l !== language)
+      languages: prev.languages.filter(l => l !== lang)
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     const missingFields = [];
     if (!formData.bio.trim()) missingFields.push("Bio");
     if (formData.expertiseAreas.length === 0) missingFields.push("Expertise Areas");
@@ -133,15 +143,13 @@ export default function TeacherRegisterPage() {
     if (!formData.hourlyRate) missingFields.push("Hourly Rate");
 
     if (missingFields.length > 0) {
-      toast.error(`Please fill in the following fields: ${missingFields.join(", ")}`);
+      toast.error(`Please fill in: ${missingFields.join(", ")}`);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // For authenticated users, create teacher profile
-      // Author: Sanket
       const response = await fetch("/api/teacher/profile", {
         method: "POST",
         headers: {
@@ -161,14 +169,12 @@ export default function TeacherRegisterPage() {
         throw new Error(result.error || "Failed to create teacher profile");
       }
 
-      toast.success("Teacher profile created successfully!");
-      toast.success("Teacher profile created successfully!");
-      // Force hard navigation to refresh session and get new role
+      toast.success("Profile created! Redirecting...");
       window.location.href = "/teacher/verification";
 
     } catch (error) {
       console.error("Profile creation error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create profile. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Failed to create profile.");
     } finally {
       setIsLoading(false);
     }
@@ -176,252 +182,271 @@ export default function TeacherRegisterPage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm font-medium animate-pulse">Initializing your journey...</p>
+        </div>
       </div>
     );
   }
 
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <Link
-              href="/"
-              className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+      {/* Left Wall - Hero Section */}
+      <div className="hidden lg:flex flex-col relative bg-zinc-950 overflow-hidden">
+        <Image
+          src="/images/registration/teacher-hero.png"
+          alt="Become a Teacher"
+          fill
+          className="object-cover opacity-60 mix-blend-luminosity grayscale hover:grayscale-0 transition-all duration-1000"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+        
+        <div className="relative z-10 p-12 flex flex-col h-full">
+          <Link href="/" className="flex items-center gap-2 group w-fit">
+            <div className="p-2 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors">
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-sm font-medium text-zinc-400 group-hover:text-white transition-colors">Back to Home</span>
+          </Link>
+
+          <div className="mt-auto max-w-xl">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Home
-            </Link>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-              Become a Teacher
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              Share your knowledge and earn while teaching students worldwide
-            </p>
-          </div>
+              <Badge className="mb-4 bg-primary/20 text-primary border-primary/20 hover:bg-primary/30 py-1 px-3">
+                Teacher Partnership Program
+              </Badge>
+              <h1 className="text-5xl font-bold text-white tracking-tight mb-6 leading-[1.1]">
+                Inspire the next generation of <span className="text-primary italic">global learners.</span>
+              </h1>
+              <p className="text-xl text-zinc-400 mb-12 leading-relaxed">
+                Join our elite community of educators and transform how the world learns languages.
+              </p>
+            </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Benefits Sidebar */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-8">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-blue-600" />
-                    Why Teach With Us?
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {benefits.map((benefit, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{benefit}</span>
-                    </div>
-                  ))}
-
-                  <Separator />
-
-                  <div className="text-center space-y-2">
-                    <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>50K+ Students</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <IndianRupee className="h-4 w-4" />
-                        <span>₹20Cr+ Earned</span>
-                      </div>
-                    </div>
+            <div className="grid grid-cols-2 gap-8">
+              {benefits.map((benefit, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + i * 0.1 }}
+                  className="flex gap-4"
+                >
+                  <div className="mt-1 p-2 bg-primary/10 rounded-lg shrink-0">
+                    <benefit.icon className="w-5 h-5 text-primary" />
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <h3 className="text-white font-semibold mb-1">{benefit.title}</h3>
+                    <p className="text-xs text-zinc-500 leading-relaxed">{benefit.description}</p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
 
-            {/* Registration Form */}
-            <div className="lg:col-span-2">
-              <Card className="shadow-xl border-0">
-                <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                  <CardTitle className="text-2xl">Teacher Registration</CardTitle>
-                  <p className="text-blue-100">Fill out the form below to start your teaching journey</p>
-                </CardHeader>
+            <div className="mt-16 flex items-center gap-8 border-t border-white/10 pt-8">
+              <div>
+                <p className="text-2xl font-bold text-white">50K+</p>
+                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Active Students</p>
+              </div>
+              <div className="w-px h-8 bg-white/10" />
+              <div>
+                <p className="text-2xl font-bold text-white">₹20Cr+</p>
+                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Teacher Earnings</p>
+              </div>
+              <div className="w-px h-8 bg-white/10" />
+              <div className="flex -space-x-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="size-8 rounded-full border-2 border-zinc-950 bg-zinc-800 flex items-center justify-center text-[10px] text-white overflow-hidden ring-2 ring-zinc-950">
+                    <Image src={`https://i.pravatar.cc/100?u=${i}`} alt="Avatar" width={32} height={32} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                <CardContent className="p-6">
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Professional Bio */}
+      {/* Right Wall - Registration Form */}
+      <div className="flex flex-col bg-slate-50 dark:bg-zinc-950 overflow-y-auto">
+        <div className="lg:hidden p-4 border-b bg-background sticky top-0 z-50">
+           <Link href="/" className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Exit Registration</span>
+          </Link>
+        </div>
+
+        <div className="flex-1 px-6 py-12 lg:px-16 flex items-center justify-center">
+          <div className="w-full max-w-xl">
+            <div className="mb-10 lg:hidden">
+              <h1 className="text-3xl font-bold mb-2">Become a Teacher</h1>
+              <p className="text-muted-foreground">Join Kidokool and start teaching today.</p>
+            </div>
+
+            <Card className="border-0 shadow-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
+              <CardContent className="p-8 lg:p-10">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                    <Award className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Complete Your Profile</h2>
+                    <p className="text-sm text-muted-foreground">This information will be shown to potential students.</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  {/* Bio Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="bio" className="text-base font-semibold">Professional Bio</Label>
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Required</span>
+                    </div>
+                    <Textarea
+                      id="bio"
+                      required
+                      value={formData.bio}
+                      onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                      placeholder="Share your background, teaching philosophy, and what students can expect from your lessons..."
+                      className="min-h-[140px] bg-slate-50/50 dark:bg-zinc-950/50 border-muted-foreground/10 focus-visible:ring-primary text-base leading-relaxed resize-none rounded-xl transition-all"
+                    />
+                  </div>
+
+                  <div className="h-px bg-gradient-to-r from-transparent via-muted-foreground/10 to-transparent" />
+
+                  {/* Expertise & Details */}
+                  <div className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Professional Bio</h3>
-
-                      <div>
-                        <Label htmlFor="bio">Tell us about yourself *</Label>
-                        <Textarea
-                          id="bio"
-                          required
-                          value={formData.bio}
-                          onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                          placeholder="Tell students about yourself, your background, and teaching experience..."
-                          rows={4}
-                        />
+                      <Label className="text-base font-semibold">Expertise Areas</Label>
+                      <Select value={selectedExpertise} onValueChange={handleExpertiseAddFromSelect}>
+                        <SelectTrigger className="bg-slate-50/50 dark:bg-zinc-950/50 border-muted-foreground/10 rounded-xl py-6 transition-all">
+                          <SelectValue placeholder="Add an area" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {metadata.expertise
+                            .filter(e => !formData.expertiseAreas.includes(e.name))
+                            .map((item) => (
+                              <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex flex-wrap gap-2">
+                        <AnimatePresence>
+                          {formData.expertiseAreas.map((area) => (
+                            <motion.div
+                              key={area}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                            >
+                              <Badge className="pl-3 pr-1 py-1.5 gap-1 bg-zinc-100 dark:bg-zinc-800 text-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700 border-0 rounded-lg group transition-all">
+                                {area}
+                                <button type="button" onClick={() => removeExpertise(area)} className="p-0.5 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded-md transition-colors">
+                                  <X className="w-3 h-3 text-muted-foreground" />
+                                </button>
+                              </Badge>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
                       </div>
                     </div>
 
-                    <Separator />
-
-                    {/* Expertise Areas */}
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Expertise Areas *</h3>
-                      <p className="text-sm text-gray-600">Select the subjects you can teach (minimum 1)</p>
-
-                      {loadingMetadata ? (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" /> Loading options...
-                        </div>
-                      ) : (
-                        <div className="space-y-4 pt-2">
-                          <div className="flex gap-2 max-w-sm">
-                            <Select
-                              value={selectedExpertise}
-                              onValueChange={(val) => handleExpertiseAddFromSelect(val)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a subject" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {metadata.expertise
-                                  .filter(e => !formData.expertiseAreas.includes(e.name))
-                                  .map((item) => (
-                                    <SelectItem key={item.id} value={item.name}>
-                                      {item.name}
-                                    </SelectItem>
-                                  ))
-                                }
-                                {metadata.expertise.length === 0 && (
-                                  <div className="p-2 text-center text-sm text-muted-foreground">No subjects available</div>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            {formData.expertiseAreas.map((area) => (
-                              <Badge key={area} className="cursor-pointer" onClick={() => handleExpertiseToggle(area)}>
-                                {area} ×
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <Separator />
-
-                    {/* Teaching Details */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Teaching Details</h3>
-
-                      <div>
-                        <Label htmlFor="hourlyRate">Hourly Rate (INR, ₹) *</Label>
+                      <Label htmlFor="hourlyRate" className="text-base font-semibold">Hourly Rate (₹)</Label>
+                      <div className="relative">
+                        <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="hourlyRate"
                           type="number"
                           min="100"
-                          max="50000"
                           required
                           value={formData.hourlyRate}
                           onChange={(e) => setFormData(prev => ({ ...prev, hourlyRate: e.target.value }))}
                           placeholder="1000"
+                          className="pl-10 h-14 bg-slate-50/50 dark:bg-zinc-950/50 border-muted-foreground/10 rounded-xl focus-visible:ring-primary transition-all pr-4 text-lg font-medium"
                         />
-                        <p className="text-xs text-gray-500 mt-1">Recommended: ₹500-5000/hour</p>
                       </div>
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Avg: ₹500 - ₹2500 per hr</p>
+                    </div>
+                  </div>
 
-                      <div>
-                        <Label htmlFor="languages">Languages You Speak *</Label>
-                        <p className="text-xs text-gray-500">Add at least one language you can teach in</p>
-                        <div className="space-y-4 pt-2">
-                          <div className="flex gap-2 max-w-sm">
-                            <Select
-                              value={selectedLanguage}
-                              onValueChange={(val) => handleLanguageAddFromSelect(val)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a language" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {loadingMetadata ? (
-                                  <div className="p-2 text-center text-sm text-muted-foreground">Loading...</div>
-                                ) : (
-                                  metadata.languages
-                                    .filter(l => !formData.languages.includes(l.name))
-                                    .map((lang) => (
-                                      <SelectItem key={lang.id} value={lang.name}>
-                                        {lang.name}
-                                      </SelectItem>
-                                    ))
-                                )}
-                                {!loadingMetadata && metadata.languages.length === 0 && (
-                                  <div className="p-2 text-center text-sm text-muted-foreground">No languages available</div>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                  {/* Languages Section */}
+                  <div className="space-y-4">
+                    <Label className="text-base font-semibold">Languages You Speak</Label>
+                    <Select value={selectedLanguage} onValueChange={handleLanguageAddFromSelect}>
+                      <SelectTrigger className="bg-slate-50/50 dark:bg-zinc-950/50 border-muted-foreground/10 rounded-xl py-6 transition-all">
+                        <SelectValue placeholder="Select languages" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {metadata.languages
+                          .filter(l => !formData.languages.includes(l.name))
+                          .map((lang) => (
+                            <SelectItem key={lang.id} value={lang.name}>{lang.name}</SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-wrap gap-2">
+                       <AnimatePresence>
+                        {formData.languages.map((lang) => (
+                          <motion.div
+                            key={lang}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                          >
+                            <Badge variant="secondary" className="pl-3 pr-1 py-1.5 gap-1 bg-primary/10 text-primary border-0 rounded-lg group transition-all">
+                              {lang}
+                              <button type="button" onClick={() => removeLanguage(lang)} className="p-0.5 hover:bg-primary/20 rounded-md transition-colors">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </div>
 
-                          <div className="flex flex-wrap gap-2">
-                            {formData.languages.map((lang) => (
-                              <Badge key={lang} variant="secondary" className="cursor-pointer" onClick={() => handleLanguageRemove(lang)}>
-                                {lang} ×
-                              </Badge>
-                            ))}
-                          </div>
+                  <div className="pt-8 space-y-4">
+                    <Button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all bg-gradient-to-r from-primary to-indigo-600 hover:opacity-90"
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Processing Application...
                         </div>
-                      </div>
-                    </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="w-5 h-5" />
+                          Apply for Teaching Position
+                        </div>
+                      )}
+                    </Button>
+                    <p className="text-center text-[10px] text-muted-foreground uppercase font-semibold tracking-wider opacity-60">
+                      Response time: 24-48 hours • Professional Review
+                    </p>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
 
-                    <Separator />
-
-                    {/* Submit */}
-                    <div className="space-y-4">
-                      <Button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
-                        size="lg"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating Account...
-                          </>
-                        ) : (
-                          "Register as Teacher"
-                        )}
-                      </Button>
-
-                      <p className="text-xs text-gray-500 text-center">
-                        By registering, you agree to our Terms of Service and Privacy Policy.
-                        Your account will be reviewed and approved within 24-48 hours.
-                      </p>
-
-                      <div className="text-center">
-                        <span className="text-sm text-gray-600">
-                          Already have an account?{" "}
-                          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-                            Sign in here
-                          </Link>
-                        </span>
-                      </div>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
+            <div className="mt-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                By applying, you agree to our <Link href="/terms" className="text-primary font-semibold hover:underline">Terms of Service</Link>
+              </p>
             </div>
           </div>
-        </div >
-      </div >
-    </div >
+        </div>
+      </div>
+    </div>
   );
 }
