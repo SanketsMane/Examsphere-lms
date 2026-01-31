@@ -43,6 +43,10 @@ fi
 
 echo -e "${GREEN}✓ SSH connection successful${NC}"
 
+# Upload environment variables
+echo -e "${GREEN}Uploading environment variables...${NC}"
+scp -i "$PEM_KEY" "env.production" "$EC2_USER@$EC2_IP:$REMOTE_DIR/.env"
+
 # Deploy on EC2
 echo -e "${GREEN}Deploying application on EC2...${NC}"
 ssh -i "$PEM_KEY" "$EC2_USER@$EC2_IP" << ENDSSH
@@ -74,9 +78,9 @@ npm install
 echo "Generating Prisma client..."
 npx prisma generate
 
-# Run database migration
-echo "Running database migration..."
-npx prisma migrate deploy
+# Run database push (since migration deploy fails with P3005 on existing schema)
+echo "Synchronizing database schema..."
+npx prisma db push
 
 # Build the application
 echo "Building application..."
@@ -84,7 +88,7 @@ npm run build
 
 # Restart PM2 process
 echo "Restarting application..."
-pm2 restart kidokool-lms || pm2 start npm --name "kidokool-lms" -- start
+pm2 restart kidokool-lms --update-env || pm2 start npm --name "kidokool-lms" -- start
 
 # Show status
 echo ""

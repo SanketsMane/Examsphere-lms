@@ -172,7 +172,7 @@ export default async function Home() {
                 <div className="h-12 w-12 bg-primary/20 rounded-xl flex items-center justify-center text-primary mb-6">
                   <BookOpen className="h-6 w-6" />
                 </div>
-                <h3 className="text-3xl font-bold mb-4">Learner</h3>
+                <h3 className="text-3xl font-bold mb-4">Student</h3>
                 <p className="text-muted-foreground mb-8 text-lg">
                   Access thousands of courses from industry experts and start your journey today.
                 </p>
@@ -183,18 +183,18 @@ export default async function Home() {
               <div className="absolute right-0 bottom-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] group-hover:bg-primary/10 transition-colors" />
             </div>
 
-            {/* Instructor CTA */}
+            {/* Teacher CTA */}
             <div className="relative overflow-hidden rounded-2xl bg-slate-900 text-white p-12 flex flex-col justify-center items-start group hover:shadow-2xl transition-all duration-500">
               <div className="relative z-10">
                 <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center text-white mb-6">
                   <Users className="h-6 w-6" />
                 </div>
-                <h3 className="text-3xl font-bold mb-4">Instructor</h3>
+                <h3 className="text-3xl font-bold mb-4">Teacher</h3>
                 <p className="text-gray-300 mb-8 text-lg">
                   Share your knowledge, inspire students, and earn money by teaching what you love.
                 </p>
                 <Link href="/teacher/register" className="inline-flex items-center px-6 py-3 rounded-lg bg-white text-slate-900 font-bold hover:bg-gray-100 transition-colors">
-                  Become an Instructor <ArrowRight className="ml-2 h-4 w-4" />
+                  Become a Teacher <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </div>
               <div className="absolute right-0 bottom-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px]" />
