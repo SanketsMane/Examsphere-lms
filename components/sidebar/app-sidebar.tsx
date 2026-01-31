@@ -22,8 +22,10 @@ import {
   IconShieldCheck as IconVerification,
   IconUserCheck,
 
+  IconShield,
   IconWallet,
   IconTicket,
+  IconSparkles,
 } from "@tabler/icons-react";
 import Logo from "@/public/logo.png";
 
@@ -150,6 +152,11 @@ const data = {
           icon: IconWallet,
         },
       ],
+    },
+    {
+      title: "Kidokool Ai",
+      url: "/admin/ai",
+      icon: IconSparkles,
     },
   ],
   navSecondary: [

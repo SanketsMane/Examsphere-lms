@@ -19,6 +19,7 @@ import {
   IconShield,
   IconWallet,
   IconTicket,
+  IconSparkles,
 } from "@tabler/icons-react";
 import Logo from "@/public/logo.png";
 
@@ -118,6 +119,11 @@ const teacherData = {
       title: "Calendar",
       url: "/teacher/calendar",
       icon: IconCalendar,
+    },
+    {
+      title: "Kidokool Ai",
+      url: "/teacher/ai",
+      icon: IconSparkles,
     },
   ],
   navSecondary: [

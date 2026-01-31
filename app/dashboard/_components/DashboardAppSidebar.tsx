@@ -16,6 +16,7 @@ import {
   IconUsers,
   IconBell,
   IconTicket,
+  IconSparkles,
 } from "@tabler/icons-react";
 import Logo from "@/public/logo.png";
 
@@ -95,6 +96,16 @@ const data = {
       title: "Calendar",
       url: "/dashboard/calendar",
       icon: IconCalendar,
+    },
+    {
+      title: "Settings",
+      url: "/dashboard/settings",
+      icon: IconSettings,
+    },
+    {
+      title: "Kidokool Ai",
+      url: "/dashboard/ai",
+      icon: IconSparkles,
     },
     {
       title: "Certificates",
