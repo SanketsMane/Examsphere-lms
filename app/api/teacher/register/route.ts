@@ -11,7 +11,7 @@ const teacherRegistrationSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   bio: z.string().min(50, "Bio must be at least 50 characters"),
-  expertiseAreas: z.array(z.string()).min(1, "At least one expertise area is required"),
+  expertiseAreas: z.array(z.string()).min(1, "At least one expertise area is required").max(5, "Maximum 5 expertise areas allowed"),
   languages: z.array(z.string()).optional().default([]),
   hourlyRate: z.string().transform(val => parseInt(val)).refine(val => val >= 100 && val <= 50000, "Hourly rate must be between ₹100-50000"),
   experience: z.string().transform(val => parseInt(val)).refine(val => val >= 0, "Experience must be 0 or more years"),

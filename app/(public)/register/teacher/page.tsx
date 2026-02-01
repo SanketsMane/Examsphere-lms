@@ -110,6 +110,10 @@ export default function TeacherRegisterPage() {
   };
 
   const handleExpertiseAddFromSelect = (value: string) => {
+    if (formData.expertiseAreas.length >= 5) {
+      toast.error("Maximum 5 expertise areas allowed.");
+      return;
+    }
     if (value && !formData.expertiseAreas.includes(value)) {
       setFormData(prev => ({
         ...prev,
@@ -324,7 +328,10 @@ export default function TeacherRegisterPage() {
                   {/* Expertise & Details */}
                   <div className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                      <Label className="text-base font-semibold">Expertise Areas</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base font-semibold">Expertise Areas</Label>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Max 5</span>
+                      </div>
                       <Select value={selectedExpertise} onValueChange={handleExpertiseAddFromSelect}>
                         <SelectTrigger className="bg-slate-50/50 dark:bg-zinc-950/50 border-muted-foreground/10 rounded-xl py-6 transition-all">
                           <SelectValue placeholder="Add an area" />
