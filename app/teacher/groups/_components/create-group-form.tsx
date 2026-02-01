@@ -27,6 +27,12 @@ export function CreateGroupForm() {
         const isAdvertised = formData.get("isAdvertised") === "on";
         const bannerUrl = formData.get("bannerUrl") as string;
 
+        if (maxStudents > 12) {
+            toast.error("Error", { description: "Maximum students allowed is 12" });
+            setLoading(false);
+            return;
+        }
+
         try {
             const result = await createGroupClass({
                 title,
@@ -78,8 +84,8 @@ export function CreateGroupForm() {
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="maxStudents">Max Students</Label>
-                    <Input id="maxStudents" name="maxStudents" type="number" defaultValue="10" required />
+                    <Label htmlFor="maxStudents">Max Students (Max 12)</Label>
+                    <Input id="maxStudents" name="maxStudents" type="number" defaultValue="10" max="12" required />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="price">Price ($)</Label>

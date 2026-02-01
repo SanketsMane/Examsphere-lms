@@ -17,6 +17,9 @@ export async function createGroupClass(data: {
     isAdvertised?: boolean;
     bannerUrl?: string; // Optional for packages
 }) {
+    // Enforce max students limit of 12
+    const maxStudents = Math.min(data.maxStudents || 12, 12);
+
     const session = await auth.api.getSession({
         headers: await headers()
     });
@@ -40,7 +43,7 @@ export async function createGroupClass(data: {
                 scheduledAt: data.scheduledAt,
                 duration: data.duration,
                 price: data.price,
-                maxStudents: data.maxStudents,
+                maxStudents: maxStudents,
                 isAdvertised: data.isAdvertised || false,
                 bannerUrl: data.bannerUrl,
                 status: "Scheduled"
@@ -309,6 +312,9 @@ export async function removeStudentFromGroup(classId: string, studentId: string)
 }
 
 export async function updateGroupClass(groupId: string, data: any) {
+    // Enforce max students limit of 12
+    const maxStudents = Math.min(data.maxStudents || 12, 12);
+
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user || (session.user as any).role !== "teacher") return { error: "Unauthorized" };
 
@@ -321,7 +327,7 @@ export async function updateGroupClass(groupId: string, data: any) {
                 scheduledAt: data.scheduledAt,
                 duration: data.duration,
                 price: data.price,
-                maxStudents: data.maxStudents,
+                maxStudents: maxStudents,
                 isAdvertised: data.isAdvertised,
                 bannerUrl: data.bannerUrl
             }

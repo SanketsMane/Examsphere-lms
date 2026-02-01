@@ -23,6 +23,14 @@ export function EditGroupForm({ group }: { group: any }) {
         setLoading(true);
 
         const formData = new FormData(e.currentTarget);
+        const maxStudents = Number(formData.get("maxStudents"));
+
+        if (maxStudents > 12) {
+            toast.error("Error", { description: "Maximum students allowed is 12" });
+            setLoading(false);
+            return;
+        }
+
         // Call server action (need to implement updateGroupClass in actions/groups.ts)
 
         toast.info("Update feature coming shortly (simulated)");
@@ -63,8 +71,8 @@ export function EditGroupForm({ group }: { group: any }) {
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="maxStudents">Max Students</Label>
-                    <Input id="maxStudents" name="maxStudents" type="number" defaultValue={group.maxStudents} required />
+                    <Label htmlFor="maxStudents">Max Students (Max 12)</Label>
+                    <Input id="maxStudents" name="maxStudents" type="number" defaultValue={group.maxStudents} max="12" required />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="price">Price ($)</Label>
