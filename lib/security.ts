@@ -5,7 +5,7 @@
  * input sanitization, file upload security, and performance monitoring
  */
 
-// crypto removed (unused)
+import { logger } from "@/lib/logger";
 
 interface RateLimitEntry {
   count: number;
@@ -160,13 +160,13 @@ export async function protectSignup(
     };
   }
 
-  // Apply rate limiting (20 signups per 2 minutes - increased from 5)
   const rateLimitOk = rateLimiter.check(identifier, {
-    maxRequests: 20,
+    maxRequests: 50,
     windowMs: 2 * 60 * 1000 // 2 minutes
   });
 
   if (!rateLimitOk) {
+    logger.security("SIGNUP_RATE_LIMIT_HIT", { identifier, email });
     return {
       success: false,
       error: "You have been blocked due to rate limiting",
@@ -198,6 +198,7 @@ export async function protectGeneral(
   const rateLimitOk = rateLimiter.check(identifier, options);
 
   if (!rateLimitOk) {
+    logger.security("GENERAL_RATE_LIMIT_HIT", { identifier, maxRequests: options.maxRequests });
     return {
       success: false,
       error: "You have been blocked due to rate limiting",

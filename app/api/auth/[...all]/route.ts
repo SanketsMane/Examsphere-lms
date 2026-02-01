@@ -34,14 +34,14 @@ async function protect(req: NextRequest) {
     } else {
       // Otherwise use general protection with rate limiting (50 per 2 mins - increased from 5)
       return await protectGeneral(req, userId, {
-        maxRequests: 50,
+        maxRequests: 100,
         windowMs: 120000 // 2 minutes
       });
     }
   } else {
     // For all other auth requests (100 per min - increased from 10)
     return await protectGeneral(req, userId, {
-      maxRequests: 100,
+      maxRequests: 200,
       windowMs: 60000 // 1 minute
     });
   }
