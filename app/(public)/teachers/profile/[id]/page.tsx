@@ -79,10 +79,13 @@ export default async function TeacherProfilePage({ params }: Props) {
 
                             <div className="space-y-3">
                                 <BookingWidget
-                                    teacherProfileId={teacher.id}
-                                    teacherId={teacher.userId}
-                                    hourlyRate={teacher.hourlyRate || 5000}
-                                    userName={teacher.user.name || "Instructor"}
+                                    teacher={{
+                                        id: teacher.id,
+                                        name: teacher.user.name || "Instructor",
+                                        image: teacher.user.image ? constructS3Url(teacher.user.image) : "",
+                                        headline: teacher.expertise[0] || "Expert Instructor",
+                                        hourlyRate: teacher.hourlyRate || 5000
+                                    }}
                                 />
                                 <Button variant="outline" className="w-full">Message</Button>
                             </div>
