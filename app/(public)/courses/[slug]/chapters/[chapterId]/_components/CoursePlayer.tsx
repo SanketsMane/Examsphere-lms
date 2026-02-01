@@ -48,13 +48,13 @@ export function CoursePlayer({
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 5000);
 
-            try {
-                await updateLessonProgress(lessonId, true);
-            } catch (error) {
+            // Update progress in background (don't wait)
+            updateLessonProgress(lessonId, true).catch((error) => {
                 console.error("Failed to update progress", error);
-            }
+            });
         }
 
+        // Navigate immediately if there's a next lesson
         if (nextLessonId) {
             // Find chapter for next lesson
             const nextChapter = course.chapter.find((c: any) => c.lessons.some((l: any) => l.id === nextLessonId));

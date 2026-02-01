@@ -8,6 +8,7 @@ import {
 } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { constructS3Url } from "@/lib/s3-utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,7 +63,7 @@ export function NavUser() {
                 <AvatarImage
                   src={
                     session?.user.image && session.user.image.trim() !== ""
-                      ? session.user.image
+                      ? (session.user.image.startsWith('http') ? session.user.image : constructS3Url(session.user.image))
                       : `https://avatar.vercel.sh/${session?.user.email}`
                   }
                   alt={session?.user.name}
@@ -98,7 +99,7 @@ export function NavUser() {
                   <AvatarImage
                     src={
                       session?.user.image && session.user.image.trim() !== ""
-                        ? session.user.image
+                        ? (session.user.image.startsWith('http') ? session.user.image : constructS3Url(session.user.image))
                         : `https://avatar.vercel.sh/${session?.user.email}`
                     }
                     alt={session?.user.name}
