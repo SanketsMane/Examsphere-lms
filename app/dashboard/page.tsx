@@ -114,7 +114,7 @@ export default async function DashboardPage() {
         <div className="lg:col-span-2 space-y-6">
 
           {/* Active Courses Box */}
-          <div className="bg-white dark:bg-card rounded-xl p-6 shadow-sm">
+          <div className="bg-white dark:bg-card rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-800">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-lg text-gray-900 dark:text-white">Active Courses</h3>
               <Link href="/dashboard/courses" className="text-sm text-blue-600 font-medium hover:underline">View All</Link>
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-10 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl">
+              <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
                 <p className="text-muted-foreground text-sm mb-4">You have no active courses.</p>
                 <Link href="/courses"><Button variant="outline">Browse Marketplace</Button></Link>
               </div>
@@ -139,7 +139,7 @@ export default async function DashboardPage() {
             title="Learning Activity"
             tabs={["Lessons"]}
             activeTab="Lessons"
-            className="bg-white dark:bg-card"
+            className="bg-white dark:bg-card border border-gray-200 dark:border-gray-800"
           >
             <ChartAreaInteractive
               data={analytics.activityData}
@@ -153,7 +153,7 @@ export default async function DashboardPage() {
         {/* Right Column (Span 1) */}
         <div className="space-y-6">
           {/* Profile Completion Widget */}
-          <div className="bg-white dark:bg-card rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-800">
+          <div className="bg-white dark:bg-card rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-800">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-sm text-gray-900 dark:text-white">Profile Status</h3>
               <Badge variant={completionPercentage === 100 ? "default" : "secondary"} className="text-[10px] px-2 py-0">

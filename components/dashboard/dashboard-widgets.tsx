@@ -154,50 +154,52 @@ interface ScheduleItem {
 }
 
 export function ScheduleWidget({ items }: { items: ScheduleItem[] }) {
+    const displayItems = items.slice(0, 3);
+
     return (
-        <Card className="border-none shadow-md bg-white dark:bg-card rounded-2xl h-full">
-            <CardHeader className="pb-4 border-b border-gray-50 dark:border-gray-800">
+        <Card className="border shadow-sm bg-white dark:bg-card border-gray-200 dark:border-gray-800 rounded-xl h-full">
+            <CardHeader className="pb-3 border-b border-gray-100 dark:border-gray-800 p-4">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-bold">Upcoming Schedule</CardTitle>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                        <Calendar className="h-4 w-4" />
-                    </Button>
+                    <CardTitle className="text-base font-bold text-gray-900 dark:text-white">Upcoming Schedule</CardTitle>
+                    <Link href="/dashboard/calendar">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
+                            <Calendar className="h-4 w-4" />
+                        </Button>
+                    </Link>
                 </div>
             </CardHeader>
             <CardContent className="p-0">
-                {items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-center">
-                        <div className="h-12 w-12 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-3">
-                            <Calendar className="h-6 w-6 text-gray-300" />
+                {displayItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-6 text-center text-gray-500">
+                        <div className="h-10 w-10 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mb-2">
+                            <Calendar className="h-5 w-5 text-gray-300" />
                         </div>
-                        <p className="text-sm text-muted-foreground">No upcoming events.</p>
+                        <p className="text-xs font-medium">No upcoming events.</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-50 dark:divide-gray-800">
-                        {items.map((item, i) => (
-                            <div key={item.id} className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group cursor-pointer">
-                                <div className="flex flex-col items-center justify-center w-14 h-14 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-100 dark:border-indigo-800">
-                                    <span className="text-[10px] uppercase tracking-wider opacity-70">{item.date.split(' ')[0] || 'TODAY'}</span>
-                                    <span className="text-lg leading-none">{item.date.includes(' ') ? item.date.split(' ')[1] : new Date().getDate()}</span>
+                    <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {displayItems.map((item, i) => (
+                            <div key={item.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group cursor-pointer">
+                                <div className="flex flex-col items-center justify-center w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-100 dark:border-indigo-800">
+                                    <span className="text-[9px] uppercase tracking-wider opacity-70 leading-none mb-0.5">{item.date.split(' ')[0].substring(0, 3) || 'TODAY'}</span>
+                                    <span className="text-sm leading-none">{item.date.includes(' ') ? item.date.split(' ')[1] : new Date().getDate()}</span>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{item.title}</h4>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">{item.time}</span>
-                                        <span className="text-xs text-muted-foreground truncate">with {item.user}</span>
+                                    <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate group-hover:text-primary transition-colors">{item.title}</h4>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{item.time}</span>
                                     </div>
                                 </div>
-                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity -mr-2">
-                                    <ArrowRight className="h-4 w-4" />
-                                </Button>
                             </div>
                         ))}
                     </div>
                 )}
-                <div className="p-4 border-t border-gray-50 dark:border-gray-800">
-                    <Button variant="outline" className="w-full text-xs font-bold rounded-xl h-9 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 dark:hover:bg-indigo-950 dark:hover:border-indigo-800 transition-colors">
-                        View Full Calendar
-                    </Button>
+                <div className="p-3 border-t border-gray-100 dark:border-gray-800">
+                    <Link href="/dashboard/calendar" className="w-full">
+                        <Button variant="outline" size="sm" className="w-full text-xs font-semibold h-8 border-gray-200 hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:hover:bg-gray-800">
+                            View Full Calendar
+                        </Button>
+                    </Link>
                 </div>
             </CardContent>
         </Card>
