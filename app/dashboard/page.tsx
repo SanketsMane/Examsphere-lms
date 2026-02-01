@@ -1,7 +1,7 @@
 import { getSessionWithRole } from "../data/auth/require-roles";
 import { getUserAnalytics } from "../actions/analytics";
-import { StatsCard, ScheduleWidget, ActivityFeed, QuickActions } from "@/components/dashboard/dashboard-widgets";
-import { IconBook, IconTrophy, IconClock, IconFlame, IconSearch, IconSparkles } from "@tabler/icons-react";
+import { ScheduleWidget, QuickActions } from "@/components/dashboard/dashboard-widgets";
+import { IconSparkles } from "@tabler/icons-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,14 +10,16 @@ import { redirect } from "next/navigation";
 import { getEnrolledCourses } from "../data/user/get-enrolled-courses";
 import { CourseProgressCard } from "./_components/CourseProgressCard";
 import { FreeClassWidget } from "./_components/FreeClassWidget";
+import { ActivityFeed } from "./_components/ActivityFeed";
 import { Input } from "@/components/ui/input";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
-import { ArrowRight, PlayCircle, BookOpen, Clock, Target } from "lucide-react";
-import { RevenueCard } from "@/components/dashboard/yo-coach/revenue-card"; // Reusing for consistency
+import { ArrowRight, BookOpen, Target } from "lucide-react";
+import { RevenueCard } from "@/components/dashboard/yo-coach/revenue-card";
 import { StatBox } from "@/components/dashboard/yo-coach/stat-box";
 import { ChartSection } from "@/components/dashboard/yo-coach/chart-section";
 import { ChartAreaInteractive } from "@/components/sidebar/chart-area-interactive";
 import { getStudentSchedule } from "../data/student/get-student-schedule";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +40,6 @@ export default async function DashboardPage() {
   const scheduleItems = await getStudentSchedule(userId);
   const freeUsage = await prisma.freeClassUsage.findUnique({ where: { studentId: userId } });
 
-  // Recent activity adapted from analytics
-  // const recentActivity = analytics.recentActivity ... (TODO: Map this if needed for a widget)
-
   // Yo-Coach Style Top Cards (Adapted for Student)
   const topStats = [
     {
@@ -54,14 +53,14 @@ export default async function DashboardPage() {
       title: "Completed Courses",
       amount: analytics.stats.completedCourses.toString(),
       subTitle: `Out of ${analytics.stats.enrollmentCount} enrolled`,
-      icon: <IconTrophy className="h-5 w-5" />,
+      icon: <Target className="h-5 w-5" />,
       variant: "orange" as const
     },
     {
       title: "Sessions Attended",
       amount: analytics.stats.completedSessions.toString(),
       subTitle: `${analytics.stats.totalSessionsBooked} booked total`,
-      icon: <IconFlame className="h-5 w-5" />,
+      icon: <BookOpen className="h-5 w-5" />,
       variant: "purple" as const
     }
   ];
@@ -73,80 +72,122 @@ export default async function DashboardPage() {
   });
 
   const profileFields = [
-    { label: "Avatar", value: !!userData?.image },
-    { label: "Bio", value: !!userData?.bio },
-    { label: "Education", value: !!userData?.education },
-    { label: "Interests", value: (userData?.preferences?.categories?.length ?? 0) > 0 },
+    { label: "Avatar", value: !!session.user.image },
+    { label: "Name", value: !!session.user.name },
+    { label: "Role Set", value: !!session.user.role },
+    { label: "Email Verified", value: true }, // Placeholder as auth usually handles this
   ];
 
   const completedFields = profileFields.filter(f => f.value).length;
   const completionPercentage = Math.round((completedFields / profileFields.length) * 100);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Student Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Track your learning progress and upcoming classes.</p>
-        </div>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8 bg-slate-50/30 dark:bg-transparent min-h-screen">
+      {/* Welcome Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <MotionWrapper variant="slideUp">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+              Welcome back, {session.user.name?.split(' ')[0]}! <span className="text-3xl animate-bounce">👋</span>
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 font-medium">
+              You've completed <span className="text-blue-600 dark:text-blue-400 font-bold">{analytics.stats.totalLessonsCompleted} lessons</span> so far. Keep it up!
+            </p>
+          </div>
+        </MotionWrapper>
+        
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/calendar" className="hidden md:flex">
-            <Button variant="outline">View Calendar</Button>
-          </Link>
-          <Link href="/courses">
-            <Button className="bg-[#1e293b] hover:bg-[#0f172a]">Browse Courses</Button>
-          </Link>
+           <Link href="/courses">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-6 rounded-full font-bold">
+              Browse Courses
+            </Button>
+           </Link>
         </div>
       </div>
 
-      {/* 1. Top Stats Row (Yo-Coach Style) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {topStats.map((stat, i) => (
-          <RevenueCard key={i} {...stat} />
-        ))}
-      </div>
-
-      {/* 2. Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
+      {/* Main Grid Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        
         {/* Left Column (Span 2) */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* Active Courses Box */}
-          <div className="bg-white dark:bg-card rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-800">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-lg text-gray-900 dark:text-white">Active Courses</h3>
-              <Link href="/dashboard/courses" className="text-sm text-blue-600 font-medium hover:underline">View All</Link>
-            </div>
-
-            {enrolledCourses.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {enrolledCourses.slice(0, 4).map((course: any) => (
-                  <CourseProgressCard key={course.Course.id} data={course} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
-                <p className="text-muted-foreground text-sm mb-4">You have no active courses.</p>
-                <Link href="/courses"><Button variant="outline">Browse Marketplace</Button></Link>
-              </div>
-            )}
+        <div className="xl:col-span-2 space-y-8">
+          
+          {/* Top Row Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {topStats.map((stat, i) => (
+              <MotionWrapper key={i} delay={i * 0.1} variant="scale">
+                <div className="bg-white dark:bg-card p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all group">
+                   <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "p-3 rounded-xl transition-transform group-hover:scale-110",
+                        stat.variant === "blue" ? "bg-blue-50 text-blue-600" :
+                        stat.variant === "orange" ? "bg-orange-50 text-orange-600" :
+                        "bg-purple-50 text-purple-600"
+                      )}>
+                        {stat.icon}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{stat.title}</p>
+                        <h4 className="text-xl font-black text-gray-900 dark:text-white mt-0.5">{stat.amount}</h4>
+                      </div>
+                   </div>
+                   <p className="text-[10px] font-semibold text-gray-400 mt-3 flex items-center gap-1">
+                      <IconSparkles className="h-3 w-3 text-yellow-400" /> {stat.subTitle}
+                   </p>
+                </div>
+              </MotionWrapper>
+            ))}
           </div>
 
-          {/* Learning Activity Chart */}
-          <ChartSection
-            title="Learning Activity"
-            tabs={["Lessons"]}
-            activeTab="Lessons"
-            className="bg-white dark:bg-card border border-gray-200 dark:border-gray-800"
-          >
-            <ChartAreaInteractive
-              data={analytics.activityData}
-              dataKey="lessons"
-              label="Lessons Completed"
-              color="#3b82f6"
-            />
+          {/* Activity Section / Learning Progress */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                    Current Learning
+                  </h3>
+                  <Link href="/dashboard/courses" className="text-xs font-bold text-blue-600 hover:underline">
+                    My Courses
+                  </Link>
+                </div>
+                
+                {enrolledCourses.length > 0 ? (
+                  <div className="space-y-4">
+                    {enrolledCourses.slice(0, 2).map((enrollment: any) => (
+                      <CourseProgressCard key={enrollment.Course.id} data={enrollment} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-card p-12 rounded-2xl border-2 border-dashed border-gray-100 dark:border-gray-800 flex flex-col items-center justify-center text-center">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-full mb-4">
+                      <BookOpen className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">No courses yet</h4>
+                    <p className="text-sm text-gray-500 mb-6">Explore our library and start your learning journey!</p>
+                    <Link href="/courses">
+                        <Button variant="outline" className="rounded-full font-bold border-blue-200">
+                          Find a Course
+                        </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Activity Feed Widget */}
+              <div className="space-y-6">
+                 <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                      <Target className="h-5 w-5 text-orange-600" />
+                      Recent Activity
+                    </h3>
+                  </div>
+                  <ActivityFeed activities={analytics.recentActivity} />
+              </div>
+          </div>
+
+          {/* Interactive Chart Section */}
+          <ChartSection title="Learning Consistency" className="bg-white dark:bg-card border border-gray-200 dark:border-gray-800">
+            <ChartAreaInteractive data={analytics.activityData} dataKey="lessons" label="Lessons Completed" color="#3b82f6" />
           </ChartSection>
         </div>
 

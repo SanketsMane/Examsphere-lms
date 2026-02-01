@@ -1,5 +1,6 @@
 "use server";
 
+import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/action-security";
 // import { BroadcastType } from "@prisma/client"; // Avoiding lint error

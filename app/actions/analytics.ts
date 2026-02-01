@@ -15,7 +15,6 @@ export async function getUserAnalytics(userId?: string) {
   // Get basic stats
   const [
     enrollmentCount,
-    completedCourses,
     totalLessonsCompleted,
     totalSessionsBooked,
     completedSessions,
@@ -26,15 +25,6 @@ export async function getUserAnalytics(userId?: string) {
     // Enrollment count
     prisma.enrollment.count({
       where: { userId: targetUserId }
-    }),
-
-    // Completed courses - for now, simplified to count active enrollments
-    // TODO: Implement proper completion logic based on lesson progress
-    prisma.enrollment.count({
-      where: {
-        userId: targetUserId,
-        status: "Active"
-      }
     }),
 
     // Total lessons completed
@@ -115,17 +105,19 @@ export async function getUserAnalytics(userId?: string) {
   // Get engagement metrics
   const engagementMetrics = await getEngagementMetrics(targetUserId);
 
+  const actualCompletedCourses = learningProgress.filter(p => p.progress === 100).length;
+
   return {
     stats: {
       enrollmentCount,
-      completedCourses,
+      completedCourses: actualCompletedCourses,
       totalLessonsCompleted,
       totalSessionsBooked,
       completedSessions,
       messagesCount,
       blogPostsCount,
       certificatesCount,
-      completionRate: enrollmentCount > 0 ? Math.round((completedCourses / enrollmentCount) * 100) : 0,
+      completionRate: enrollmentCount > 0 ? Math.round((actualCompletedCourses / enrollmentCount) * 100) : 0,
       sessionCompletionRate: totalSessionsBooked > 0 ? Math.round((completedSessions / totalSessionsBooked) * 100) : 0,
     },
     recentActivity,

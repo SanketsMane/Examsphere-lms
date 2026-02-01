@@ -35,14 +35,36 @@ export async function GET(request: Request) {
       select: { courseId: true }
     });
 
-    // Note: Since Enrollment doesn't have completedAt, we'll use active status for now
-    const completedCourses = await prisma.enrollment.findMany({
-      where: {
-        userId,
-        status: "Active"  // Simplified - all active enrollments considered as progress
-      },
-      select: { courseId: true }
+    // Fetch detailed progress to determine true completion
+    const enrollmentData = await prisma.enrollment.findMany({
+      where: { userId },
+      include: {
+        Course: {
+          include: {
+            chapter: {
+              include: {
+                lessons: {
+                  include: {
+                    lessonProgress: {
+                      where: { userId }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
+
+    const trulyCompletedCourseIds = enrollmentData
+      .filter(enrollment => {
+        const allLessons = enrollment.Course.chapter.flatMap(c => c.lessons);
+        if (allLessons.length === 0) return false;
+        const completedCount = allLessons.filter(l => l.lessonProgress[0]?.completed).length;
+        return completedCount === allLessons.length;
+      })
+      .map(e => e.courseId);
 
     // Build recommendation context
     const context = {
@@ -54,7 +76,7 @@ export async function GET(request: Request) {
         category: activity.category || undefined,
         timestamp: activity.timestamp
       })) as any[],
-      completedCourses: completedCourses.map(c => c.courseId),
+      completedCourses: trulyCompletedCourseIds,
       enrolledCourses: enrolledCourses.map(c => c.courseId),
       searchHistory: recentActivity
         .filter(a => a.type === 'Search' && a.searchQuery)
