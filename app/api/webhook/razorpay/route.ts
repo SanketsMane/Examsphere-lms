@@ -47,10 +47,27 @@ export async function POST(req: NextRequest) {
 
             if (enrollment) {
                 if (enrollment.status !== "Active") {
+                    // Fetch course details for notification
+                    const course = await prisma.course.findUnique({
+                        where: { id: enrollment.courseId },
+                        select: { title: true }
+                    });
+
                     await prisma.enrollment.update({
                         where: { id: enrollment.id },
                         data: { 
                             status: "Active",
+                        }
+                    });
+
+                    // Create system notification
+                    await prisma.notification.create({
+                        data: {
+                            userId: enrollment.userId,
+                            title: "Course Enrollment Successful",
+                            message: `Your payment was successful! You're now enrolled in "${course?.title || 'the course'}".`,
+                            type: "Course",
+                            data: { courseId: enrollment.courseId, action: "enrolled" }
                         }
                     });
 

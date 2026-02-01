@@ -44,13 +44,24 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: "Already enrolled" }, { status: 200 });
         }
 
-        await prisma.enrollment.create({
+        const enrollment = await prisma.enrollment.create({
             data: {
                 userId: session.user.id,
                 courseId: courseId,
                 amount: 0,
                 status: "Active", // Directly active for free courses
             },
+        });
+
+        // Create system notification
+        await prisma.notification.create({
+            data: {
+                userId: session.user.id,
+                title: "Course Enrollment Successful",
+                message: `You've successfully enrolled in "${course.title}". Start learning now!`,
+                type: "Course",
+                data: { courseId: course.id, action: "enrolled" }
+            }
         });
 
         return NextResponse.json({ message: "Enrolled successfully" });
