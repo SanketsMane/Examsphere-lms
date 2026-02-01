@@ -17,10 +17,21 @@ export default async function SettingsPage() {
 
   if (!user) return null;
 
-  // Fetch all categories for the interest section
+  // Fetch all categories for the interest section, grouped by parent
   const categories = await prisma.category.findMany({
-    where: { isActive: true },
-    select: { id: true, name: true },
+    where: { 
+      isActive: true,
+      parentId: null // Fetch only top-level categories
+    },
+    select: { 
+      id: true, 
+      name: true,
+      children: {
+        where: { isActive: true },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' }
+      }
+    },
     orderBy: { name: 'asc' }
   });
 

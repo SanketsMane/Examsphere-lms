@@ -124,28 +124,58 @@ export function SettingsForm({ user, preferences, categories }: SettingsFormProp
                         <CardDescription>Tell us what you want to learn to get better recommendations</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <Label>Interests (Categories)</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {categories.map((cat) => (
-                                    <label
-                                        key={cat.id}
-                                        className="flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer hover:bg-slate-50 transition-colors"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            name="categories"
-                                            value={cat.name}
-                                            defaultChecked={preferences?.categories?.includes(cat.name)}
-                                            className="hidden peer"
-                                        />
-                                        <div className="w-4 h-4 rounded-sm border peer-checked:bg-blue-600 peer-checked:border-blue-600 flex items-center justify-center">
-                                            <div className="w-2 h-2 bg-white rounded-full hidden peer-checked:block" />
-                                        </div>
-                                        <span className="text-sm font-medium">{cat.name}</span>
-                                    </label>
-                                ))}
-                            </div>
+                            
+                            {categories.map((parent) => (
+                                <div key={parent.id} className="space-y-2">
+                                    <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                                        {parent.name}
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {parent.children && parent.children.length > 0 ? (
+                                            parent.children.map((child: any) => (
+                                                <label
+                                                    key={child.id}
+                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        name="categories"
+                                                        value={child.name}
+                                                        defaultChecked={preferences?.categories?.includes(child.name)}
+                                                        className="hidden peer"
+                                                    />
+                                                    <div className="w-4 h-4 rounded-sm border peer-checked:bg-blue-600 peer-checked:border-blue-600 flex items-center justify-center">
+                                                        <div className="w-2 h-2 bg-white rounded-full hidden peer-checked:block" />
+                                                    </div>
+                                                    <span className="text-sm font-medium">{child.name}</span>
+                                                </label>
+                                            ))
+                                        ) : (
+                                            <label
+                                                className="flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    name="categories"
+                                                    value={parent.name}
+                                                    defaultChecked={preferences?.categories?.includes(parent.name)}
+                                                    className="hidden peer"
+                                                />
+                                                <div className="w-4 h-4 rounded-sm border peer-checked:bg-blue-600 peer-checked:border-blue-600 flex items-center justify-center">
+                                                    <div className="w-2 h-2 bg-white rounded-full hidden peer-checked:block" />
+                                                </div>
+                                                <span className="text-sm font-medium">{parent.name}</span>
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {categories.length === 0 && (
+                                <p className="text-sm text-muted-foreground">No categories available.</p>
+                            )}
                         </div>
 
                         <div className="space-y-2">
