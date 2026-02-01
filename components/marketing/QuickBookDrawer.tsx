@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
@@ -98,7 +98,11 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            {trigger}
+            {trigger && (
+                <SheetTrigger asChild>
+                    {trigger}
+                </SheetTrigger>
+            )}
             <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-white dark:bg-card">
                 <SheetHeader className="p-6 border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-4">
