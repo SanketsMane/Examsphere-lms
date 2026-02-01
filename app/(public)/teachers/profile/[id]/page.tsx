@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { IconStarFilled, IconMapPin, IconVideo, IconShieldCheck, IconMessageCircle, IconCalendar, IconClock } from "@tabler/icons-react";
@@ -87,7 +88,12 @@ export default async function TeacherProfilePage({ params }: Props) {
                                         hourlyRate: teacher.hourlyRate || 5000
                                     }}
                                 />
-                                <Button variant="outline" className="w-full">Message</Button>
+                                <Link href={`/dashboard/messages?createChatWith=${teacher.user.id}`} className="w-full">
+                                    <Button variant="outline" className="w-full">
+                                        <IconMessageCircle className="w-4 h-4 mr-2" />
+                                        Message
+                                    </Button>
+                                </Link>
                             </div>
                         </div>
 

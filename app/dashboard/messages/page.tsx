@@ -108,8 +108,28 @@ export default function MessagesPage() {
     loadConversations();
   }, []);
 
-  // Effect to select conversation from URL
+  // Effect to select conversation from URL or create new one
   useEffect(() => {
+    const createChatWith = searchParams.get("createChatWith");
+    
+    if (createChatWith && !selectedConversation) {
+      // Check if we already have a conversation with this user
+      const existingConv = conversations.find(c => c.otherParticipant.id === createChatWith);
+      
+      if (existingConv) {
+        setSelectedConversation(existingConv.id);
+      } else {
+        // Create new conversation
+        handleStartConversation(createChatWith);
+      }
+      
+      // Clear the query param to avoid re-triggering
+      const url = new URL(window.location.href);
+      url.searchParams.delete("createChatWith");
+      window.history.replaceState({}, "", url.toString());
+      return;
+    }
+
     if (conversationIdParam && !selectedConversation && conversations.length > 0) {
       // Verify if it exists in loaded conversations or just set it (will load messages anyway)
       // To be safe, we check if we have it or if we should trust the URL.
@@ -119,7 +139,7 @@ export default function MessagesPage() {
         setSelectedConversation(conversationIdParam);
       }
     }
-  }, [conversationIdParam, conversations, selectedConversation]);
+  }, [conversationIdParam, conversations, selectedConversation, searchParams]);
 
   const loadConversations = async () => {
     try {
