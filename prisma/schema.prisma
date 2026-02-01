@@ -249,6 +249,7 @@ model Enrollment {
   userId    String
   Course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  razorpayOrderId String?
 
   @@unique([userId, courseId])
   @@index([courseId])
@@ -651,6 +652,8 @@ model SiteSettings {
   youtube        String?
   footerLinks    Json?
   maxGroupClassSize Int @default(12)
+  razorpayKeyId     String?
+  razorpayKeySecret String?
   updatedAt      DateTime @updatedAt
 }
 
@@ -1466,6 +1469,7 @@ model WalletTransaction {
   description     String
   metadata        Json?                 // Store course/session/group details
   stripeSessionId String?               // For recharge transactions
+  razorpayOrderId String?
   createdAt       DateTime              @default(now())
   
   wallet          Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade)

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRazorpay } from "@/components/payment/use-razorpay";
 
 interface CoursePurchaseButtonProps {
     courseId: string;
@@ -28,6 +29,7 @@ export const CoursePurchaseButton = ({
     const [isLoading, setIsLoading] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
     const [couponCode, setCouponCode] = useState("");
+    const { openCheckout } = useRazorpay();
 
     const onEnroll = async () => {
         try {
@@ -56,7 +58,7 @@ export const CoursePurchaseButton = ({
                 window.location.reload();
                 return;
             } else {
-                // Stripe Checkout for Paid Courses
+                // Razorpay Checkout for Paid Courses
                 const response = await fetch("/api/checkout", {
                     method: "POST",
                     headers: {
@@ -74,14 +76,35 @@ export const CoursePurchaseButton = ({
                         window.location.href = "/login";
                         return;
                     }
-                    throw new Error("Checkout failed");
+                    const errorMsg = await response.text();
+                    throw new Error(errorMsg || "Checkout failed");
                 }
 
                 const data = await response.json();
-                window.location.assign(data.url);
+                
+                // Open Razorpay Checkout
+                await openCheckout({
+                    orderId: data.orderId,
+                    keyId: data.keyId,
+                    amount: data.amount,
+                    currency: data.currency,
+                    name: data.courseName,
+                    description: data.courseDescription,
+                    user: data.user,
+                    onSuccess: (paymentId) => {
+                        toast.success("Payment successful! Redirecting...");
+                        window.location.href = `/courses/${data.courseName.toLowerCase().replace(/\s+/g, '-')}/?success=1`;
+                         // Fallback reload if slug construction is risky, but ideally backend provided URL or we reload
+                         window.location.reload(); 
+                    },
+                    onError: (err) => {
+                        console.error(err);
+                        toast.error("Payment failed or cancelled");
+                    }
+                });
             }
-        } catch {
-            toast.error("Something went wrong");
+        } catch (error: any) {
+            toast.error(error.message || "Something went wrong");
         } finally {
             setIsLoading(false);
         }
@@ -104,7 +127,7 @@ export const CoursePurchaseButton = ({
         <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
             <DialogTrigger asChild>
                 <Button className="w-full text-lg h-12 font-bold">
-                    Enroll for ${price}
+                    Enroll for ₹{price}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
@@ -126,7 +149,7 @@ export const CoursePurchaseButton = ({
                     </div>
                     <div className="flex items-center justify-between font-medium">
                         <span>Course Price:</span>
-                        <span>${price}</span>
+                        <span>₹{price}</span>
                     </div>
                 </div>
                 <DialogFooter>

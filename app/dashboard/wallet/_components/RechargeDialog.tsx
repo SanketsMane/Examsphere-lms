@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useRazorpay } from "@/components/payment/use-razorpay";
 
 interface RechargeDialogProps {
     children: React.ReactNode;
@@ -20,6 +21,7 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
     const [open, setOpen] = useState(false);
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
+    const { openCheckout } = useRazorpay();
 
     const quickAmounts = [100, 500, 1000, 2000, 5000];
 
@@ -48,15 +50,39 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || "Failed to create checkout session");
+                if (data.error && data.error.includes("Gateway Configuration")) {
+                    toast.error("Payment gateway is not configured correctly. Please contact support.");
+                } else {
+                    toast.error(data.error || "Failed to initiate recharge");
+                }
+                setLoading(false);
+                return;
             }
 
-            // Redirect to Stripe checkout
-            if (data.url) {
-                window.location.href = data.url;
-            }
+            // Open Razorpay Checkout
+            await openCheckout({
+                orderId: data.orderId,
+                keyId: data.keyId,
+                amount: data.amount,
+                currency: data.currency,
+                name: "Wallet Recharge",
+                description: `Add ₹${amountNum} to wallet`,
+                user: data.user,
+                onSuccess: (paymentId: any) => {
+                    toast.success("Recharge successful! Updating wallet...");
+                    // Add a small delay for webhook to process
+                    setTimeout(() => {
+                        window.location.href = "/dashboard/wallet?recharge=success";
+                    }, 2000);
+                },
+                onError: (err: any) => {
+                    console.error(err);
+                    toast.error("Payment failed or cancelled");
+                }
+            });
         } catch (error: any) {
             toast.error(error.message || "Failed to initiate recharge");
+        } finally {
             setLoading(false);
         }
     };

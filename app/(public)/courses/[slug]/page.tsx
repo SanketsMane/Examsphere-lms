@@ -208,11 +208,11 @@ export default async function CourseDetailsPage({
                         <div className="p-6 space-y-6">
                             <div className="flex items-end gap-2">
                                 <span className="text-3xl font-bold text-foreground">
-                                    {course.price === 0 ? "Free" : `$${course.price}`}
+                                    {course.price === 0 ? "Free" : `₹${course.price}`}
                                 </span>
                                 {course.price > 0 && (
                                     <span className="text-lg text-muted-foreground line-through mb-1">
-                                        ${Math.round(course.price * 1.5)}
+                                        ₹{Math.round(course.price * 1.5)}
                                     </span>
                                 )}
                             </div>

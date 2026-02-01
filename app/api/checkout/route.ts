@@ -1,24 +1,18 @@
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { env } from "@/lib/env";
 import { protectGeneral, getClientIP } from "@/lib/security";
-import { getCurrencyData, convertPrice } from "@/lib/currency";
+import { getCurrencyData } from "@/lib/currency";
 import { logger } from "@/lib/logger";
+import { getRazorpayInstance } from "@/lib/razorpay";
 
 export const dynamic = "force-dynamic";
-
-const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-    apiVersion: "2025-08-27.basil",
-    typescript: true,
-});
 
 export async function POST(req: Request) {
     let userId: string | undefined;
 
     try {
-        const stripe = getStripe();
         const session = await getSessionWithRole();
         const user = session?.user;
         userId = user?.id;
@@ -28,7 +22,7 @@ export async function POST(req: Request) {
         }
 
         const clientIP = getClientIP(req) || "unknown";
-        const startCheck = await protectGeneral(req, `${clientIP}:checkout`, { maxRequests: 1250, windowMs: 60000 }); // Increased 25x from 50
+        const startCheck = await protectGeneral(req, `${clientIP}:checkout`, { maxRequests: 1250, windowMs: 60000 });
         if (!startCheck.success) {
              return new NextResponse("Too many checkout attempts", { status: 429 });
         }
@@ -43,17 +37,6 @@ export async function POST(req: Request) {
             where: {
                 id: courseId,
             },
-            include: {
-                chapter: {
-                    include: {
-                        lessons: {
-                            orderBy: {
-                                position: "asc",
-                            }
-                        }
-                    }
-                }
-            }
         });
 
         if (!course) {
@@ -71,7 +54,10 @@ export async function POST(req: Request) {
         });
 
         if (purchase) {
-            return new NextResponse("Already purchased", { status: 400 });
+            // Check if status is completed, if pending we might want to allow retry or resume
+            if (purchase.status === "Active") {
+                return new NextResponse("Already purchased", { status: 400 });
+            }
         }
 
         // Coupon Logic
@@ -107,81 +93,81 @@ export async function POST(req: Request) {
             }
         }
 
-        // 1. Fetch user profile for country and Stripe customer ID
-        let userProfile = await prisma.user.findUnique({
+        // 1. Initialize Razorpay
+        const razorpay = await getRazorpayInstance();
+
+        // 2. Resolve Currency
+        // Force INR for Razorpay if using Indian account, or dynamic if supported. 
+        // For simpler integration consistent with "INR" default plan, we use INR.
+        const currencyCode = "INR"; 
+        
+        // Since we updated default factor to 1 for INR in lib/currency, finalPrice is already in INR unit.
+        // Razorpay expects amount in PAISA (smallest currency unit), so multiply by 100.
+        const amountInPaisa = Math.round(finalPrice * 100);
+
+        // 3. Create Pending Enrollment (or update existing pending)
+        // We'll upsert to handle retries cleanly
+        const enrollment = await prisma.enrollment.upsert({
             where: {
-                id: user.id,
-            },
-            select: {
-                stripeCustomerId: true,
-                country: true,
-            }
-        });
-
-        if (!userProfile?.stripeCustomerId) {
-            const customer = await stripe.customers.create({
-                email: user.email,
-            });
-
-            await prisma.user.update({
-                where: {
-                    id: user.id,
-                },
-                data: {
-                    stripeCustomerId: customer.id,
+                userId_courseId: {
+                    userId: user.id,
+                    courseId: courseId,
                 }
-            });
-
-            userProfile = { ...userProfile, stripeCustomerId: customer.id, country: userProfile?.country || null };
-        }
-
-        // 2. Resolve Currency and Convert Price
-        const { code: currencyCode } = getCurrencyData(userProfile?.country);
-        const convertedPrice = convertPrice(finalPrice, userProfile?.country);
-
-        // 3. Create Stripe Session
-        const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-            {
-                quantity: 1,
-                price_data: {
-                    currency: currencyCode.toLowerCase(),
-                    product_data: {
-                        name: course.title,
-                        description: course.smallDescription || undefined,
-                        images: course.fileKey ? [`https://utfs.io/f/${course.fileKey}`] : [],
-                    },
-                    unit_amount: convertedPrice * 100, // Stripe expects cents/paisa/fils
-                },
             },
-        ];
-
-        // Create Pending Enrollment
-        const enrollment = await prisma.enrollment.create({
-            data: {
+            update: {
+                amount: amountInPaisa,
+                status: "Pending",
+            },
+            create: {
                 userId: user.id,
                 courseId: courseId,
-                amount: convertedPrice * 100,
-                status: "Pending", // Important: Initial status
+                amount: amountInPaisa,
+                status: "Pending",
             }
         });
 
-        const checkoutSession = await stripe.checkout.sessions.create({
-            customer: userProfile.stripeCustomerId || undefined,
-            line_items,
-            mode: "payment",
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/courses/${course.slug}?success=1`,
-            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/courses/${course.slug}?canceled=1`,
-            metadata: {
+        // 4. Create Razorpay Order
+        const options = {
+            amount: amountInPaisa.toString(),
+            currency: currencyCode,
+            receipt: enrollment.id,
+            notes: {
                 courseId: course.id,
                 userId: user.id,
-                enrollmentId: enrollment.id, // Pass to Webhook
+                enrollmentId: enrollment.id,
                 couponId: couponId || "",
-            },
+            }
+        };
+
+        const order = await razorpay.orders.create(options);
+
+        // Update enrollment with Razorpay Order ID for tracking
+        await prisma.enrollment.update({
+            where: { id: enrollment.id },
+            data: { razorpayOrderId: order.id }
         });
 
-        return NextResponse.json({ url: checkoutSession.url });
+        return NextResponse.json({
+            orderId: order.id,
+            amount: amountInPaisa,
+            currency: currencyCode,
+            keyId: await import("@/lib/razorpay").then(m => m.getRazorpayKeyId()),
+            courseName: course.title,
+            courseDescription: course.smallDescription,
+            user: {
+                name: user.name,
+                email: user.email,
+                contact: "", // If we had phone number we'd pass it here
+            }
+        });
+
     } catch (error) {
+        // If razorpay credentials missing
+        if (error instanceof Error && error.message.includes("Razorpay credentials")) {
+             return new NextResponse("Payment Gateway Configuration Error", { status: 503 });
+        }
         logger.error("COURSE_CHECKOUT_ERROR", error as Error, userId);
+        console.error(error);
         return new NextResponse("Internal Error", { status: 500 });
     }
 }

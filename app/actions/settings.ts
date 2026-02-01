@@ -31,6 +31,9 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
         const youtube = formData.get("youtube") as string;
         const maxGroupClassSize = parseInt(formData.get("maxGroupClassSize") as string) || 12;
 
+        const razorpayKeyId = formData.get("razorpayKeyId") as string;
+        const razorpayKeySecret = formData.get("razorpayKeySecret") as string;
+
         const existing = await prisma.siteSettings.findFirst();
 
         if (existing) {
