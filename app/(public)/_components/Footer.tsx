@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import Logo from "@/public/logo.png";
 import {
   Facebook,
   Twitter,
@@ -54,7 +53,7 @@ export async function Footer() {
   // Construct proper logo URL from S3 key if needed
   const logoSrc = settings?.logo && settings.logo.trim() !== ""
     ? (settings.logo.startsWith('http') ? settings.logo : constructS3Url(settings.logo))
-    : Logo;
+    : "/logo.png";
 
   return (
     <footer className="bg-[#0b1120] text-slate-300 border-t border-slate-800/50 font-sans">

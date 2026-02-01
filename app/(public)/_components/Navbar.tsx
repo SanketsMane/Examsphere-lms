@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import Logo from "@/public/logo.png";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 import { UserDropdown } from "./UserDropdown";
@@ -41,7 +40,7 @@ export function Navbar({ settings }: { settings?: any }) {
   // Construct proper logo URL from S3 key if needed
   const logoSrc = settings?.logo && settings.logo.trim() !== ""
     ? (settings.logo.startsWith('http') ? settings.logo : constructS3Url(settings.logo))
-    : Logo;
+    : "/logo.png";
   const siteName = settings?.siteName || "KIDOKOOL";
 
   return (
