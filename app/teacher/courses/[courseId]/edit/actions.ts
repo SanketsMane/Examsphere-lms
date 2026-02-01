@@ -508,28 +508,36 @@ export async function publishCourse(courseId: string): Promise<ApiResponse> {
   const user = session.user as any;
   try {
     const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { userId: true, title: true }
+        where: {
+            id: courseId,
+            userId: session.user.id,
+        },
+        select: {
+            id: true,
+            title: true,
+            price: true,
+            status: true,
+        },
     });
 
     if (!course) {
-      return { status: "error", message: "Course not found" };
+        throw new Error("Course not found");
     }
 
-    if (user.role === "teacher" && course.userId !== user.id) {
-      return { status: "error", message: "Unauthorized" };
-    }
+    // Determine new status based on price
+    // Free courses (price = 0) are auto-approved
+    // Paid courses require admin review
+    const isFree = course.price === 0;
+    const newStatus = isFree ? "Published" : "Pending";
 
-    // Logic: Teachers go to Pending, Admins go to Published
-    const newStatus = user.role === "admin" ? "Published" : "Pending";
-    const message = user.role === "admin" ? "Course Published" : "Submitted for Review";
-
+    // Update course status
     await prisma.course.update({
-      where: { id: courseId },
-      data: { status: newStatus as any }
+        where: { id: courseId },
+        data: { status: newStatus as any },
     });
 
-    if (newStatus === "Pending") {
+    // Only notify admins for paid courses
+    if (!isFree && newStatus === "Pending") {
       // Notify Admins
       const admins = await prisma.user.findMany({
         where: { role: "admin" },
@@ -559,9 +567,16 @@ export async function publishCourse(courseId: string): Promise<ApiResponse> {
     }
 
     revalidatePath(`/teacher/courses/${courseId}/edit`);
-    return { status: "success", message };
+    revalidatePath("/teacher/courses");
 
-  } catch (error) {
+    return {
+        status: "success",
+        message: isFree
+            ? "Free course published successfully!"
+            : "Course submitted for admin review."
+    };
+}
+  catch (error) {
     return { status: "error", message: "Failed to update status" };
   }
 }

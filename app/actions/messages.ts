@@ -152,6 +152,19 @@ export async function sendMessage(conversationId: string, content: string, messa
     },
   });
 
+  // Create notification for receiver (only for 1:1 chats)
+  if (receiverId) {
+    await prisma.notification.create({
+      data: {
+        userId: receiverId,
+        title: "New Message",
+        message: `You have a new message from ${message.sender.name || "Someone"}`,
+        type: "Message",
+        data: { senderId: currentUserId, conversationId }
+      }
+    });
+  }
+
   revalidatePath("/dashboard/messages");
   return message;
 }

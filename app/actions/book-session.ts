@@ -117,6 +117,36 @@ export async function bookSessionAction(data: BookSessionInput) {
              });
         }
 
+        // Create notifications for both parties
+        const teacher = await prisma.teacherProfile.findUnique({
+            where: { id: data.teacherProfileId },
+            select: { userId: true, user: { select: { name: true } } }
+        });
+
+        // Notify student
+        await prisma.notification.create({
+            data: {
+                userId: session.user.id,
+                title: "Session Booked Successfully",
+                message: `Your session with ${teacher?.user.name || "the teacher"} has been confirmed for ${scheduledAt.toLocaleDateString()}.`,
+                type: "Session",
+                data: { sessionId: liveSession.id, action: "booked" }
+            }
+        });
+
+        // Notify teacher
+        if (teacher) {
+            await prisma.notification.create({
+                data: {
+                    userId: teacher.userId,
+                    title: "New Session Booking",
+                    message: `${session.user.name || "A student"} has booked a session with you for ${scheduledAt.toLocaleDateString()}.`,
+                    type: "Session",
+                    data: { sessionId: liveSession.id, action: "booked" }
+                }
+            });
+        }
+
         revalidatePath("/dashboard/sessions");
         return { success: true, sessionId: liveSession.id };
 
