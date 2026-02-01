@@ -352,61 +352,16 @@ export async function createGroupChat(groupId: string) {
             return { success: true, conversationId: group.chatGroupId };
         }
 
-        // Create new conversation
-        // The Conversation model in schema has participant1/2 which is for 1:1...
-        // Wait, schema check:
-        // Conversation has `isGroup Boolean`. 
-        // But the relation `participant1` and `participant2` are mandatory?
-        // Let's re-read the schema conversation part.
-
-        // If Model Conversation has mandatory participants, creating a GROUP chat might abuse these fields 
-        // or the schema assumes 1:1 structure primarily.
-        // Line 434: isGroup Boolean @default(false)
-        // Line 440: participant1 User @relation...
-        // Line 441: participant2 User @relation...
-
-        // This schema design enforces 2 participants even for "isGroup". This is a limitation.
-        // Usually for Group Chat, we'd have a `ConversationParticipant` join table.
-        // HACK: Use Teacher = P1, Student[0] = P2 (or dummy).
-        // BETTER: Since we are in "Agentic" mode and can change schema, 
-        // verify if `Conversation` supports >2 people properly.
-        // The current schema creates `Message` with senderId.
-        // But `Conversation` is uniquely constrained by [p1, p2].
-
-        // I should probably relax the participant constraints for Group Chats or create a new Conversation Type.
-        // Given existing constraints, I will do a best-effort approach or just link it.
-        // But wait, user requirement: "In Group classes user con able to create an chatting group"
-
-        // Let's modify schema to support proper Group Chat if needed.
-        // Or re-use `chatGroupId` on GroupClass as the Source of Truth and link messages to it.
-        // Actually, if I link `GroupClass` to `Conversation`, I can just ignore p1/p2 for groups?
-        // But `participant1Id` is not optional in schema line 431.
-
-        // Plan B: Create a conversation with Teacher and THEMSELVES (if unique allows?) or a phantom user?
-        // Or just use the Teacher as P1 and leave P2 as... wait it's mandatory.
-
-        // Let's use the first student as P2? No, that's messy when student leaves.
-        // I will assume for now I can create a conversation with Teacher as P1 and Teacher as P2 (if not constrained)
-        // Schema line 444: @@unique([participant1Id, participant2Id])
-
-        // Okay, I'll pass for now and just set up the skeleton.
-        // For a robust group chat, I'd need a `ConversationParticipant` model.
-        // Schema line 28-29 on User: `conversationsAsParticipant1`, `conversationsAsParticipant2`.
-
-        // I will implement `createGroupChat` to just return success for now 
-        // and ideally we'd update schema to `ConversationParticipant` model 
-        // but that's a big refactor.
-        // Alternative: Use `VideoRoom` model? No that's for calls.
-
-        // Let's stick to the plan: GroupClass has `chatGroupId` -> `Conversation.id`.
-        // To satisfy Prisma mandatory fields, I'll use Teacher as P1 and Teacher as P2 (Self-chat as group anchor).
-
         const conversation = await prisma.conversation.create({
             data: {
-                participant1Id: session.user.id,
-                participant2Id: session.user.id, // Self-chat anchor
                 isGroup: true,
-                title: group.title + " Chat"
+                title: group.title + " Chat",
+                participants: {
+                    create: [
+                        { userId: session.user.id, isAdmin: true }, // Teacher
+                        ...group.enrollments.map(e => ({ userId: e.studentId })) // Joined students
+                    ]
+                }
             }
         });
 
@@ -416,9 +371,8 @@ export async function createGroupChat(groupId: string) {
         });
 
         return { success: true, conversationId: conversation.id };
-
     } catch (error) {
-        console.error("Chat Create Error", error);
-        return { error: "Failed to create chat" };
+        console.error("Failed to create group conversation:", error);
+        return { error: "Failed to create conversation" };
     }
 }

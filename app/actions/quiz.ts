@@ -68,11 +68,13 @@ export async function submitQuizAttempt(payload: {
                     const correctOption = options.find((opt: any) => opt.isCorrect);
                     if (correctOption && correctOption.id === userAnswer) {
                         isCorrect = true;
+                        pointsAwarded = question.points;
                     }
                 } else if (question.type === 'TrueFalse') {
                     const correctAnswer = (question.questionData as any).correctAnswer;
                     if (correctAnswer === userAnswer) {
                         isCorrect = true;
+                        pointsAwarded = question.points;
                     }
                 } else if (question.type === 'ShortAnswer') {
                     const correctAnswers = (question.questionData as any).correctAnswers || [];
@@ -84,13 +86,40 @@ export async function submitQuizAttempt(payload: {
                             : ans.toLowerCase() === (userAnswer as string).toLowerCase()
                     )) {
                         isCorrect = true;
+                        pointsAwarded = question.points;
+                    }
+                } else if (question.type === 'Matching') {
+                    const pairs = (question.questionData as any).pairs || [];
+                    const userPairs = userAnswer || {};
+                    let matches = 0;
+                    pairs.forEach((pair: any) => {
+                        if (userPairs[pair.left] === pair.right) {
+                            matches++;
+                        }
+                    });
+                    
+                    if (pairs.length > 0) {
+                        if (matches === pairs.length) {
+                            isCorrect = true;
+                            pointsAwarded = question.points;
+                        } else if (question.partialCredit && matches > 0) {
+                            pointsAwarded = Math.round((matches / pairs.length) * question.points);
+                        }
+                    }
+                } else if (question.type === 'Ordering') {
+                    const correctOrder = (question.questionData as any).items || [];
+                    if (Array.isArray(userAnswer) && userAnswer.length === correctOrder.length) {
+                        const correctCount = userAnswer.filter((val, index) => val === correctOrder[index]).length;
+                        if (correctCount === correctOrder.length) {
+                            isCorrect = true;
+                            pointsAwarded = question.points;
+                        } else if (question.partialCredit && correctCount > 0) {
+                            pointsAwarded = Math.round((correctCount / correctOrder.length) * question.points);
+                        }
                     }
                 }
 
-                if (isCorrect) {
-                    pointsAwarded = question.points;
-                    earnedPoints += pointsAwarded;
-                }
+                earnedPoints += pointsAwarded;
             }
 
             responseData.push({

@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 
-// Get or create conversation between two users
+/**
+ * Get or create conversation between two users (1:1 chat)
+ * Now also ensures entries in ConversationParticipant table.
+ */
 export async function getOrCreateConversation(participantId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -18,9 +21,10 @@ export async function getOrCreateConversation(participantId: string) {
     throw new Error("Cannot create conversation with yourself");
   }
 
-  // Try to find existing conversation
+  // Try to find existing 1:1 conversation
   let conversation = await prisma.conversation.findFirst({
     where: {
+      isGroup: false,
       OR: [
         {
           participant1Id: currentUserId,
@@ -44,6 +48,7 @@ export async function getOrCreateConversation(participantId: string) {
         orderBy: { createdAt: "desc" },
         take: 1,
       },
+      participants: true
     },
   });
 
@@ -53,6 +58,13 @@ export async function getOrCreateConversation(participantId: string) {
       data: {
         participant1Id: currentUserId,
         participant2Id: participantId,
+        isGroup: false,
+        participants: {
+          create: [
+            { userId: currentUserId, isAdmin: true },
+            { userId: participantId }
+          ]
+        }
       },
       include: {
         participant1: {
@@ -66,6 +78,7 @@ export async function getOrCreateConversation(participantId: string) {
           orderBy: { createdAt: "desc" },
           take: 1,
         },
+        participants: true
       },
     });
   }
@@ -73,7 +86,10 @@ export async function getOrCreateConversation(participantId: string) {
   return conversation;
 }
 
-// Send a new message
+/**
+ * Send a new message
+ * Works for both 1:1 and Group chats via ConversationParticipant check.
+ */
 export async function sendMessage(conversationId: string, content: string, messageType: "Text" | "Image" | "File" | "Video" | "Audio" = "Text") {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -82,25 +98,32 @@ export async function sendMessage(conversationId: string, content: string, messa
 
   const currentUserId = session.user.id;
 
-  // Verify user is part of the conversation
-  const conversation = await prisma.conversation.findFirst({
+  // Verify user is part of the conversation via Participant table
+  const participation = await prisma.conversationParticipant.findUnique({
     where: {
-      id: conversationId,
-      OR: [
-        { participant1Id: currentUserId },
-        { participant2Id: currentUserId },
-      ],
+      conversationId_userId: {
+        conversationId,
+        userId: currentUserId,
+      },
     },
+    include: {
+      conversation: true
+    }
   });
 
-  if (!conversation) {
+  if (!participation) {
     throw new Error("Conversation not found or access denied");
   }
 
-  // Determine receiver ID
-  const receiverId = conversation.participant1Id === currentUserId
-    ? conversation.participant2Id
-    : conversation.participant1Id;
+  const conversation = participation.conversation;
+
+  // Determine receiver ID (only for 1:1 chats for legacy support/indexing)
+  let receiverId = null;
+  if (!conversation.isGroup) {
+      receiverId = conversation.participant1Id === currentUserId
+        ? conversation.participant2Id
+        : conversation.participant1Id;
+  }
 
   // Create the message
   const message = await prisma.message.create({
@@ -131,7 +154,9 @@ export async function sendMessage(conversationId: string, content: string, messa
   return message;
 }
 
-// Get conversation messages
+/**
+ * Get conversation messages
+ */
 export async function getConversationMessages(conversationId: string, page: number = 1, limit: number = 50) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -141,17 +166,16 @@ export async function getConversationMessages(conversationId: string, page: numb
   const currentUserId = session.user.id;
 
   // Verify user is part of the conversation
-  const conversation = await prisma.conversation.findFirst({
+  const participation = await prisma.conversationParticipant.findUnique({
     where: {
-      id: conversationId,
-      OR: [
-        { participant1Id: currentUserId },
-        { participant2Id: currentUserId },
-      ],
+      conversationId_userId: {
+        conversationId,
+        userId: currentUserId,
+      },
     },
   });
 
-  if (!conversation) {
+  if (!participation) {
     throw new Error("Conversation not found or access denied");
   }
 
@@ -182,7 +206,9 @@ export async function getConversationMessages(conversationId: string, page: numb
   return messages.reverse(); // Return in chronological order
 }
 
-// Get user's conversations
+/**
+ * Get current user's conversations (including groups)
+ */
 export async function getUserConversations(userId?: string) {
   let currentUserId = userId;
 
@@ -196,10 +222,11 @@ export async function getUserConversations(userId?: string) {
 
   const conversations = await prisma.conversation.findMany({
     where: {
-      OR: [
-        { participant1Id: currentUserId },
-        { participant2Id: currentUserId },
-      ],
+      participants: {
+        some: {
+          userId: currentUserId
+        }
+      }
     },
     include: {
       participant1: {
@@ -207,6 +234,13 @@ export async function getUserConversations(userId?: string) {
       },
       participant2: {
         select: { id: true, name: true, image: true },
+      },
+      participants: {
+        include: {
+          user: {
+            select: { id: true, name: true, image: true }
+          }
+        }
       },
       lastMessage: {
         include: {
@@ -229,15 +263,26 @@ export async function getUserConversations(userId?: string) {
     orderBy: { lastActivity: "desc" },
   });
 
-  // Add unread count and other participant info
+  // Calculate meta info for UI
   const conversationsWithData = conversations.map((conv) => {
-    const otherParticipant = conv.participant1Id === currentUserId
-      ? conv.participant2
-      : conv.participant1;
+    let otherParticipant = null;
+    let displayName = conv.title || "Group Chat";
+    let displayImage = null;
+
+    if (!conv.isGroup) {
+      otherParticipant = conv.participant1Id === currentUserId
+        ? conv.participant2
+        : conv.participant1;
+      
+      displayName = otherParticipant?.name || "Deleted User";
+      displayImage = otherParticipant?.image || null;
+    }
 
     return {
       ...conv,
       otherParticipant,
+      displayName,
+      displayImage,
       unreadCount: conv._count.messages,
     };
   });
@@ -245,7 +290,9 @@ export async function getUserConversations(userId?: string) {
   return conversationsWithData;
 }
 
-// Mark messages as read
+/**
+ * Mark messages as read for current user
+ */
 export async function markMessagesAsRead(conversationId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -254,26 +301,27 @@ export async function markMessagesAsRead(conversationId: string) {
 
   const currentUserId = session.user.id;
 
-  // Verify user is part of the conversation
-  const conversation = await prisma.conversation.findFirst({
+  // Verify participation
+  const participation = await prisma.conversationParticipant.findUnique({
     where: {
-      id: conversationId,
-      OR: [
-        { participant1Id: currentUserId },
-        { participant2Id: currentUserId },
-      ],
+      conversationId_userId: {
+        conversationId,
+        userId: currentUserId,
+      },
     },
   });
 
-  if (!conversation) {
+  if (!participation) {
     throw new Error("Conversation not found or access denied");
   }
 
-  // Mark all unread messages in this conversation as read
+  // Mark all unread messages where the current user is NOT the sender
+  // In a participant-based system, 'receiverId' is less useful for unread,
+  // but we'll stick to legacy receiverId check if available, or just senderId != current
   await prisma.message.updateMany({
     where: {
       conversationId,
-      receiverId: currentUserId,
+      senderId: { not: currentUserId },
       isRead: false,
     },
     data: {
@@ -284,7 +332,9 @@ export async function markMessagesAsRead(conversationId: string) {
   revalidatePath("/dashboard/messages");
 }
 
-// Search users to start new conversations
+/**
+ * Search users to start new 1:1 conversations
+ */
 export async function searchUsersForChat(query: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -296,7 +346,7 @@ export async function searchUsersForChat(query: string) {
   const users = await prisma.user.findMany({
     where: {
       AND: [
-        { id: { not: currentUserId } }, // Exclude current user
+        { id: { not: currentUserId } },
         {
           OR: [
             { name: { contains: query, mode: "insensitive" } },

@@ -121,11 +121,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log("DEBUG: POST /api/quiz body:", JSON.stringify(body, null, 2));
 
     const validatedData = createQuizSchema.parse(body);
 
-    console.log("DEBUG: Validated Data:", JSON.stringify(validatedData, null, 2));
 
     const quiz = await prisma.quiz.create({
       data: {
@@ -168,7 +166,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log("DEBUG: Quiz Created ID:", quiz.id);
 
     return NextResponse.json(quiz, { status: 201 });
 

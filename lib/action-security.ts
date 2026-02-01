@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/db";
 
 /**
  * Security helpers for KIDOKOOL Server Actions
@@ -63,4 +64,26 @@ export async function requireUser() {
   }
   
   return session;
+}
+
+/**
+ * Perform security checks before an enrollment action
+ * @param userId User attempting the action
+ */
+export async function protectEnrollmentAction(userId: string) {
+  // Basic check: Ensure user exists and is not banned
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { banned: true }
+  });
+
+  if (!user) {
+    return { success: false, error: "User not found" };
+  }
+
+  if (user.banned) {
+    return { success: false, error: "Access denied: Your account is restricted." };
+  }
+
+  return { success: true };
 }

@@ -39,5 +39,5 @@ export default async function MarketplacePage() {
   // Mock featured mentors for now or select top rated
   const featuredMentors: any[] = []; 
 
-  return <FindTeacherContent teachers={teachers} featuredMentors={featuredMentors} allCategories={allCategories} />;
+  return <FindTeacherContent teachers={teachers} featuredMentors={featuredMentors} categories={allCategories} />;
 }

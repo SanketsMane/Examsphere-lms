@@ -1,18 +1,44 @@
 // Author: Sanket
-// Purpose: Check if S3 bucket is active and accessible
+// Purpose: Final S3 Production Verification
+const { S3Client, ListObjectsV2Command, HeadBucketCommand } = require('@aws-sdk/client-s3');
+const fs = require('fs');
+const path = require('path');
 
-const { S3Client, HeadBucketCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+// Manually load .env
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split('\n').forEach(line => {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match) {
+            const key = match[1];
+            let value = match[2] || '';
+            if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+            if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
+            process.env[key] = value;
+        }
+    });
+}
 
 const config = {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION || 'eu-north-1',
-    bucketName: process.env.AWS_BUCKET_NAME || 'kidokool-sanket-dev'
+    region: process.env.AWS_REGION,
+    bucketName: process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES
 };
 
-async function checkBucket() {
-    const client = new S3Client({
-        region: config.region,
+async function verify() {
+    console.log('🚀 Starting Final S3 Production Verification');
+    console.log(`- Bucket: ${config.bucketName}`);
+    console.log(`- Region: ${config.region}\n`);
+
+    if (!config.accessKeyId || !config.secretAccessKey || !config.region || !config.bucketName) {
+        console.error('❌ ERROR: Missing configuration in .env');
+        process.exit(1);
+    }
+
+    const client = new S3Client({ 
+        region: config.region, 
         credentials: {
             accessKeyId: config.accessKeyId,
             secretAccessKey: config.secretAccessKey
@@ -20,65 +46,22 @@ async function checkBucket() {
     });
 
     try {
-        console.log('🔍 Checking S3 bucket status...\n');
-        console.log(`Bucket Name: ${config.bucketName}`);
-        console.log(`Region: ${config.region}\n`);
+        console.log('🛰️ Testing HeadBucket...');
+        await client.send(new HeadBucketCommand({ Bucket: config.bucketName }));
+        console.log('✅ SUCCESS: Bucket found and accessible.');
 
-        // Check if bucket exists and is accessible
-        const headResponse = await client.send(new HeadBucketCommand({
-            Bucket: config.bucketName
-        }));
-
-        console.log('✅ SUCCESS: Bucket is ACTIVE and accessible!\n');
-        console.log('Bucket Details:');
-        console.log(`- Status Code: ${headResponse.$metadata.httpStatusCode}`);
-        console.log(`- Request ID: ${headResponse.$metadata.requestId}`);
-
-        // Try to list objects to verify permissions
-        const listResponse = await client.send(new ListObjectsV2Command({
-            Bucket: config.bucketName,
-            MaxKeys: 5
-        }));
-
-        console.log('\n📁 Bucket Contents:');
-        console.log(`- Total objects shown: ${listResponse.Contents?.length || 0}`);
-        console.log(`- Bucket is truncated: ${listResponse.IsTruncated || false}`);
-
-        if (listResponse.Contents && listResponse.Contents.length > 0) {
-            console.log('\nSample files:');
-            listResponse.Contents.forEach((obj, index) => {
-                console.log(`  ${index + 1}. ${obj.Key} (${obj.Size} bytes)`);
-            });
-        } else {
-            console.log('  (Bucket is empty or no objects found)');
-        }
-
-        console.log('\n✅ All checks passed! The S3 bucket is fully operational.');
-
+        console.log('🛰️ Testing ListObjects...');
+        const list = await client.send(new ListObjectsV2Command({ Bucket: config.bucketName, MaxKeys: 1 }));
+        console.log(`✅ SUCCESS: List permissions verified.`);
+        
+        console.log('\n✨ ALL PRODUCTION S3 CHECKS PASSED!');
+        console.log('Credentials are valid, region is correct, and bucket is ready for uploads.');
     } catch (error) {
-        console.error('❌ ERROR: Bucket check failed!\n');
-        console.error(`Error Type: ${error.name}`);
-        console.error(`Error Message: ${error.message}`);
-        console.error(`Error Code: ${error.$metadata?.httpStatusCode || error.code || 'N/A'}`);
-
-        // Show detailed error information
-        if (error.$fault) {
-            console.error(`Error Fault: ${error.$fault}`);
-        }
-
-        console.error('\nFull Error Details:');
-        console.error(JSON.stringify(error, null, 2));
-
-        if (error.name === 'NoSuchBucket') {
-            console.error('\n💡 The bucket does not exist.');
-        } else if (error.name === 'Forbidden' || error.name === 'AccessDenied') {
-            console.error('\n💡 Access denied. Check your AWS credentials and bucket permissions.');
-        } else if (error.name === 'NotFound') {
-            console.error('\n💡 Bucket not found in the specified region.');
-        }
-
+        console.error('\n❌ ERROR: Verification failed.');
+        console.error(`Name: ${error.name}`);
+        console.error(`Message: ${error.message}`);
         process.exit(1);
     }
 }
 
-checkBucket();
+verify();

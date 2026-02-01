@@ -135,11 +135,60 @@ export async function GET(request: Request) {
       )
     ]);
 
+    // 4. Generate Learning Paths
+    // We'll create one or two paths based on user's top categories
+    const topCategories = await prisma.userInteraction.groupBy({
+      by: ['category'],
+      where: { userId },
+      _count: { category: true },
+      orderBy: { _count: { category: 'desc' } },
+      take: 2
+    });
+
+    const learningPaths: any[] = [];
+    for (const cat of topCategories) {
+      if (!cat.category) continue;
+      
+      const coursesInPath = await prisma.course.findMany({
+        where: { 
+          category: cat.category,
+          status: 'Published'
+        },
+        orderBy: [
+          { level: 'asc' },
+          { totalStudents: 'desc' }
+        ],
+        take: 5,
+        select: {
+          id: true,
+          title: true,
+          level: true,
+          slug: true,
+          fileKey: true
+        }
+      });
+
+      if (coursesInPath.length >= 2) {
+        learningPaths.push({
+          id: `path-${cat.category}`,
+          title: `${cat.category} Mastery Path`,
+          description: `A guided sequence to master ${cat.category} from basic to advanced.`,
+          category: cat.category,
+          courses: coursesInPath.map((course, index) => ({
+            ...course,
+            status: trulyCompletedCourseIds.includes(course.id) ? 'Completed' : 
+                    enrolledCourses.some(e => e.courseId === course.id) ? 'In Progress' : 'Locked',
+            order: index + 1
+          }))
+        });
+      }
+    }
+
     return NextResponse.json({
       personalized,
       trending,
       similar,
-      learningPaths: [] // TODO: Implement learning paths
+      learningPaths
     });
 
   } catch (error) {

@@ -62,6 +62,7 @@ model User {
   savedByStudents             StudentSavedTutor[]      @relation("TutorSavedBy")
   freeClassUsage              FreeClassUsage?
   couponUsage                 CouponUsage[]
+  joinedConversations         ConversationParticipant[] @relation("JoinedConversations")
   
   // Storage Limits (in bytes)
   storageUsed                 BigInt                   @default(0)
@@ -517,8 +518,8 @@ model Notification {
 
 model Conversation {
   id             String    @id @default(uuid())
-  participant1Id String
-  participant2Id String
+  participant1Id String?
+  participant2Id String?
   title          String?
   isGroup        Boolean   @default(false)
   lastMessageId  String?   @unique
@@ -526,18 +527,31 @@ model Conversation {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   lastMessage    Message?  @relation("ConversationLastMessage", fields: [lastMessageId], references: [id])
-  participant1   User      @relation("ConversationParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
-  participant2   User      @relation("ConversationParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  participant1   User?     @relation("ConversationParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2   User?     @relation("ConversationParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
   messages       Message[] @relation("ConversationMessages")
   groupClasses   GroupClass[] @relation("GroupClassChat")
+  participants   ConversationParticipant[] @relation("ChatParticipants")
 
   @@unique([participant1Id, participant2Id])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  userId         String
+  isAdmin        Boolean      @default(false)
+  joinedAt       DateTime     @default(now())
+  conversation   Conversation @relation("ChatParticipants", fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation("JoinedConversations", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
 }
 
 model Message {
   id                      String        @id @default(uuid())
   senderId                String
-  receiverId              String
+  receiverId              String?
   conversationId          String
   content                 String
   messageType             MessageType   @default(Text)
@@ -551,7 +565,7 @@ model Message {
   conversation            Conversation  @relation("ConversationMessages", fields: [conversationId], references: [id], onDelete: Cascade)
   parent                  Message?      @relation("MessageThread", fields: [parentId], references: [id])
   replies                 Message[]     @relation("MessageThread")
-  receiver                User          @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiver                User?         @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
   sender                  User          @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([senderId])

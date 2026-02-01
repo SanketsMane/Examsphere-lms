@@ -15,14 +15,13 @@ const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 });
 
 export async function POST(req: Request) {
-    /**
-     * Handles course checkout with coupon validation and Stripe session creation.
-     * Author: Sanket
-     */
+    let userId: string | undefined;
+
     try {
         const stripe = getStripe();
         const session = await getSessionWithRole();
         const user = session?.user;
+        userId = user?.id;
 
         if (!user || !user.id || !user.email) {
             return new NextResponse("Unauthorized", { status: 401 });
@@ -182,7 +181,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ url: checkoutSession.url });
     } catch (error) {
-        logger.error("COURSE_CHECKOUT_ERROR", error as Error, user.id);
+        logger.error("COURSE_CHECKOUT_ERROR", error as Error, userId);
         return new NextResponse("Internal Error", { status: 500 });
     }
 }
