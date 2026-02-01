@@ -75,11 +75,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Manually set role to teacher
-    await prisma.user.update({
-      where: { id: userId },
-      data: { role: 'teacher' }
-    });
+    // Set role to teacher ONLY if user is currently a student or has no role
+    // This prevents Admins from accidentally downgrading themselves during testing
+    if (!existingUser || (existingUser.role !== 'admin' && existingUser.role !== 'teacher')) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { role: 'teacher' }
+        });
+    }
 
     // Send welcome email with verification instructions
     await sendEmail({

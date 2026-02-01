@@ -25,7 +25,7 @@ export const env = createEnv({
     STRIPE_WEBHOOK_SECRET: z.string().min(1),
   },
 
-  skipValidation: true, // Temporarily disabled for development
+  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 
   client: {
     NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES: z.string().min(1),

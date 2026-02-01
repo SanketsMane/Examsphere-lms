@@ -1,9 +1,7 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/action-security";
 // import { BroadcastType } from "@prisma/client"; // Avoiding lint error
 
 // Local type definition to match Prisma schema
@@ -33,8 +31,7 @@ export async function getActiveBroadcasts() {
 // Admin: Get All
 export async function getAllBroadcasts() {
     try {
-        const session = await auth.api.getSession({ headers: await headers() });
-        if ((session?.user as any)?.role !== "admin") return [];
+        await requireAdmin();
 
         // @ts-ignore - Prisma client is generated at build time
         return await prisma.broadcast.findMany({
@@ -55,8 +52,7 @@ export async function createBroadcast(data: {
     priority?: number;
     expiresAt?: Date;
 }) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if ((session?.user as any)?.role !== "admin") throw new Error("Unauthorized");
+    await requireAdmin();
 
     // @ts-ignore - Prisma client is generated at build time
     await prisma.broadcast.create({
@@ -72,8 +68,7 @@ export async function createBroadcast(data: {
 
 // Admin: Update
 export async function updateBroadcast(id: string, data: any) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if ((session?.user as any)?.role !== "admin") throw new Error("Unauthorized");
+    await requireAdmin();
 
     // @ts-ignore - Prisma client is generated at build time
     await prisma.broadcast.update({
@@ -87,8 +82,7 @@ export async function updateBroadcast(id: string, data: any) {
 
 // Admin: Delete
 export async function deleteBroadcast(id: string) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if ((session?.user as any)?.role !== "admin") throw new Error("Unauthorized");
+    await requireAdmin();
 
     // @ts-ignore - Prisma client is generated at build time
     await prisma.broadcast.delete({ where: { id } });
@@ -99,8 +93,7 @@ export async function deleteBroadcast(id: string) {
 
 // Admin: Toggle
 export async function toggleBroadcastStatus(id: string, isActive: boolean) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if ((session?.user as any)?.role !== "admin") throw new Error("Unauthorized");
+    await requireAdmin();
 
     // @ts-ignore - Prisma client is generated at build time
     await prisma.broadcast.update({

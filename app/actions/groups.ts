@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { requireTeacher } from "@/lib/action-security";
 
 // --- Group Class Management ---
 
@@ -20,13 +21,7 @@ export async function createGroupClass(data: {
     // Enforce max students limit of 12
     const maxStudents = Math.min(data.maxStudents || 12, 12);
 
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session?.user || (session.user as any).role !== "teacher") {
-        return { error: "Unauthorized" };
-    }
+    const session = await requireTeacher();
 
     const teacher = await prisma.teacherProfile.findUnique({
         where: { userId: session.user.id }

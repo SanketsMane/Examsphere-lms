@@ -26,10 +26,11 @@ interface TeacherCardProps {
         experience: number;
         isVerified: boolean;
         availability?: Record<string, string[]> | object;
-    }
+    };
+    currency?: { code: string; symbol: string; factor: number };
 }
 
-export function HorizontalTeacherCard({ teacher }: TeacherCardProps) {
+export function HorizontalTeacherCard({ teacher, currency = { code: "USD", symbol: "$", factor: 1 } }: TeacherCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
 
@@ -173,7 +174,7 @@ export function HorizontalTeacherCard({ teacher }: TeacherCardProps) {
                 <div className="text-center mb-1">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Hourly Rate</p>
                     <div className="text-3xl font-bold text-slate-800 dark:text-white">
-                        ₹{teacher.hourlyRate.toLocaleString()}
+                        {currency.symbol}{Math.round(teacher.hourlyRate * currency.factor).toLocaleString()}
                     </div>
                     <p className="text-[10px] text-slate-400">per session</p>
                 </div>

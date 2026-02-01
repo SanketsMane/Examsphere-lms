@@ -1,11 +1,10 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import slugify from "slugify";
 import { Prisma } from "@prisma/client";
+import { requireAdmin } from "@/lib/action-security";
 
 export type ActionState = {
   success?: boolean;
@@ -13,13 +12,6 @@ export type ActionState = {
   timestamp?: number;
 };
 
-async function requireAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-  if (user?.role !== "admin") throw new Error("Unauthorized");
-  return user;
-}
 
 export async function createBlogPost(prevState: ActionState, formData: FormData): Promise<ActionState> {
   try {
@@ -50,7 +42,7 @@ export async function createBlogPost(prevState: ActionState, formData: FormData)
         featuredImage: coverImage,
         isPublished,
         publishedAt: isPublished ? new Date() : null,
-        authorId: user.id,
+        authorId: (user.user as any).id,
       },
     });
 

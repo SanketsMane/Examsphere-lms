@@ -3,14 +3,12 @@
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { sendNotificationEmail } from "@/lib/email-notifications";
-
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { requireAdmin } from "@/lib/action-security";
 
 export async function approveTeacher(profileId: string) {
     try {
-        const session = await auth.api.getSession({ headers: await headers() });
-        const adminId = session?.user?.id;
+        const session = await requireAdmin();
+        const adminId = (session.user as any).id;
 
         const teacher = await prisma.teacherProfile.update({
             where: { id: profileId },
@@ -54,7 +52,7 @@ export async function approveTeacher(profileId: string) {
 
 export async function rejectTeacher(profileId: string, userId: string) {
     try {
-        const session = await auth.api.getSession({ headers: await headers() });
+        const session = await requireAdmin();
         const adminId = session?.user?.id;
 
         // Do NOT delete profile, just set approved=false and verification status = Rejected

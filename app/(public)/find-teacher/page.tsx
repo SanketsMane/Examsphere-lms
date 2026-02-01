@@ -1,6 +1,9 @@
 import { FindTeacherContent } from "@/components/mentors/FindTeacherContent";
 import { prisma } from "@/lib/db";
 import { getFeaturedMentors } from "@/app/data/marketing/get-marketing-data";
+import { auth } from "@/lib/auth";
+import { getCurrencyData } from "@/lib/currency";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +15,13 @@ export const metadata: Metadata = {
 };
 
 export default async function FindTeacherPage() {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+    // @ts-ignore
+    const userCountry = session?.user?.country;
+    const currencyData = getCurrencyData(userCountry);
+
     const teachers = await prisma.teacherProfile.findMany({
         where: {
             isVerified: true,
@@ -52,8 +62,8 @@ export default async function FindTeacherPage() {
     }));
 
     const categories = await prisma.category.findMany({
-        where: { isActive: true },
-        select: { name: true },
+        where: { isActive: true, parentId: null },
+        include: { children: { where: { isActive: true } } },
         orderBy: { displayOrder: 'asc' }
     });
 
@@ -67,7 +77,8 @@ export default async function FindTeacherPage() {
         teachers={formattedTeachers} 
         packages={packages as any} 
         featuredMentors={featuredMentors} 
-        allCategories={categories.map(c => c.name)}
+        categories={categories as any}
         allLanguages={languages.map(l => l.name)}
+        currency={currencyData}
     />;
 }

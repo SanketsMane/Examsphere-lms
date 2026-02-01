@@ -57,7 +57,7 @@ export function SessionCalendarView({ sessions, children }: SessionCalendarViewP
             </div>
 
             {viewMode === "calendar" && (
-                <div className="bg-white dark:bg-card border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+                <div className="bg-white dark:bg-card border border-slate-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
                     {/* Header Controls */}
                     <div className="flex items-center justify-between mb-8">
                         <Button variant="outline" size="icon" onClick={() => setCurrentDate(addDays(currentDate, -7))}>
@@ -78,7 +78,7 @@ export function SessionCalendarView({ sessions, children }: SessionCalendarViewP
                             const isToday = isSameDay(day, new Date());
 
                             return (
-                                <div key={idx} className={`min-h-[200px] rounded-xl border ${isToday ? "border-primary/50 bg-primary/5" : "border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/20"} p-3 flex flex-col gap-2`}>
+                                <div key={idx} className={`min-h-[200px] rounded-xl border ${isToday ? "border-primary/50 bg-primary/5" : "border-slate-200 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-900/20"} p-3 flex flex-col gap-2`}>
                                     <div className="text-center mb-2">
                                         <div className="text-xs font-semibold text-muted-foreground uppercase">{format(day, "EEE")}</div>
                                         <div className={`text-lg font-bold ${isToday ? "text-primary" : ""}`}>{format(day, "d")}</div>
@@ -89,7 +89,7 @@ export function SessionCalendarView({ sessions, children }: SessionCalendarViewP
                                             key={session.id}
                                             initial={{ scale: 0.9, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
-                                            className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm text-xs border border-gray-100 dark:border-gray-700 cursor-pointer hover:border-primary transition-colors group"
+                                            className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm text-xs border border-slate-200 dark:border-gray-700 cursor-pointer hover:border-primary transition-colors group"
                                         >
                                             <div className="font-bold truncate text-[#011E21] dark:text-gray-200 group-hover:text-primary">
                                                 {session.title}
@@ -102,7 +102,7 @@ export function SessionCalendarView({ sessions, children }: SessionCalendarViewP
                                     ))}
 
                                     {daySessions.length === 0 && (
-                                        <div className="flex-1 flex items-center justify-center text-xs text-gray-300 dark:text-gray-700 font-medium">
+                                        <div className="flex-1 flex items-center justify-center text-xs text-slate-400 dark:text-gray-700 font-medium">
                                             No sessions
                                         </div>
                                     )}

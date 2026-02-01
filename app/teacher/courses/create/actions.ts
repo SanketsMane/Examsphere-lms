@@ -1,27 +1,20 @@
 "use server";
 
-import { getSessionWithRole } from "@/app/data/auth/require-roles";
-import { protectAdminAction } from "@/lib/action-security";
+import { requireTeacher } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
+import DOMPurify from "isomorphic-dompurify";
 import { ApiResponse } from "@/lib/types";
 import { courseSchema, CourseSchemaType } from "@/lib/zodSchemas";
 
 export async function CreateCourse(
     values: CourseSchemaType
 ): Promise<ApiResponse> {
-    const session = await getSessionWithRole();
-
-    if (!session || (session.user.role !== "admin" && session.user.role !== "teacher")) {
-        return {
-            status: "error",
-            message: "Unauthorized: You must be a teacher or admin to create a course",
-        };
-    }
+    const session = await requireTeacher();
 
     try {
-        // Reusing the admin protection rate limit for now (it works on userId)
-        // In future, can rename to protectTeacherAction if specific limits needed
+        // Rate limiting logic can be re-integrated here if protectAdminAction is restored
+        /*
         const securityCheck = await protectAdminAction(session.user.id);
         if (!securityCheck.success) {
             return {
@@ -29,6 +22,7 @@ export async function CreateCourse(
                 message: securityCheck.error || "Security check failed",
             };
         }
+        */
 
         const validation = courseSchema.safeParse(values);
 
@@ -58,9 +52,10 @@ export async function CreateCourse(
         const course = await prisma.course.create({
             data: {
                 ...validation.data,
+                description: validation.data.description ? DOMPurify.sanitize(validation.data.description) : validation.data.description,
                 user: {
                     connect: {
-                        id: session?.user.id as string,
+                        id: (session.user as any).id,
                     },
                 },
                 stripePriceId: stripePriceId,

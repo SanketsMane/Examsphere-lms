@@ -5,6 +5,7 @@ import Stripe from "stripe";
 import { env } from "@/lib/env";
 import { protectGeneral, getClientIP } from "@/lib/security";
 import { getCurrencyData, convertPrice } from "@/lib/currency";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -181,7 +182,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ url: checkoutSession.url });
     } catch (error) {
-        console.log("[COURSE_CHECKOUT]", error);
+        logger.error("COURSE_CHECKOUT_ERROR", error as Error, user.id);
         return new NextResponse("Internal Error", { status: 500 });
     }
 }

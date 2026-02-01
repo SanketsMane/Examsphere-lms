@@ -2,8 +2,10 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/action-security";
 
 export async function deleteDummyData() {
+    await requireAdmin();
     const dummyNames = [
         "Sarah Jenkins",
         "Sarah Wilson",

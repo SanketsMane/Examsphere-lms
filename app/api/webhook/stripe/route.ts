@@ -4,6 +4,8 @@ import Stripe from "stripe";
 
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
+import { getCurrencyData } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +72,7 @@ async function handleLiveSessionPayment(session: Stripe.Checkout.Session) {
     });
 
     if (!booking) {
-      console.error('No pending booking found for session:', session.id);
+      logger.error('No pending booking found for session', { sessionId: session.id });
       return;
     }
 
@@ -88,7 +90,7 @@ async function handleLiveSessionPayment(session: Stripe.Checkout.Session) {
     });
 
     if (updateResult.count === 0) {
-       console.log(`Booking ${booking.id} already processed.`);
+       logger.info(`Booking already processed`, { bookingId: booking.id });
        return;
     }
 
@@ -139,9 +141,9 @@ async function handleLiveSessionPayment(session: Stripe.Checkout.Session) {
       message: `Your session is scheduled for ${new Date(booking.session.scheduledAt).toLocaleString()}.`
     });
 
-    console.log(`Live session booking confirmed: ${booking.id}`);
+    logger.info(`Live session booking confirmed`, { bookingId: booking.id });
   } catch (error) {
-    console.error("Error handling course enrollment payment:", error);
+    logger.error("Live session payment error", error as Error);
     throw error;
   }
 }
@@ -155,7 +157,7 @@ async function handleWalletRecharge(session: Stripe.Checkout.Session) {
   const amount = parseInt(metadata.amount || "0");
 
   if (!userId || !amount) {
-    console.error("Missing userId or amount in wallet recharge metadata");
+    logger.error("Missing userId or amount in wallet recharge metadata", { sessionId: session.id });
     return;
   }
 
@@ -166,7 +168,7 @@ async function handleWalletRecharge(session: Stripe.Checkout.Session) {
     });
 
     if (existingTransaction) {
-      console.log("Wallet recharge already processed:", session.id);
+      logger.info("Wallet recharge already processed", { sessionId: session.id });
       return;
     }
 
@@ -181,10 +183,21 @@ async function handleWalletRecharge(session: Stripe.Checkout.Session) {
       });
     }
 
+    // Get user country for currency symbol
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { country: true }
+    });
+    const currency = getCurrencyData(dbUser?.country);
+    
+    // Convert local amount back to USD (internal base)
+    // We use the same factor to ensure mathematical stability
+    const amountInUsd = amount / currency.factor;
+
     // Atomic transaction to update balance and create transaction record
     await prisma.$transaction(async (tx) => {
       const balanceBefore = wallet!.balance;
-      const balanceAfter = balanceBefore + amount;
+      const balanceAfter = balanceBefore + amountInUsd;
 
       // Update wallet balance
       await tx.wallet.update({
@@ -197,10 +210,10 @@ async function handleWalletRecharge(session: Stripe.Checkout.Session) {
         data: {
           walletId: wallet!.id,
           type: "RECHARGE",
-          amount,
+          amount: amountInUsd,
           balanceBefore,
           balanceAfter,
-          description: `Wallet recharge of ₹${amount}`,
+          description: `Wallet recharge of ${currency.symbol}${amount}`,
           stripeSessionId: session.id,
           metadata: {
             paymentIntentId: session.payment_intent as string,
@@ -214,15 +227,15 @@ async function handleWalletRecharge(session: Stripe.Checkout.Session) {
         data: {
           userId,
           title: "Wallet Recharged",
-          message: `₹${amount} has been added to your wallet. New balance: ₹${balanceAfter}`,
+          message: `${currency.symbol}${amount} has been added to your wallet. New balance: ${currency.symbol}${balanceAfter}`,
           type: "Payment"
         }
       });
     });
 
-    console.log(`Wallet recharge successful: ₹${amount} for user ${userId}`);
+    logger.info(`Wallet recharge successful`, { amount, amountInUsd, userId, currency: currency.code });
   } catch (error) {
-    console.error("Error handling wallet recharge:", error);
+    logger.error("Wallet recharge error", error as Error, userId);
     throw error;
   }
 }
@@ -234,7 +247,7 @@ async function handleCourseEnrollmentPayment(session: Stripe.Checkout.Session) {
   const enrollmentId = session.metadata?.enrollmentId;
 
   if (!courseId || !enrollmentId) {
-    console.error("Missing metadata for course enrollment");
+    logger.error("Missing metadata for course enrollment", { sessionId: session.id });
     return;
   }
 
@@ -250,7 +263,7 @@ async function handleCourseEnrollmentPayment(session: Stripe.Checkout.Session) {
 
   if (updateResult.count === 0) {
     // Either didn't exist or was already Active (processed)
-    console.log(`Enrollment ${enrollmentId} already processed or invalid.`);
+    logger.info(`Enrollment already processed or invalid`, { enrollmentId });
     return;
   }
 
@@ -273,7 +286,7 @@ async function handleCourseEnrollmentPayment(session: Stripe.Checkout.Session) {
   });
 
   if (!updatedEnrollment || !updatedEnrollment.Course.user.teacherProfile) {
-    console.error("Critical: Enrollment updated but data missing for commission/notifications", enrollmentId);
+    logger.error("Enrollment updated but data missing for commission/notifications", { enrollmentId });
     return;
   }
 
@@ -334,7 +347,7 @@ async function handleCourseEnrollmentPayment(session: Stripe.Checkout.Session) {
     });
 
   } catch (error) {
-    console.error("Error creating post-enrollment records:", error);
+    logger.error("Error creating post-enrollment records", error as Error, updatedEnrollment.userId);
     // Note: Enrollment is already Active, but commission/notifs failed.
     // In strict system, we might want to revert enrollment, but that complicates things.
     // Ideally use interactive transaction for ALL of it, but updateMany + relations is tricky.

@@ -86,9 +86,18 @@ npx prisma db push
 echo "Building application..."
 npm run build
 
+# Copy public and static files for standalone mode
+echo "Preparing standalone assets..."
+cp -r public .next/standalone/
+cp -r .next/static .next/standalone/.next/
+
 # Restart PM2 process
 echo "Restarting application..."
-pm2 restart kidokool-lms --update-env || pm2 start npm --name "kidokool-lms" -- start
+# We use node to start the standalone server
+pm2 stop kidokool-lms || true
+pm2 delete kidokool-lms || true
+# Need to set PORT explicitly for standalone server
+PORT=3000 pm2 start .next/standalone/server.js --name "kidokool-lms"
 
 # Show status
 echo ""

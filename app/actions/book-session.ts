@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { revalidatePath } from "next/cache";
+import { logger } from "@/lib/logger";
 
 interface BookSessionInput {
     teacherProfileId: string;
@@ -120,7 +121,7 @@ export async function bookSessionAction(data: BookSessionInput) {
         return { success: true, sessionId: liveSession.id };
 
     } catch (error) {
-        console.error("Booking Error:", error);
+        logger.error("Booking Error", { error, data });
         return { success: false, error: "Failed to create session" };
     }
 }

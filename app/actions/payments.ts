@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { PayoutRequestStatus, RefundStatus } from "@prisma/client";
+import { logger } from "@/lib/logger";
 
 export async function requestPayout(data: {
     amount: number;
@@ -70,7 +71,7 @@ export async function requestPayout(data: {
         revalidatePath("/teacher/finance");
         return { success: true, payout };
     } catch (error) {
-        console.error("Payout request error:", error);
+        logger.error("Payout request error", error as Error);
         return { error: "Failed to request payout" };
     }
 }
@@ -103,7 +104,7 @@ export async function updatePayoutStatus(
         revalidatePath("/admin/payments");
         return { success: true, payout };
     } catch (error) {
-        console.error("Update payout error:", error);
+        logger.error("Update payout error", { error, payoutId, status }, session.user.id);
         return { error: "Failed to update payout status" };
     }
 }
@@ -135,7 +136,7 @@ export async function createRefundRequest(data: {
         revalidatePath("/dashboard/purchases");
         return { success: true, refund };
     } catch (error) {
-        console.error("Refund request error:", error);
+        logger.error("Refund request error", { error, data }, session.user.id);
         return { error: "Failed to request refund" };
     }
 }
@@ -166,7 +167,7 @@ export async function updateRefundStatus(
         revalidatePath("/admin/payments/refunds");
         return { success: true, refund };
     } catch (error) {
-        console.error("Update refund error:", error);
+        logger.error("Update refund error", { error, refundId, status }, session.user.id);
         return { error: "Failed to update refund status" };
     }
 }

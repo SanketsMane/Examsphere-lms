@@ -47,16 +47,27 @@ export interface TeacherWithProfile {
 interface FindTeacherContentProps {
     teachers: TeacherWithProfile[];
     featuredMentors: FeaturedMentor[];
-    allCategories?: string[];
+    categories?: any[]; // Array of categories with children
     allLanguages?: string[];
     packages?: any[];
+    currency?: { code: string; symbol: string; factor: number };
 }
 
-export function FindTeacherContent({ teachers, featuredMentors, allCategories = [], allLanguages = [], packages = [] }: FindTeacherContentProps) {
+export function FindTeacherContent({ 
+    teachers, 
+    featuredMentors, 
+    categories = [], 
+    allLanguages = [], 
+    packages = [],
+    currency = { code: "USD", symbol: "$", factor: 1 }
+}: FindTeacherContentProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
     const [categorySearch, setCategorySearch] = useState("");
+    const [subcategorySearch, setSubcategorySearch] = useState("");
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+    const [isSubcategoryOpen, setIsSubcategoryOpen] = useState(false);
 
     const [selectedAvailability, setSelectedAvailability] = useState<string[]>([]);
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
@@ -97,6 +108,10 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
             const matchesCategory = !selectedCategory ||
                 teacher.teaches.some(t => t.toLowerCase() === selectedCategory.toLowerCase());
 
+            // Subcategory filter
+            const matchesSubCategory = !selectedSubCategory ||
+                teacher.teaches.some(t => t.toLowerCase() === selectedSubCategory.toLowerCase());
+
             // Price filter
             const isMaxPrice = priceRange[1] === 10000;
             const matchesPrice = teacher.hourlyRate >= priceRange[0] && (isMaxPrice ? true : teacher.hourlyRate <= priceRange[1]);
@@ -110,10 +125,9 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
             
             // Online status is a bit tricky, for now we match any teacher if not toggled, 
             // otherwise we'd need real-time data or a flag. Assuming isVerified for "Online" for demo if toggled.
-            // In a real app, this would check a Redis/DB status.
             const matchesOnline = !isOnlineOnly || teacher.isVerified; 
 
-            return matchesSearch && matchesCategory && matchesPrice && matchesLanguage && 
+            return matchesSearch && matchesCategory && matchesSubCategory && matchesPrice && matchesLanguage && 
                    matchesGender && matchesCountry && matchesRating && matchesExperience && matchesOnline;
         });
 
@@ -127,14 +141,13 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
                 case "rating":
                     return b.rating - a.rating;
                 case "newest":
-                    // Assuming higher ID or another field proxies for newest if createdAt isn't available
                     return 0;
                 case "popularity":
                 default:
                     return b.reviewCount - a.reviewCount; // Popularity by review count
             }
         });
-    }, [searchQuery, selectedCategory, priceRange, sortBy, teachers, 
+    }, [searchQuery, selectedCategory, selectedSubCategory, priceRange, sortBy, teachers, 
         selectedLanguage, selectedGender, selectedCountry, minRating, experienceRange, isOnlineOnly]);
 
     // Scroll detection
@@ -159,6 +172,7 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
     const clearAllFilters = () => {
         setSearchQuery("");
         setSelectedCategory(null);
+        setSelectedSubCategory(null);
         setSelectedAvailability([]);
         setPriceRange([0, 10000]);
         setSelectedLanguage(null);
@@ -170,6 +184,7 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
     };
 
     const activeFiltersCount = (selectedCategory ? 1 : 0) + 
+                             (selectedSubCategory ? 1 : 0) + 
                              (selectedLanguage ? 1 : 0) + 
                              (selectedGender ? 1 : 0) + 
                              (selectedCountry ? 1 : 0) + 
@@ -304,6 +319,16 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
                                         <X className="h-3 w-3" />
                                     </Badge>
                                 )}
+                                {selectedSubCategory && (
+                                    <Badge
+                                        variant="secondary"
+                                        className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800 hover:bg-blue-200 cursor-pointer gap-1 pl-3 pr-2 py-1.5"
+                                        onClick={() => setSelectedSubCategory(null)}
+                                    >
+                                        SubCategory: {selectedSubCategory}
+                                        <X className="h-3 w-3" />
+                                    </Badge>
+                                )}
                                 {selectedLanguage && (
                                     <Badge
                                         variant="secondary"
@@ -370,16 +395,12 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
                 </div>
             </div>
 
-            {/* TopicTicker removed as per request */}
-
             <div className="container mx-auto px-6 max-w-7xl py-10">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
                     {/* Sidebar Filters */}
                     <div className="lg:col-span-3 hidden lg:block space-y-6">
                         <div className="bg-white dark:bg-[#1e293b] p-6 rounded-2xl border border-slate-200 dark:border-slate-800 sticky top-24 shadow-sm">
-                            {/* Removed MentorMatchWizard and FeaturedMentorCarousel as per request */}
-
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
                                     <SlidersHorizontal className="w-5 h-5 text-blue-600" /> Filters
@@ -398,7 +419,6 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
 
                             {/* Filter Groups */}
                             <div className="space-y-6">
-                                {/* Languages */}
                                 {/* Online Now Toggle */}
                                 <div className="flex items-center justify-between p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/20">
                                     <div className="flex items-center gap-2">
@@ -440,29 +460,86 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
                                                 />
                                             </div>
                                             <div className="max-h-[300px] overflow-y-auto p-1">
-                                                {allCategories
-                                                    .filter(cat => cat.toLowerCase().includes(categorySearch.toLowerCase()))
-                                                    .map((cat, idx) => (
+                                                {categories
+                                                    .filter((cat: any) => cat.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                                                    .map((cat: any, idx: number) => (
                                                         <div
                                                             key={idx}
                                                             onClick={() => {
-                                                                setSelectedCategory(cat === selectedCategory ? null : cat);
+                                                                if (selectedCategory === cat.name) {
+                                                                    setSelectedCategory(null);
+                                                                    setSelectedSubCategory(null);
+                                                                } else {
+                                                                    setSelectedCategory(cat.name);
+                                                                    setSelectedSubCategory(null);
+                                                                    if (cat.children && cat.children.length > 0) {
+                                                                        setTimeout(() => setIsSubcategoryOpen(true), 100);
+                                                                    }
+                                                                }
                                                                 setIsCategoryOpen(false);
                                                             }}
                                                             className={cn(
                                                                 "flex items-center justify-between px-3 py-2 rounded-md text-sm cursor-pointer transition-colors",
-                                                                selectedCategory === cat
+                                                                selectedCategory === cat.name
                                                                     ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-200"
                                                                     : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                                                             )}
                                                         >
-                                                            {cat}
-                                                            {selectedCategory === cat && <Check className="h-4 w-4" />}
+                                                            {cat.name}
+                                                            {selectedCategory === cat.name && <Check className="h-4 w-4" />}
                                                         </div>
                                                     ))}
                                             </div>
                                         </PopoverContent>
                                     </Popover>
+
+                                    {/* Subcategory Dropdown - Only if parent has children */}
+                                    {selectedCategory && (categories.find((c: any) => c.name === selectedCategory) as any)?.children?.length > 0 && (
+                                        <Popover open={isSubcategoryOpen} onOpenChange={setIsSubcategoryOpen}>
+                                            <PopoverTrigger asChild>
+                                                <div
+                                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm flex items-center justify-between cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors animate-in fade-in slide-in-from-top-2"
+                                                >
+                                                    <span className={selectedSubCategory ? "text-slate-900 dark:text-white font-medium" : "text-slate-500 dark:text-slate-400"}>
+                                                        {selectedSubCategory || "Select Subcategory"}
+                                                    </span>
+                                                    <ChevronDown className="h-4 w-4 text-slate-400" />
+                                                </div>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[280px] p-0" align="start">
+                                                <div className="p-2 border-b border-slate-100 dark:border-slate-800">
+                                                    <Input
+                                                        placeholder="Search subcategories..."
+                                                        value={subcategorySearch}
+                                                        onChange={(e) => setSubcategorySearch(e.target.value)}
+                                                        className="h-9 border-none bg-slate-50 dark:bg-slate-800 focus-visible:ring-0"
+                                                    />
+                                                </div>
+                                                <div className="max-h-[300px] overflow-y-auto p-1">
+                                                    {(categories.find((c: any) => c.name === selectedCategory) as any)?.children
+                                                        .filter((sub: any) => sub.name.toLowerCase().includes(subcategorySearch.toLowerCase()))
+                                                        .map((sub: any, idx: number) => (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => {
+                                                                    setSelectedSubCategory(sub.name === selectedSubCategory ? null : sub.name);
+                                                                    setIsSubcategoryOpen(false);
+                                                                }}
+                                                                className={cn(
+                                                                    "flex items-center justify-between px-3 py-2 rounded-md text-sm cursor-pointer transition-colors",
+                                                                    selectedSubCategory === sub.name
+                                                                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-200"
+                                                                        : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                                                )}
+                                                            >
+                                                                {sub.name}
+                                                                {selectedSubCategory === sub.name && <Check className="h-4 w-4" />}
+                                                            </div>
+                                                        ))}
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
+                                    )}
                                 </div>
 
                                 <div className="h-px bg-slate-100 dark:bg-slate-800" />
@@ -548,7 +625,6 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
                                                 />
                                             </div>
                                             <div className="max-h-[300px] overflow-y-auto p-1">
-                                                {/* Deduplicate and filter countries from teachers list */}
                                                 {Array.from(new Set(teachers.map(t => t.country)))
                                                     .filter(c => c && c.toLowerCase().includes(countrySearch.toLowerCase()))
                                                     .map((country, idx) => (
@@ -668,9 +744,9 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
                                         Hourly Rate <ChevronDown className="w-4 h-4 text-slate-400" />
                                     </h4>
                                     <div className="flex items-center gap-2 mb-4">
-                                        <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-sm flex-1 text-center font-medium">₹{priceRange[0]}</div>
+                                        <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-sm flex-1 text-center font-medium">{currency.symbol}{priceRange[0]}</div>
                                         <span className="text-slate-400">-</span>
-                                        <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-sm flex-1 text-center font-medium">₹{priceRange[1]}+</div>
+                                        <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-sm flex-1 text-center font-medium">{currency.symbol}{priceRange[1]}+</div>
                                     </div>
                                     <Slider
                                         defaultValue={[0, 10000]}
@@ -718,7 +794,7 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
 
                     {/* Main Content: Teacher Lists */}
                     <div className="lg:col-span-9 space-y-6">
-                        <PackagesList packages={packages} />
+                        <PackagesList packages={packages} currency={currency} />
 
                         {/* Mobile Filter Button */}
                         <div className="lg:hidden">
@@ -774,7 +850,7 @@ export function FindTeacherContent({ teachers, featuredMentors, allCategories = 
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             transition={{ delay: index * 0.05 }}
                                         >
-                                            <HorizontalTeacherCard teacher={teacher} />
+                                            <HorizontalTeacherCard teacher={teacher} currency={currency} />
                                         </motion.div>
                                     ))}
                                 </div>

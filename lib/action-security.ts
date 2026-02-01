@@ -1,55 +1,66 @@
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { logger } from "@/lib/logger";
+
 /**
- * Action Security Helpers
- * Provides security protection functions for server actions
+ * Security helpers for KIDOKOOL Server Actions
+ * Author: Sanket
  */
 
-import { protectGeneral } from './security';
-
-interface ActionSecurityResult {
-  success: boolean;
-  error?: string;
+export async function getSession() {
+  return await auth.api.getSession({
+    headers: await headers(),
+  });
 }
 
 /**
- * Protect admin actions with enhanced rate limiting
+ * Enforce Admin role for a server action
+ * @throws Error if not an admin
  */
-export async function protectAdminAction(userId: string): Promise<ActionSecurityResult> {
-  // Create a mock request for rate limiting
-  const mockRequest = new Request('https://example.com', {
-    headers: {
-      'user-agent': 'Next.js Server Action'
-    }
-  });
-
-  const result = await protectGeneral(mockRequest, `admin:${userId}`, {
-    maxRequests: 50, // Increased from 5
-    windowMs: 60000 // 1 minute window
-  });
-
-  return {
-    success: result.success,
-    error: result.error
-  };
+export async function requireAdmin() {
+  const session = await getSession();
+  const user = session?.user as any;
+  
+  if (!session || user?.role !== "admin") {
+    logger.security("Unauthorized admin access attempt", { 
+        userId: user?.id,
+        role: user?.role
+    });
+    throw new Error("Unauthorized: Admin access required");
+  }
+  
+  return session;
 }
 
 /**
- * Protect enrollment actions with user-specific rate limiting
+ * Enforce Teacher role for a server action
+ * @throws Error if not a teacher or admin
  */
-export async function protectEnrollmentAction(userId: string): Promise<ActionSecurityResult> {
-  // Create a mock request for rate limiting
-  const mockRequest = new Request('https://example.com', {
-    headers: {
-      'user-agent': 'Next.js Server Action'
-    }
-  });
+export async function requireTeacher() {
+  const session = await getSession();
+  const user = session?.user as any;
+  
+  if (!session || (user?.role !== "teacher" && user?.role !== "admin")) {
+    logger.security("Unauthorized teacher access attempt", { 
+        userId: user?.id,
+        role: user?.role
+    });
+    throw new Error("Unauthorized: Teacher access required");
+  }
+  
+  return session;
+}
 
-  const result = await protectGeneral(mockRequest, `enroll:${userId}`, {
-    maxRequests: 30, // Increased from 3
-    windowMs: 60000 // 1 minute window, stricter for enrollments
-  });
-
-  return {
-    success: result.success,
-    error: result.error
-  };
+/**
+ * Enforce any authenticated user
+ * @throws Error if not logged in
+ */
+export async function requireUser() {
+  const session = await getSession();
+  
+  if (!session) {
+    throw new Error("Unauthorized: Please log in to continue");
+  }
+  
+  return session;
 }

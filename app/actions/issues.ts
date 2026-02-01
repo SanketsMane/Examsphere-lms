@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/action-security";
 import { sendEmail } from "@/lib/email"; // Using generic email sender, will refine after viewing email-notifications.ts
 import { IssueStatus, Priority } from "@prisma/client";
 
@@ -85,13 +86,7 @@ export async function updateIssueStatus(
     status: IssueStatus,
     isEscalated: boolean = false
 ) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!session?.user || (session.user as any).role !== "admin") {
-        return { error: "Unauthorized" };
-    }
+    await requireAdmin();
 
     try {
         const issue = await prisma.issue.update({

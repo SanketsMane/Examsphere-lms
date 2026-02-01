@@ -48,7 +48,7 @@ export function SessionCard({
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
             viewport={{ once: true }}
-            className="group relative overflow-hidden bg-white dark:bg-card border border-gray-100 dark:border-gray-800 rounded-[2rem] hover:shadow-xl transition-all duration-300 flex flex-col h-full p-4"
+            className="group relative overflow-hidden bg-white dark:bg-card border border-slate-200 dark:border-gray-800 rounded-[2rem] hover:shadow-xl transition-all duration-300 flex flex-col h-full p-4"
         >
             <CardContent className="p-4 flex flex-col gap-4 flex-1">
                 {/* Header Row */}
@@ -76,19 +76,19 @@ export function SessionCard({
 
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground mt-2">
-                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-white/5 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-200 dark:border-gray-800">
                         <Calendar className="w-4 h-4 text-primary" />
                         <span>{date}</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-white/5 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-200 dark:border-gray-800">
                         <Clock className="w-4 h-4 text-primary" />
                         <span>{time}</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-white/5 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-200 dark:border-gray-800">
                         <Video className="w-4 h-4 text-primary" />
                         <span>{duration}</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-white/5 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-200 dark:border-gray-800">
                         <Users className="w-4 h-4 text-primary" />
                         <span>{participants}/{maxParticipants}</span>
                     </div>
@@ -96,7 +96,7 @@ export function SessionCard({
             </CardContent>
 
             <div className="p-4 pt-0 mt-auto">
-                <div className="flex items-center justify-between bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/50">
+                <div className="flex items-center justify-between bg-slate-50 dark:bg-black/20 p-4 rounded-2xl border border-slate-200 dark:border-gray-800/50">
                     <div className="flex flex-col">
                         <span className="text-xl font-extrabold text-[#011E21] dark:text-white">{price}</span>
                         <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Per Session</span>

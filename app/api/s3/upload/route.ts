@@ -70,8 +70,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const currentUsed = Number(user.storageUsed);
-    const limit = Number(user.storageLimit);
+    const dbUser = user as any;
+    const currentUsed = Number(dbUser.storageUsed || 0);
+    const limit = Number(dbUser.storageLimit || 500 * 1024 * 1024);
 
     if (currentUsed + size > limit) {
       return NextResponse.json(
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
         storageUsed: {
           increment: size
         }
-      }
+      } as any
     });
 
     const uniqueKey = `${uuidv4()}-${fileName}`;

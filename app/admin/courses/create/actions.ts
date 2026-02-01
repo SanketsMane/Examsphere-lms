@@ -1,7 +1,6 @@
 "use server";
 
-import { requireTeacherOrAdmin } from "@/app/data/auth/require-roles";
-import { protectAdminAction } from "@/lib/action-security";
+import { requireTeacher } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { ApiResponse } from "@/lib/types";
@@ -10,18 +9,9 @@ import { courseSchema, CourseSchemaType } from "@/lib/zodSchemas";
 export async function CreateCourse(
   values: CourseSchemaType
 ): Promise<ApiResponse> {
-  const session = await requireTeacherOrAdmin();
+  const session = await requireTeacher();
 
   try {
-    // Apply security protection for admin actions
-    const securityCheck = await protectAdminAction(session.user.id);
-    if (!securityCheck.success) {
-      return {
-        status: "error",
-        message: securityCheck.error || "Security check failed",
-      };
-    }
-
     const validation = courseSchema.safeParse(values);
 
     if (!validation.success) {
@@ -43,7 +33,7 @@ export async function CreateCourse(
     await prisma.course.create({
       data: {
         ...validation.data,
-        userId: session?.user.id as string,
+        userId: session.user.id,
         stripePriceId: data.default_price as string,
       },
     });

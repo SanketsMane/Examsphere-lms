@@ -1,9 +1,8 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { requireTeacher } from "@/lib/action-security";
 import { sendTeacherVerificationSubmissionEmail } from "@/lib/email-notifications";
 import { env } from "@/lib/env";
 
@@ -12,8 +11,7 @@ export async function saveBankDetails(data: {
     bankAccountNumber: string;
     bankRoutingNumber: string;
 }) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    const session = await requireTeacher();
 
     const teacher = await prisma.teacherProfile.findUnique({
         where: { userId: session.user.id }
@@ -39,8 +37,7 @@ export async function saveBankDetails(data: {
 }
 
 export async function getVerificationStatus() {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) return null;
+    const session = await requireTeacher();
 
     const teacher = await prisma.teacherProfile.findUnique({
         where: { userId: session.user.id },
@@ -58,8 +55,7 @@ export async function getVerificationStatus() {
 
 
 export async function saveVerificationDocument(type: 'identity' | 'qualification' | 'experience', urls: string | string[]) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    const session = await requireTeacher();
 
     const teacher = await prisma.teacherProfile.findUnique({
         where: { userId: session.user.id }
@@ -116,8 +112,7 @@ export async function saveVerificationDocument(type: 'identity' | 'qualification
 }
 
 export async function submitVerification() {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    const session = await requireTeacher();
 
     const teacher = await prisma.teacherProfile.findUnique({
         where: { userId: session.user.id },
@@ -194,8 +189,7 @@ export async function submitVerification() {
 }
 
 export async function removeVerificationDocument(type: 'qualification' | 'experience', urlToRemove: string) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    const session = await requireTeacher();
 
     const teacher = await prisma.teacherProfile.findUnique({
         where: { userId: session.user.id }

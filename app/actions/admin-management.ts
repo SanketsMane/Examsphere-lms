@@ -3,11 +3,14 @@
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { sendTemplatedEmail } from "@/lib/email";
+import { requireAdmin } from "@/lib/action-security";
+import { logger } from "@/lib/logger";
 
 // --- User Management ---
 
 export async function suspendUser(userId: string, reason?: string) {
     try {
+        await requireAdmin();
         await prisma.user.update({
             where: { id: userId },
             data: {
@@ -18,13 +21,14 @@ export async function suspendUser(userId: string, reason?: string) {
         revalidatePath("/admin/users");
         return { success: true, message: "User suspended successfully" };
     } catch (error) {
-        console.error("Failed to suspend user:", error);
+        logger.error("Failed to suspend user", error as Error, userId);
         return { success: false, message: "Failed to suspend user" };
     }
 }
 
 export async function unsuspendUser(userId: string) {
     try {
+        await requireAdmin();
         await prisma.user.update({
             where: { id: userId },
             data: {
@@ -35,13 +39,14 @@ export async function unsuspendUser(userId: string) {
         revalidatePath("/admin/users");
         return { success: true, message: "User unsuspended successfully" };
     } catch (error) {
-        console.error("Failed to unsuspend user:", error);
+        logger.error("Failed to unsuspend user", error as Error, userId);
         return { success: false, message: "Failed to unsuspend user" };
     }
 }
 
 export async function updateUserRole(userId: string, role: string) {
     try {
+        await requireAdmin();
         await prisma.user.update({
             where: { id: userId },
             data: { role },
@@ -49,13 +54,14 @@ export async function updateUserRole(userId: string, role: string) {
         revalidatePath("/admin/users");
         return { success: true, message: "User role updated successfully" };
     } catch (error) {
-        console.error("Failed to update role:", error);
+        logger.error("Failed to update role", error as Error, userId);
         return { success: false, message: "Failed to update role" };
     }
 }
 
 export async function deleteUser(userId: string) {
     try {
+        await requireAdmin();
         // Delete related data first to avoid constraint errors if cascade isn't perfect
         // Though schema has onDelete: Cascade, explicit cleanup is safer for major entities
         await prisma.user.delete({
@@ -64,13 +70,14 @@ export async function deleteUser(userId: string) {
         revalidatePath("/admin/users");
         return { success: true, message: "User deleted successfully" };
     } catch (error) {
-        console.error("Failed to delete user:", error);
+        logger.error("Failed to delete user", error as Error, userId);
         return { success: false, message: "Failed to delete user" };
     }
 }
 
 export async function deleteCourse(courseId: string) {
     try {
+        await requireAdmin();
         // Check if course has enrollments? Maybe prevent delete?
         // For now, allow delete (schema handles cascade)
         await prisma.course.delete({
@@ -79,7 +86,7 @@ export async function deleteCourse(courseId: string) {
         revalidatePath("/admin/courses");
         return { success: true, message: "Course deleted successfully" };
     } catch (error) {
-        console.error("Failed to delete course:", error);
+        logger.error("Failed to delete course", error as Error, courseId);
         return { success: false, message: "Failed to delete course" };
     }
 }
@@ -88,6 +95,7 @@ export async function deleteCourse(courseId: string) {
 
 export async function approveTeacher(teacherId: string) {
     try {
+        await requireAdmin();
         const user = await prisma.user.findUnique({
              where: { id: teacherId }
         });
@@ -124,13 +132,14 @@ export async function approveTeacher(teacherId: string) {
         revalidatePath("/admin/teachers");
         return { success: true, message: "Teacher approved & email sent" };
     } catch (error: any) {
-        console.error("Failed to approve teacher:", error);
+        logger.error("Failed to approve teacher", error as Error, teacherId);
         return { success: false, message: error.message || "Failed to approve teacher" };
     }
 }
 
 export async function rejectTeacher(teacherUserId: string, reason: string) {
     try {
+        await requireAdmin();
         const user = await prisma.user.findUnique({
              where: { id: teacherUserId }
         });
@@ -181,7 +190,7 @@ export async function rejectTeacher(teacherUserId: string, reason: string) {
         revalidatePath("/admin/teachers");
         return { success: true, message: "Teacher application rejected & email sent" };
     } catch (error: any) {
-        console.error("Failed to reject teacher:", error);
+        logger.error("Failed to reject teacher", { error, reason }, teacherUserId);
         return { success: false, message: error.message || "Failed to reject teacher" };
     }
 }

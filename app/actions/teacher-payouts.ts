@@ -3,15 +3,11 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { requireTeacher } from "@/lib/action-security";
 
 export async function getTeacherPayoutData() {
-    const session = await auth.api.getSession({ headers: await headers() });
-
-    if (!session?.user?.id) {
-        redirect("/sign-in");
-    }
+    const session = await requireTeacher();
 
     const teacher = await prisma.teacherProfile.findUnique({
         where: { userId: session.user.id },
@@ -85,10 +81,7 @@ export async function getTeacherPayoutData() {
 }
 
 export async function requestPayout() {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
-        throw new Error("Unauthorized");
-    }
+    const session = await requireTeacher();
 
     const teacherProfile = await prisma.teacherProfile.findUnique({
         where: { userId: session.user.id },
