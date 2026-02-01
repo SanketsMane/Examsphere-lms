@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { env } from "@/lib/env";
 import { protectGeneral, getClientIP } from "@/lib/security";
+import { getCurrencyData, convertPrice } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -106,32 +107,18 @@ export async function POST(req: Request) {
             }
         }
 
-        // Create Stripe Session
-        const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-            {
-                quantity: 1,
-                price_data: {
-                    currency: "USD",
-                    product_data: {
-                        name: course.title,
-                        description: course.smallDescription || undefined,
-                        images: course.fileKey ? [`https://utfs.io/f/${course.fileKey}`] : [],
-                    },
-                    unit_amount: Math.round(finalPrice * 100), // Stripe expects cents
-                },
-            },
-        ];
-
-        let stripeCustomer = await prisma.user.findUnique({
+        // 1. Fetch user profile for country and Stripe customer ID
+        let userProfile = await prisma.user.findUnique({
             where: {
                 id: user.id,
             },
             select: {
                 stripeCustomerId: true,
+                country: true,
             }
         });
 
-        if (!stripeCustomer?.stripeCustomerId) {
+        if (!userProfile?.stripeCustomerId) {
             const customer = await stripe.customers.create({
                 email: user.email,
             });
@@ -145,21 +132,41 @@ export async function POST(req: Request) {
                 }
             });
 
-            stripeCustomer = { stripeCustomerId: customer.id };
+            userProfile = { ...userProfile, stripeCustomerId: customer.id, country: userProfile?.country || null };
         }
+
+        // 2. Resolve Currency and Convert Price
+        const { code: currencyCode } = getCurrencyData(userProfile?.country);
+        const convertedPrice = convertPrice(finalPrice, userProfile?.country);
+
+        // 3. Create Stripe Session
+        const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+            {
+                quantity: 1,
+                price_data: {
+                    currency: currencyCode.toLowerCase(),
+                    product_data: {
+                        name: course.title,
+                        description: course.smallDescription || undefined,
+                        images: course.fileKey ? [`https://utfs.io/f/${course.fileKey}`] : [],
+                    },
+                    unit_amount: convertedPrice * 100, // Stripe expects cents/paisa/fils
+                },
+            },
+        ];
 
         // Create Pending Enrollment
         const enrollment = await prisma.enrollment.create({
             data: {
                 userId: user.id,
                 courseId: courseId,
-                amount: Math.round(finalPrice * 100),
+                amount: convertedPrice * 100,
                 status: "Pending", // Important: Initial status
             }
         });
 
         const checkoutSession = await stripe.checkout.sessions.create({
-            customer: stripeCustomer.stripeCustomerId || undefined,
+            customer: userProfile.stripeCustomerId || undefined,
             line_items,
             mode: "payment",
             success_url: `${process.env.NEXT_PUBLIC_APP_URL}/courses/${course.slug}?success=1`,

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/app/data/user/require-user";
 import { stripe } from "@/lib/stripe";
+import { prisma } from "@/lib/db";
+import { getCurrencyData, convertPrice } from "@/lib/currency";
 
 /**
  * Create Stripe checkout session for wallet recharge
@@ -11,17 +13,29 @@ export async function POST(req: NextRequest) {
         const user = await requireUser();
         const { amount } = await req.json();
 
-        // Validate amount
-        if (!amount || amount < 100) {
+        const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { country: true }
+        });
+
+        const currencyData = getCurrencyData(dbUser?.country);
+        const localAmount = amount;
+
+        const minRechargeUsd = 1.25; // ~$1.25
+        const maxRechargeUsd = 1250; // ~$1250
+        
+        const usdAmount = localAmount / currencyData.factor;
+
+        if (usdAmount < minRechargeUsd) {
             return NextResponse.json(
-                { error: "Minimum recharge amount is ₹100" },
+                { error: `Minimum recharge is ${currencyData.symbol}${Math.round(minRechargeUsd * currencyData.factor)}` },
                 { status: 400 }
             );
         }
 
-        if (amount > 100000) {
+        if (usdAmount > maxRechargeUsd) {
             return NextResponse.json(
-                { error: "Maximum recharge amount is ₹100,000" },
+                { error: `Maximum recharge is ${currencyData.symbol}${Math.round(maxRechargeUsd * currencyData.factor)}` },
                 { status: 400 }
             );
         }
@@ -33,12 +47,12 @@ export async function POST(req: NextRequest) {
             line_items: [
                 {
                     price_data: {
-                        currency: "inr",
+                        currency: currencyData.code.toLowerCase(),
                         product_data: {
                             name: "Wallet Recharge",
-                            description: `Add ₹${amount} to your KIDOKOOL wallet`,
+                            description: `Add ${currencyData.symbol}${localAmount} to your wallet`,
                         },
-                        unit_amount: amount * 100, // Convert to paise
+                        unit_amount: Math.round(localAmount * 100), // Stripe expects cents/paise/fils
                     },
                     quantity: 1,
                 },

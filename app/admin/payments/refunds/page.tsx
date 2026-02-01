@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { updateRefundStatus } from "@/app/actions/payments";
+import { getCurrencyData, convertPrice } from "@/lib/currency";
 import { RefundStatus } from "@prisma/client";
 import { Check, X } from "lucide-react";
 
@@ -22,7 +23,7 @@ export default async function RefundsPage() {
     const refunds = await prisma.refundRequest.findMany({
         orderBy: { createdAt: "desc" },
         include: {
-            user: { select: { name: true, email: true } },
+            user: { select: { name: true, email: true, country: true } },
             course: { select: { title: true } }
         }
     });
@@ -56,7 +57,19 @@ export default async function RefundsPage() {
                                     </div>
                                 </TableCell>
                                 <TableCell>{refund.course?.title || "N/A"}</TableCell>
-                                <TableCell>{formatPrice(refund.amount)}</TableCell>
+                                <TableCell>
+                                    <div className="flex flex-col">
+                                        <span>
+                                            {formatPrice(
+                                                convertPrice(refund.amount, refund.user.country),
+                                                getCurrencyData(refund.user.country).code
+                                            )}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            ({formatPrice(refund.amount, "USD")})
+                                        </span>
+                                    </div>
+                                </TableCell>
                                 <TableCell className="max-w-[200px] truncate" title={refund.reason}>
                                     {refund.reason}
                                 </TableCell>

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { updatePayoutStatus } from "@/app/actions/payments";
+import { getCurrencyData, convertPrice } from "@/lib/currency";
 import { PayoutRequestStatus } from "@prisma/client";
 import { Check, X } from "lucide-react";
 import { revalidatePath } from "next/cache";
@@ -24,7 +25,7 @@ export default async function PayoutsPage() {
         orderBy: { createdAt: "desc" },
         include: {
             teacher: {
-                include: { user: { select: { name: true, email: true } } }
+                include: { user: { select: { name: true, email: true, country: true } } }
             }
         }
     });
@@ -56,7 +57,19 @@ export default async function PayoutsPage() {
                                         <span className="text-xs text-muted-foreground">{payout.teacher.user.email}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell>{formatPrice(Number(payout.requestedAmount))}</TableCell>
+                                <TableCell>
+                                    <div className="flex flex-col">
+                                        <span>
+                                            {formatPrice(
+                                                convertPrice(Number(payout.requestedAmount), payout.teacher.user.country),
+                                                getCurrencyData(payout.teacher.user.country).code
+                                            )}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            ({formatPrice(Number(payout.requestedAmount), "USD")})
+                                        </span>
+                                    </div>
+                                </TableCell>
                                 <TableCell>
                                     <div className="text-xs">
                                         <p>Bank: {payout.bankName || "N/A"}</p>

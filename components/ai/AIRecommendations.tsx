@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { CourseRecommendation } from "@/lib/recommendation-engine";
 import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
 
 interface RecommendationSectionProps {
   userId: string;
@@ -294,6 +295,9 @@ function RecommendationCard({
     toast.success('Course link copied to clipboard');
   };
 
+  const { data: session } = authClient.useSession();
+  const user = session?.user as any;
+
   return (
     <Card className="group hover:shadow-lg transition-all duration-200 relative overflow-hidden">
       {/* Confidence indicator */}
@@ -325,6 +329,7 @@ function RecommendationCard({
             instructor: course.instructor,
             isFavorite: liked
           }}
+          country={user?.country}
           variant={compact ? "compact" : "default"}
           onEnroll={(courseId) => {
             // Handle enrollment

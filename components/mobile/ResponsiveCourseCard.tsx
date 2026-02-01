@@ -25,6 +25,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/format";
+import { getCurrencyData, convertPrice } from "@/lib/currency";
 
 interface Course {
   id: string;
@@ -52,6 +54,7 @@ interface ResponsiveCourseCardProps {
   course: Course;
   variant?: "default" | "compact" | "horizontal";
   showActions?: boolean;
+  country?: string | null;
   onEnroll?: (courseId: string) => void;
   onFavorite?: (courseId: string) => void;
   onShare?: (courseId: string) => void;
@@ -61,6 +64,7 @@ export function ResponsiveCourseCard({
   course,
   variant = "default",
   showActions = true,
+  country,
   onEnroll,
   onFavorite,
   onShare
@@ -68,11 +72,10 @@ export function ResponsiveCourseCard({
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price);
+  const displayPrice = (price: number) => {
+    const currency = getCurrencyData(country);
+    const convertedAmount = convertPrice(price, country);
+    return formatPrice(convertedAmount, currency.code);
   };
 
   const renderStars = (rating: number) => {
@@ -149,7 +152,7 @@ export function ResponsiveCourseCard({
                   {course.price === 0 ? (
                     <span className="text-green-600">Free</span>
                   ) : (
-                    <span>{formatPrice(course.price)}</span>
+                    <span>{displayPrice(course.price)}</span>
                   )}
                 </div>
               </div>
@@ -265,14 +268,14 @@ export function ResponsiveCourseCard({
                 <div className="text-right">
                   {course.originalPrice && course.originalPrice > course.price && (
                     <div className="text-xs text-muted-foreground line-through">
-                      {formatPrice(course.originalPrice)}
+                      {displayPrice(course.originalPrice)}
                     </div>
                   )}
                   <div className="font-bold text-lg">
                     {course.price === 0 ? (
                       <span className="text-green-600">Free</span>
                     ) : (
-                      formatPrice(course.price)
+                      displayPrice(course.price)
                     )}
                   </div>
                 </div>
@@ -424,14 +427,14 @@ export function ResponsiveCourseCard({
             <div>
               {course.originalPrice && course.originalPrice > course.price && (
                 <div className="text-sm text-muted-foreground line-through">
-                  {formatPrice(course.originalPrice)}
+                  {displayPrice(course.originalPrice)}
                 </div>
               )}
               <div className="font-bold text-xl">
                 {course.price === 0 ? (
                   <span className="text-green-600">Free</span>
                 ) : (
-                  formatPrice(course.price)
+                  displayPrice(course.price)
                 )}
               </div>
             </div>

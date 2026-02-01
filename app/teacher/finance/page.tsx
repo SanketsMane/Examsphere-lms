@@ -11,6 +11,7 @@ import { Banknote, History, AlertCircle } from "lucide-react";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { WithdrawForm } from "./_components/withdraw-form";
+import { getCurrencyData, convertPrice } from "@/lib/currency";
 
 export default async function TeacherFinancePage() {
     const session = await auth.api.getSession({
@@ -30,6 +31,11 @@ export default async function TeacherFinancePage() {
         }
     });
 
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { country: true }
+    });
+
     if (!teacher) return <div>Teacher profile not found</div>;
 
     const totalEarnings = Number(teacher.totalEarnings);
@@ -38,6 +44,12 @@ export default async function TeacherFinancePage() {
         .reduce((sum, p) => sum + Number(p.requestedAmount), 0);
 
     const currentBalance = totalEarnings - totalPaidOut;
+    const { code: currencyCode } = getCurrencyData(user?.country);
+    
+    const displayPrice = (price: number) => {
+        const converted = convertPrice(price, user?.country);
+        return formatPrice(converted, currencyCode);
+    };
 
     return (
         <div className="p-6 space-y-6">
@@ -53,7 +65,7 @@ export default async function TeacherFinancePage() {
                         <Banknote className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatPrice(totalEarnings)}</div>
+                        <div className="text-2xl font-bold">{displayPrice(totalEarnings)}</div>
                         <p className="text-xs text-muted-foreground">Lifetime earnings</p>
                     </CardContent>
                 </Card>
@@ -64,7 +76,7 @@ export default async function TeacherFinancePage() {
                         <Banknote className="h-4 w-4 text-green-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{formatPrice(currentBalance)}</div>
+                        <div className="text-2xl font-bold text-green-600">{displayPrice(currentBalance)}</div>
                         <p className="text-xs text-muted-foreground">Available for withdrawal</p>
                     </CardContent>
                 </Card>
@@ -111,7 +123,7 @@ export default async function TeacherFinancePage() {
                                     {teacher.payoutRequests.map(payout => (
                                         <TableRow key={payout.id}>
                                             <TableCell>{formatDate(payout.createdAt)}</TableCell>
-                                            <TableCell>{formatPrice(Number(payout.requestedAmount))}</TableCell>
+                                            <TableCell>{displayPrice(Number(payout.requestedAmount))}</TableCell>
                                             <TableCell>
                                                 <Badge variant={payout.status === 'Completed' ? 'default' : 'secondary'}>
                                                     {payout.status}
@@ -144,6 +156,7 @@ export default async function TeacherFinancePage() {
                                 <WithdrawForm
                                     balance={currentBalance}
                                     userId={session.user.id}
+                                    country={user?.country}
                                 />
                             ) : (
                                 <div className="rounded-md bg-yellow-50 p-4">

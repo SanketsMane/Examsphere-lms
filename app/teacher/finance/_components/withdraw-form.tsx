@@ -10,24 +10,30 @@ import { formatPrice } from "@/lib/format";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner"; // Switching to sonner if use-toast not standard or use user's prefered
 
-export function WithdrawForm({ balance, userId }: { balance: number, userId: string }) {
+import { getCurrencyData, convertPrice } from "@/lib/currency";
+
+export function WithdrawForm({ balance, userId, country }: { balance: number, userId: string, country?: string | null }) {
     const [loading, setLoading] = useState(false);
+    const currency = getCurrencyData(country);
 
     async function onSubmit(formData: FormData) {
         setLoading(true);
 
-        const amount = Number(formData.get("amount"));
+        const localAmount = Number(formData.get("amount"));
         const bankAccountName = formData.get("bankAccountName") as string;
         const bankAccountNumber = formData.get("bankAccountNumber") as string;
         const bankName = formData.get("bankName") as string;
 
-        if (amount <= 0) {
+        // Convert back to USD for the backend
+        const usdAmount = localAmount / currency.factor;
+
+        if (usdAmount <= 0) {
             toast.error("Invalid Amount", { description: "Amount must be greater than 0" });
             setLoading(false);
             return;
         }
 
-        if (amount > balance) {
+        if (usdAmount > balance) {
             toast.error("Insufficient Funds", { description: "Amount exceeds available balance" });
             setLoading(false);
             return;
@@ -35,7 +41,7 @@ export function WithdrawForm({ balance, userId }: { balance: number, userId: str
 
         try {
             const result = await requestPayout({
-                amount,
+                amount: usdAmount,
                 bankAccountName,
                 bankAccountNumber,
                 bankName
@@ -45,7 +51,6 @@ export function WithdrawForm({ balance, userId }: { balance: number, userId: str
                 toast.error("Request Failed", { description: result.error });
             } else {
                 toast.success("Request Sent", { description: "Payout request submitted successfully" });
-                // Additional reset logic if needed, typically revalidatePath handles data refresh, form reset manual perhaps
             }
         } catch (error) {
             toast.error("Error", { description: "Something went wrong" });
@@ -54,18 +59,20 @@ export function WithdrawForm({ balance, userId }: { balance: number, userId: str
         }
     }
 
+    const localBalance = convertPrice(balance, country);
+
     return (
         <form action={onSubmit} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="amount">Withdraw Amount</Label>
+                <Label htmlFor="amount">Withdraw Amount ({currency.code})</Label>
                 <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                    <span className="absolute left-3 top-2.5 text-gray-500">{currency.symbol}</span>
                     <Input
                         id="amount"
                         name="amount"
                         type="number"
-                        min="10"
-                        max={balance}
+                        min={convertPrice(10, country)}
+                        max={localBalance}
                         step="0.01"
                         placeholder="0.00"
                         className="pl-7"
@@ -73,7 +80,7 @@ export function WithdrawForm({ balance, userId }: { balance: number, userId: str
                     />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                    Available: {formatPrice(balance)}
+                    Available: {formatPrice(localBalance, currency.code)}
                 </p>
             </div>
 
