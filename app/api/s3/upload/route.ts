@@ -52,11 +52,11 @@ export async function POST(request: Request) {
 
     const { fileName, contentType, size } = validation.data;
 
-    // 1. Enforce 5MB per-file limit
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    // 1. Enforce 500MB per-file limit (Increased from 5MB)
+    const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
     if (size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File size exceeds 5MB limit" },
+        { error: "File size exceeds 500MB limit" },
         { status: 400 }
       );
     }
@@ -72,11 +72,11 @@ export async function POST(request: Request) {
 
     const dbUser = user as any;
     const currentUsed = Number(dbUser.storageUsed || 0);
-    const limit = Number(dbUser.storageLimit || 500 * 1024 * 1024);
+    const limit = Number(dbUser.storageLimit || 5 * 1024 * 1024 * 1024); // Default 5GB
 
     if (currentUsed + size > limit) {
       return NextResponse.json(
-        { error: "Storage limit reached (500MB). Please delete some files or upgrade." },
+        { error: "Storage limit reached (5GB). Please delete some files or upgrade." },
         { status: 400 }
       );
     }

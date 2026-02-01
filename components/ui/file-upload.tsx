@@ -19,15 +19,15 @@ interface FileUploadProps {
     export function FileUpload({ value, onChange, label = "Upload Image", disabled, onFileSelect }: FileUploadProps) {
     const [isUploading, setIsUploading] = useState(false);
 
-    // Author: Sanket - Use S3 presigned URLs for direct upload (no server proxy, no size limits)
+    // Author: Sanket - Use S3 presigned URLs for direct upload (no server proxy)
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         let file = e.target.files?.[0];
         if (!file) return;
 
-        // Force 5MB Limit
-        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+        // Force 500MB Limit (Increased from 5MB)
+        const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
         if (file.size > MAX_FILE_SIZE) {
-            toast.error("File size exceeds 5MB limit. Please upload a smaller file.");
+            toast.error("File size exceeds 500MB limit. Please upload a smaller file.");
             e.target.value = "";
             return;
         }
@@ -54,7 +54,7 @@ interface FileUploadProps {
                     fileName: file.name,
                     contentType: file.type,
                     size: file.size,
-                    isImage: true,
+                    isImage: file.type.startsWith("image/"),
                 }),
             });
 
@@ -90,10 +90,10 @@ interface FileUploadProps {
             // Construct the S3 URL from the key
             const s3Url = `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.s3.${process.env.NEXT_PUBLIC_AWS_REGION || 'eu-north-1'}.amazonaws.com/${key}`;
             onChange(s3Url);
-            toast.success("Image uploaded successfully");
+            toast.success("File uploaded successfully");
         } catch (error: any) {
             console.error("Upload error:", error);
-            toast.error(error.message || "Failed to upload image");
+            toast.error(error.message || "Failed to upload file");
         } finally {
             setIsUploading(false);
         }
@@ -104,12 +104,17 @@ interface FileUploadProps {
             <Label>{label}</Label>
             {value ? (
                 <div className="relative aspect-video w-full max-w-[200px] overflow-hidden rounded-md border">
-                    <Image
-                        src={value}
-                        alt="Upload"
-                        fill
-                        className="object-cover"
-                    />
+                    {/* Check if video or image for preview */}
+                    {value.match(/\.(mp4|webm|ogg)$/i) ? (
+                         <video src={value} className="object-cover w-full h-full" controls />
+                    ) : (
+                        <Image
+                            src={value}
+                            alt="Upload"
+                            fill
+                            className="object-cover"
+                        />
+                    )}
                     <Button
                         type="button"
                         variant="destructive"
@@ -135,12 +140,12 @@ interface FileUploadProps {
                         ) : (
                             <UploadCloud className="mr-2 h-4 w-4" />
                         )}
-                        {isUploading ? "Uploading..." : "Select Image"}
+                        {isUploading ? "Uploading..." : label || "Select File"}
                     </Button>
                     <Input
                         id="file-upload"
                         type="file"
-                        accept="image/*"
+                        accept="image/*,video/*,application/pdf"
                         className="hidden"
                         onChange={handleUpload}
                         disabled={disabled || isUploading}
