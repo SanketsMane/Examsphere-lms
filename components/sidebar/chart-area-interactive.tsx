@@ -88,7 +88,7 @@ export function ChartAreaInteractive({
     <Card className="@container/card">
       <CardHeader>
         <CardTitle>Total {label}</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-gray-700 dark:text-gray-400">
           <span className="hidden @[540px]/card:block">
             Total {label}: {totalNumber.toLocaleString()}
           </span>

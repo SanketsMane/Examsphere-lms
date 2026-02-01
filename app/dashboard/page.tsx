@@ -91,7 +91,9 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground text-sm">Track your learning progress and upcoming classes.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="hidden md:flex">View Calendar</Button>
+          <Link href="/dashboard/calendar" className="hidden md:flex">
+            <Button variant="outline">View Calendar</Button>
+          </Link>
           <Link href="/courses">
             <Button className="bg-[#1e293b] hover:bg-[#0f172a]">Browse Courses</Button>
           </Link>
@@ -151,9 +153,9 @@ export default async function DashboardPage() {
         {/* Right Column (Span 1) */}
         <div className="space-y-6">
           {/* Profile Completion Widget */}
-          <div className="bg-white dark:bg-card rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-card rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-800">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-sm">Profile Status</h3>
+              <h3 className="font-bold text-sm text-gray-900 dark:text-white">Profile Status</h3>
               <Badge variant={completionPercentage === 100 ? "default" : "secondary"} className="text-[10px] px-2 py-0">
                 {completionPercentage}% Complete
               </Badge>
@@ -171,7 +173,7 @@ export default async function DashboardPage() {
                 {profileFields.map((field, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <div className={`w-1.5 h-1.5 rounded-full ${field.value ? "bg-green-500" : "bg-slate-300"}`} />
-                    <span className="text-[11px] text-muted-foreground">{field.label}</span>
+                    <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">{field.label}</span>
                   </div>
                 ))}
               </div>
