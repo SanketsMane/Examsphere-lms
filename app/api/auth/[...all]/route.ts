@@ -32,16 +32,16 @@ async function protect(req: NextRequest) {
     if (typeof body.email === "string") {
       return await protectSignup(req, userId, body.email);
     } else {
-      // Otherwise use general protection with rate limiting
+      // Otherwise use general protection with rate limiting (50 per 2 mins - increased from 5)
       return await protectGeneral(req, userId, {
-        maxRequests: 5,
+        maxRequests: 50,
         windowMs: 120000 // 2 minutes
       });
     }
   } else {
-    // For all other auth requests
+    // For all other auth requests (100 per min - increased from 10)
     return await protectGeneral(req, userId, {
-      maxRequests: 10,
+      maxRequests: 100,
       windowMs: 60000 // 1 minute
     });
   }

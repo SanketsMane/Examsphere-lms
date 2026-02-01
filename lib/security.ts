@@ -160,9 +160,9 @@ export async function protectSignup(
     };
   }
 
-  // Apply rate limiting (5 signups per 2 minutes)
+  // Apply rate limiting (20 signups per 2 minutes - increased from 5)
   const rateLimitOk = rateLimiter.check(identifier, {
-    maxRequests: 5,
+    maxRequests: 20,
     windowMs: 2 * 60 * 1000 // 2 minutes
   });
 
@@ -183,7 +183,7 @@ export async function protectSignup(
 export async function protectGeneral(
   request: Request,
   identifier: string,
-  options: RateLimitOptions = { maxRequests: 10, windowMs: 60000 }
+  options: RateLimitOptions = { maxRequests: 100, windowMs: 60000 } // Increased from 10
 ): Promise<SecurityCheckResult> {
   // Check for bot behavior
   if (detectBot(request)) {

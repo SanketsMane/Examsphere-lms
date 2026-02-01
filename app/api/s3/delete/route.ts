@@ -18,9 +18,9 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    // Apply rate limiting for file deletions (5 per minute)
+    // Apply rate limiting for file deletions (50 per minute)
     const securityCheck = await protectGeneral(request, session?.user.id as string, {
-      maxRequests: 5,
+      maxRequests: 50,
       windowMs: 60000
     });
 

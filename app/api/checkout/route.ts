@@ -26,9 +26,8 @@ export async function POST(req: Request) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
-        // Rate Limit Checkout: 5 per minute
         const clientIP = getClientIP(req) || "unknown";
-        const startCheck = await protectGeneral(req, `${clientIP}:checkout`, { maxRequests: 5, windowMs: 60000 });
+        const startCheck = await protectGeneral(req, `${clientIP}:checkout`, { maxRequests: 50, windowMs: 60000 });
         if (!startCheck.success) {
              return new NextResponse("Too many checkout attempts", { status: 429 });
         }

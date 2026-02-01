@@ -22,7 +22,7 @@ export async function protectAdminAction(userId: string): Promise<ActionSecurity
   });
 
   const result = await protectGeneral(mockRequest, `admin:${userId}`, {
-    maxRequests: 5,
+    maxRequests: 50, // Increased from 5
     windowMs: 60000 // 1 minute window
   });
 
@@ -44,7 +44,7 @@ export async function protectEnrollmentAction(userId: string): Promise<ActionSec
   });
 
   const result = await protectGeneral(mockRequest, `enroll:${userId}`, {
-    maxRequests: 3,
+    maxRequests: 30, // Increased from 3
     windowMs: 60000 // 1 minute window, stricter for enrollments
   });
 
