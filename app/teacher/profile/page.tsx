@@ -25,6 +25,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import Link from "next/link";
+import { constructS3Url } from "@/lib/s3-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -199,7 +200,7 @@ export default function TeacherProfilePage() {
               <div className="flex flex-col md:flex-row items-start md:items-end -mt-12 mb-6 gap-6">
                 <div className="relative">
                   <Avatar className="h-24 w-24 border-4 border-white dark:border-gray-800 shadow-lg">
-                    <AvatarImage src={profile.user?.image || ""} />
+                    <AvatarImage src={constructS3Url(profile.user?.image || "")} />
                     <AvatarFallback className="text-2xl font-bold bg-blue-100 text-blue-700">
                       {profile.user?.name?.charAt(0) || "T"}
                     </AvatarFallback>

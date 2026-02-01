@@ -24,7 +24,7 @@ export async function createGroupClass(data: {
     const session = await requireTeacher();
 
     const teacher = await prisma.teacherProfile.findUnique({
-        where: { userId: session.user.id }
+        where: { userId: (session.user as any).id }
     });
 
     if (!teacher) return { error: "Teacher profile not found" };
@@ -100,7 +100,7 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
                 }
             }),
             prisma.siteSettings.findFirst(),
-            prisma.freeClassUsage.findUnique({ where: { studentId: user.id } })
+            prisma.freeClassUsage.findUnique({ where: { studentId: (user as any).id } })
         ]);
 
         if (!groupClass) return { error: "Group class not found" };
@@ -137,7 +137,7 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
 
         // Check if already enrolled
         const existing = await prisma.groupEnrollment.findFirst({
-            where: { classId: groupId, studentId: user.id }
+            where: { classId: groupId, studentId: (user as any).id }
         });
         if (existing) return { error: "Already requested or enrolled" };
         
@@ -181,7 +181,7 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
             if (finalPrice > 0) {
                  const { deductFromWallet } = await import("./wallet");
                  await deductFromWallet(
-                    user.id,
+                    (user as any).id,
                     finalPrice,
                     "GROUP_ENROLLMENT",
                     `Joined group class: ${groupClass.title}`,
@@ -194,8 +194,8 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
                 // If free, mark usage
                 if (groupClass.price === 0) {
                     await tx.freeClassUsage.upsert({
-                        where: { studentId: user.id },
-                        create: { studentId: user.id, groupUsed: true, groupSessionId: groupClass.id },
+                        where: { studentId: (user as any).id },
+                        create: { studentId: (user as any).id, groupUsed: true, groupSessionId: groupClass.id },
                         update: { groupUsed: true, groupSessionId: groupClass.id }
                     });
                 }
@@ -205,7 +205,7 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
                     await tx.couponUsage.create({
                         data: {
                             couponId,
-                            userId: user.id,
+                            userId: (user as any).id,
                             orderId: `group_${groupClass.id}_${Date.now()}`
                         }
                     });
@@ -218,14 +218,14 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
                 await tx.groupEnrollment.create({
                     data: {
                         classId: groupId,
-                        studentId: user.id,
+                        studentId: (user as any).id,
                         status: "Active"
                     }
                 });
 
                 await tx.notification.create({
                     data: {
-                        userId: user.id,
+                        userId: (user as any).id,
                         title: "Joined Group Class",
                         message: `You've successfully joined "${groupClass.title}".`,
                         type: "Session"
@@ -241,7 +241,7 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
         await prisma.groupEnrollment.create({
             data: {
                 classId: groupId,
-                studentId: user.id,
+                studentId: (user as any).id,
                 status: "Pending" // Note: Normally Stripe would handle completion, 
                 // but this simplified flow records it immediately.
             }
@@ -358,11 +358,11 @@ export async function createGroupChat(groupId: string) {
                 title: group.title + " Chat",
                 participants: {
                     create: [
-                        { userId: session.user.id, isAdmin: true }, // Teacher
+                        { userId: (session.user as any).id, isAdmin: true }, // Teacher
                         ...group.enrollments.map(e => ({ userId: e.studentId })) // Joined students
                     ]
                 }
-            }
+            } as any
         });
 
         await prisma.groupClass.update({

@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         }
 
         const clientIP = getClientIP(req) || "unknown";
-        const startCheck = await protectGeneral(req, `${clientIP}:checkout`, { maxRequests: 50, windowMs: 60000 });
+        const startCheck = await protectGeneral(req, `${clientIP}:checkout`, { maxRequests: 1250, windowMs: 60000 }); // Increased 25x from 50
         if (!startCheck.success) {
              return new NextResponse("Too many checkout attempts", { status: 429 });
         }

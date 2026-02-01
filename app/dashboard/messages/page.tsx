@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatWebSocket } from "@/hooks/use-chat-websocket";
 import { toast } from "sonner";
+import { constructS3Url } from "@/lib/s3-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -324,7 +325,7 @@ export default function MessagesPage() {
                           <CardContent className="p-3">
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-10 w-10">
-                                <AvatarImage src={user.image || ""} />
+                                <AvatarImage src={constructS3Url(user.image || "")} />
                                 <AvatarFallback>
                                   {user.name.charAt(0).toUpperCase()}
                                 </AvatarFallback>
@@ -377,7 +378,7 @@ export default function MessagesPage() {
                       <div className="flex items-start space-x-3">
                         <div className="relative">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={conversation.otherParticipant.image || ""} />
+                            <AvatarImage src={constructS3Url(conversation.otherParticipant.image || "")} />
                             <AvatarFallback>
                               {conversation.otherParticipant.name.charAt(0).toUpperCase()}
                             </AvatarFallback>
@@ -430,7 +431,7 @@ export default function MessagesPage() {
               <div className="flex items-center space-x-3">
                 <div className="relative">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={currentConversation.otherParticipant.image || ""} />
+                    <AvatarImage src={constructS3Url(currentConversation.otherParticipant.image || "")} />
                     <AvatarFallback>
                       {currentConversation.otherParticipant.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -468,7 +469,7 @@ export default function MessagesPage() {
                       <div className={`flex ${isOwn ? "flex-row-reverse" : "flex-row"} items-end space-x-2 max-w-[70%]`}>
                         {showAvatar && !isOwn && (
                           <Avatar className="h-6 w-6">
-                            <AvatarImage src={message.sender.image || ""} />
+                            <AvatarImage src={constructS3Url(message.sender.image || "")} />
                             <AvatarFallback className="text-xs">
                               {message.sender.name.charAt(0).toUpperCase()}
                             </AvatarFallback>
@@ -497,7 +498,7 @@ export default function MessagesPage() {
                   <div className="flex justify-start mb-4">
                     <div className="flex flex-row items-end space-x-2">
                       <Avatar className="h-6 w-6">
-                        <AvatarImage src={currentConversation.otherParticipant.image || ""} />
+                        <AvatarImage src={constructS3Url(currentConversation.otherParticipant.image || "")} />
                         <AvatarFallback className="text-xs">
                           {currentConversation.otherParticipant.name.charAt(0).toUpperCase()}
                         </AvatarFallback>

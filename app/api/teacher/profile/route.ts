@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
           include: {
             user: {
               select: {
+                id: true,
                 name: true,
                 email: true,
                 image: true,
@@ -116,6 +117,23 @@ export async function POST(req: NextRequest) {
           await tx.user.update({
             where: { id: session.user.id },
             data: { role: "teacher" }
+          });
+        }
+
+        // Notify Admins about new application
+        const admins = await tx.user.findMany({
+          where: { role: "admin" },
+          select: { id: true }
+        });
+
+        if (admins.length > 0) {
+          await tx.notification.createMany({
+            data: admins.map(admin => ({
+              userId: admin.id,
+              title: "New Teacher Application",
+              message: `${newProfile.user.name || session.user.email} has applied to become a teacher.`,
+              type: "System",
+            }))
           });
         }
 

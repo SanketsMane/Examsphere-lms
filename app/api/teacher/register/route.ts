@@ -147,6 +147,21 @@ export async function POST(req: NextRequest) {
     });
 
     for (const admin of adminUsers) {
+      // Create database notification for admin
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: "New Teacher Application",
+          message: `${validatedData.name} has applied to become a teacher.`,
+          type: "System",
+          data: {
+            teacherName: validatedData.name,
+            teacherEmail: validatedData.email,
+            profileId: userId // Using user ID as a reference
+          }
+        }
+      });
+
       await sendEmail({
         to: admin.email,
         subject: "New Teacher Application - KIDOKOOL",

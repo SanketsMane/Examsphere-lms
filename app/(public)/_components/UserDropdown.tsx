@@ -18,8 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { constructS3Url } from "@/lib/s3-utils";
 import Link from "next/link";
-
 import { useSignOut } from "@/hooks/use-singout";
 
 interface iAppProps {
@@ -38,7 +38,7 @@ export function UserDropdown({ email, name, image, role }: iAppProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-auto p-0 hover:bg-transparent">
           <Avatar>
-            <AvatarImage src={image} alt="Profile image" />
+            <AvatarImage src={constructS3Url(image)} alt="Profile image" />
             <AvatarFallback>{name[0].toUpperCase()}</AvatarFallback>
           </Avatar>
           <ChevronDownIcon

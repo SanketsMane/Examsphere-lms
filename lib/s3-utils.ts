@@ -16,9 +16,13 @@ export function constructS3Url(key: string): string {
         return key;
     }
 
-    // Construct AWS S3 URL with bucket and region
+    // Construct AWS S3 URL
+    const bucket = env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES;
     const region = env.NEXT_PUBLIC_AWS_REGION || "ap-southeast-2";
-    return `https://${env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.s3.${region}.amazonaws.com/${key}`;
+
+    // Using path-style URL (s3.region.amazonaws.com/bucket/key) 
+    // This is often more compatible with various bucket names and SSL configurations
+    return `https://s3.${region}.amazonaws.com/${bucket}/${key}`;
 }
 
 /**

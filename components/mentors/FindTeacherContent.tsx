@@ -74,6 +74,8 @@ export function FindTeacherContent({
     const [sortBy, setSortBy] = useState("popularity");
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     // New Filters
     const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
@@ -149,6 +151,20 @@ export function FindTeacherContent({
         });
     }, [searchQuery, selectedCategory, selectedSubCategory, priceRange, sortBy, teachers, 
         selectedLanguage, selectedGender, selectedCountry, minRating, experienceRange, isOnlineOnly]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedCategory, selectedSubCategory, priceRange, sortBy, 
+        selectedLanguage, selectedGender, selectedCountry, minRating, experienceRange, isOnlineOnly]);
+
+    // Paginated results
+    const paginatedTeachers = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredTeachers.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredTeachers, currentPage]);
+
+    const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage);
 
     // Scroll detection
     useEffect(() => {
@@ -818,7 +834,9 @@ export function FindTeacherContent({
                             className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#1e293b] p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm"
                         >
                             <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                                Showing <span className="text-slate-900 dark:text-white font-bold">1 - {filteredTeachers.length}</span> of {filteredTeachers.length} Professional Mentors
+                                Showing <span className="text-slate-900 dark:text-white font-bold">
+                                    {filteredTeachers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, filteredTeachers.length)}
+                                </span> of {filteredTeachers.length} Professional Mentors
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-slate-500">Sort By:</span>
@@ -839,9 +857,9 @@ export function FindTeacherContent({
 
                         {/* List */}
                         <AnimatePresence mode="popLayout">
-                            {filteredTeachers.length > 0 ? (
+                            {paginatedTeachers.length > 0 ? (
                                 <div className="flex flex-col gap-6">
-                                    {filteredTeachers.map((teacher, index) => (
+                                    {paginatedTeachers.map((teacher, index) => (
                                         <motion.div
                                             key={teacher.id}
                                             layout
@@ -871,14 +889,37 @@ export function FindTeacherContent({
                         </AnimatePresence>
 
                         {/* Pagination Visual */}
-                        {filteredTeachers.length > 0 && (
+                        {totalPages > 1 && (
                             <div className="flex justify-center mt-12 gap-2">
-                                <Button variant="outline" size="icon" disabled>{'<'}</Button>
-                                <Button variant="default" size="icon" className="bg-blue-600 hover:bg-blue-700 text-white">1</Button>
-                                <Button variant="outline" size="icon">2</Button>
-                                <Button variant="outline" size="icon">3</Button>
-                                <Button variant="ghost" size="icon">...</Button>
-                                <Button variant="outline" size="icon">{'>'}</Button>
+                                <Button 
+                                    variant="outline" 
+                                    size="icon" 
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    {'<'}
+                                </Button>
+                                
+                                {Array.from({ length: totalPages }).map((_, i) => (
+                                    <Button 
+                                        key={i + 1}
+                                        variant={currentPage === i + 1 ? "default" : "outline"}
+                                        size="icon"
+                                        className={currentPage === i + 1 ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                                        onClick={() => setCurrentPage(i + 1)}
+                                    >
+                                        {i + 1}
+                                    </Button>
+                                ))}
+                                
+                                <Button 
+                                    variant="outline" 
+                                    size="icon"
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    {'>'}
+                                </Button>
                             </div>
                         )}
                     </div>

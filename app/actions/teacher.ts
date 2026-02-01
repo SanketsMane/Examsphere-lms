@@ -41,6 +41,16 @@ export async function approveTeacher(profileId: string) {
             );
         }
 
+        // Create database notification for the teacher
+        await prisma.notification.create({
+            data: {
+                userId: teacher.userId,
+                title: "Profile Approved",
+                message: "Congratulations! Your teacher profile has been approved. You can now start teaching.",
+                type: "System"
+            }
+        });
+
         revalidatePath("/admin/team");
         revalidatePath("/admin/verification");
         return { success: true };
@@ -97,6 +107,16 @@ export async function rejectTeacher(profileId: string, userId: string) {
                 "Please review your documents and profile information, then submit again."
             );
         }
+
+        // Create database notification for the teacher
+        await prisma.notification.create({
+            data: {
+                userId: teacher.userId,
+                title: "Application Status Update",
+                message: "Your teacher application was not approved. Please check your email for details and re-submit your profile.",
+                type: "System"
+            }
+        });
 
         revalidatePath("/admin/team");
         revalidatePath("/admin/verification");

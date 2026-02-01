@@ -19,6 +19,7 @@ import {
 import { requireAdmin } from "@/app/data/auth/require-roles";
 import { getPendingPayouts } from "@/app/data/admin/verification-data";
 import { prisma } from "@/lib/db";
+import { constructS3Url } from "@/lib/s3-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -144,7 +145,7 @@ export default async function PayoutSystemPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
                           <Avatar>
-                            <AvatarImage src={payout.teacher.user.image || undefined} />
+                            <AvatarImage src={constructS3Url(payout.teacher.user.image || "")} />
                             <AvatarFallback>
                               {payout.teacher.user.name?.split(' ').map(n => n[0]).join('') || '?'}
                             </AvatarFallback>
@@ -222,7 +223,7 @@ export default async function PayoutSystemPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <Avatar>
-                            <AvatarImage src={payout.teacher.user.image || undefined} />
+                            <AvatarImage src={constructS3Url(payout.teacher.user.image || "")} />
                             <AvatarFallback>
                               {payout.teacher.user.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>

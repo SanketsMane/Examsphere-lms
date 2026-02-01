@@ -4,6 +4,7 @@ import { getFeaturedMentors } from "@/app/data/marketing/get-marketing-data";
 import { auth } from "@/lib/auth";
 import { getCurrencyData } from "@/lib/currency";
 import { headers } from "next/headers";
+import { constructS3Url } from "@/lib/s3-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export default async function FindTeacherPage() {
     const formattedTeachers = teachers.map(t => ({
         id: t.id,
         name: t.user.name || "Instructor",
-        image: t.user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.user.name || "Instructor")}&background=random&color=fff&size=128`,
+        image: constructS3Url(t.user.image || "") || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.user.name || "Instructor")}&background=random&color=fff&size=128`,
         headline: t.bio ? t.bio.substring(0, 50) + "..." : "Expert Instructor",
         rating: t.rating || 5.0,
         reviewCount: t.totalReviews,

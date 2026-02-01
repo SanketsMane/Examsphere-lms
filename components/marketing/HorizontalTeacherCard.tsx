@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { constructS3Url } from "@/lib/s3-utils";
 
 interface TeacherCardProps {
     teacher: {
@@ -56,7 +57,7 @@ export function HorizontalTeacherCard({ teacher, currency = { code: "USD", symbo
                 <div className="relative w-full aspect-[4/3] mb-4">
                     <div className="w-full h-full rounded-lg overflow-hidden shadow-sm relative">
                         <Image
-                            src={teacher.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.name)}&background=random&color=fff&size=128`}
+                            src={constructS3Url(teacher.image) || `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.name)}&background=random&color=fff&size=128`}
                             alt={teacher.name}
                             fill
                             sizes="(max-width: 768px) 100vw, 300px"

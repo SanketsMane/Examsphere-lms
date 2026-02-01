@@ -16,6 +16,7 @@ import { Uploader } from "@/components/file-uploader/Uploader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
+import { constructS3Url } from "@/lib/s3-utils";
 
 const initialState = {
     message: "",
@@ -62,7 +63,7 @@ export function SettingsForm({ user, preferences, categories }: SettingsFormProp
                     <CardContent className="space-y-6">
                         <div className="flex items-center gap-6">
                             <Avatar className="h-20 w-20">
-                                <AvatarImage src={user.image || ""} />
+                                <AvatarImage src={constructS3Url(user.image || "")} />
                                 <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">

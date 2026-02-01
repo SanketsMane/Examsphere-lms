@@ -18,6 +18,7 @@ import {
 } from "@tabler/icons-react";
 import { prisma } from "@/lib/db";
 import { TeacherActions } from "./_components/TeacherActions";
+import { constructS3Url } from "@/lib/s3-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -114,7 +115,7 @@ export default async function AdminTeamPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={member.image || ""} alt={member.name || "User"} />
+                        <AvatarImage src={constructS3Url(member.image || "")} alt={member.name || "User"} />
                         <AvatarFallback>
                           {member.name?.split(" ").map(n => n[0]).join("") || "U"}
                         </AvatarFallback>

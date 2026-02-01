@@ -21,6 +21,7 @@ import { requireAdmin } from "@/app/data/auth/require-roles";
 import { getPendingVerifications } from "@/app/data/admin/verification-data";
 import { prisma } from "@/lib/db";
 import { TeacherApprovalActions } from "./_components/TeacherApprovalActions";
+import { constructS3Url } from "@/lib/s3-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -112,7 +113,7 @@ export default async function ProfileVerificationPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <Avatar>
-                            <AvatarImage src={verification.teacher.user.image || undefined} />
+                            <AvatarImage src={constructS3Url(verification.teacher.user.image || "")} />
                             <AvatarFallback>
                               {verification.teacher.user.name?.split(' ').map(n => n[0]).join('') || '?'}
                             </AvatarFallback>
@@ -253,7 +254,7 @@ function DocumentLink({ url, index }: { url: string; index?: number }) {
     ? url
     : isMock
       ? "#"
-      : `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.fly.storage.tigris.dev/${url}`;
+      : constructS3Url(url);
 
   const label = isUrl ? url.split('/').pop() : url;
 

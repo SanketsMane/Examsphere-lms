@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireTeacher } from "@/lib/action-security";
 import { sendTeacherVerificationSubmissionEmail } from "@/lib/email-notifications";
 import { env } from "@/lib/env";
+import { constructS3Url } from "@/lib/s3-utils";
 
 export async function saveBankDetails(data: {
     bankAccountName: string;
@@ -139,12 +140,8 @@ export async function submitVerification() {
 
     // Helper to format links
     const formatLink = (url: string) => {
-        // Construct full URL if needed (User mock or S3)
-        // If mocked, it's just a string key. If from S3, it might also be just a key.
-        // Assuming we need to prepend bucket URL unless it's a full URL.
-        const fullUrl = url.startsWith('http')
-            ? url
-            : `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.fly.storage.tigris.dev/${url}`;
+        // Construct full URL using centralized utility
+        const fullUrl = constructS3Url(url);
         const name = url.split('/').pop() || "Document";
         return `<a href="${fullUrl}" class="doc-link" target="_blank">${name}</a>`;
     };
@@ -166,10 +163,25 @@ export async function submitVerification() {
         // Notify Admins
         const admins = await prisma.user.findMany({
             where: { role: 'admin' },
-            select: { email: true, name: true }
+            select: { id: true, email: true, name: true }
         });
 
         for (const admin of admins) {
+            // Create database notification for admin
+            await prisma.notification.create({
+                data: {
+                    userId: admin.id,
+                    title: "Verification Request",
+                    message: `${session.user.name || "A teacher"} has submitted documents for verification.`,
+                    type: "System",
+                    data: {
+                        teacherId: teacher.id,
+                        teacherName: session.user.name,
+                        verificationId: verification.id
+                    }
+                }
+            });
+
             if (admin.email) {
                 await sendTeacherVerificationSubmissionEmail(
                     admin.email,

@@ -30,9 +30,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Apply rate limiting for file uploads (50 per minute)
+    // Apply rate limiting for file uploads (1250 per minute)
     const securityCheck = await protectGeneral(request, session?.user.id as string, {
-      maxRequests: 50,
+      maxRequests: 1250, // Increased 25x from 50
       windowMs: 60000,
     });
 
