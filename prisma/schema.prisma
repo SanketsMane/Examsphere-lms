@@ -372,6 +372,7 @@ model SessionBooking {
   status                BookingStatus @default(pending)
   amount                Int
   stripeSessionId       String?       @unique
+  razorpayOrderId       String?       @unique
   stripePaymentIntentId String?
   paymentCompletedAt    DateTime?
   cancelledAt           DateTime?
@@ -1655,4 +1656,5 @@ enum TransactionType {
   COURSE_PURCHASE
   WALLET_RECHARGE
   WITHDRAWAL
+  SESSION_BOOKING
 }

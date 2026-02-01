@@ -139,6 +139,60 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ status: "ok" });
             }
 
+            // 3. Check if this is a Session Booking (LiveSession)
+            const sessionBooking = await prisma.sessionBooking.findFirst({
+                 where: { id: payment.notes.bookingId } 
+            }) || await prisma.sessionBooking.findFirst({
+                 where: { stripeSessionId: orderId } // Backup if we reused stripeSessionId field
+            });
+            // Note: In our checkout/session API we did not set stripeSessionId to orderId immediately to avoid unique constraint if empty?
+            // Actually we didn't set it at all. We should rely on `notes.bookingId`.
+            
+            if (sessionBooking || (payment.notes.type === "SESSION_BOOKING" && payment.notes.bookingId)) {
+                 const bookingId = sessionBooking?.id || payment.notes.bookingId;
+                 
+                 const booking = await prisma.sessionBooking.findUnique({
+                     where: { id: bookingId },
+                     include: { session: true }
+                 });
+
+                 if (booking) {
+                      if (booking.status !== "confirmed") {
+                           await prisma.sessionBooking.update({
+                               where: { id: booking.id },
+                               data: {
+                                   status: "confirmed",
+                                   stripeSessionId: orderId, // Store Razorpay Order ID here for reference
+                                   paymentCompletedAt: new Date(),
+                               }
+                           });
+                           
+                           // Log Transaction
+                           await prisma.systemTransaction.create({
+                                data: {
+                                    amount: payment.amount,
+                                    currency: payment.currency,
+                                    status: "SUCCESS",
+                                    method: payment.method,
+                                    providerOrderId: orderId,
+                                    providerPaymentId: payment.id,
+                                    type: "SESSION_BOOKING",
+                                    description: `Session Booking: ${booking.session.title}`,
+                                    userId: booking.studentId,
+                                    metadata: {
+                                        sessionId: booking.sessionId,
+                                        bookingId: booking.id,
+                                        email: payment.email
+                                    }
+                                }
+                           });
+
+                           console.log(`Session Booking ${booking.id} confirmed via Razorpay`);
+                      }
+                      return NextResponse.json({ status: "ok" });
+                 }
+            }
+
             console.log(`Razorpay order ${orderId} match not found in local DB`);
         }
 

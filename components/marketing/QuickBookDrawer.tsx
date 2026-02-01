@@ -7,12 +7,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Clock, CalendarDays, ArrowRight } from "lucide-react";
+import { CheckCircle2, Clock, CalendarDays, ArrowRight, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { useRazorpay } from "@/components/payment/use-razorpay";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 
 interface QuickBookDrawerProps {
     teacher: {
-        id: string;
+        id: string; // This is teacher.id (TeacherProfile ID) ? Correct.
         name: string;
         image: string;
         headline: string;
@@ -26,10 +30,71 @@ interface QuickBookDrawerProps {
 export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickBookDrawerProps) {
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [timeSlot, setTimeSlot] = useState<string | undefined>();
+    const [isLoading, setIsLoading] = useState(false);
+    const { openCheckout } = useRazorpay();
+    const router = useRouter();
 
     const timeSlots = [
         "09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "04:00 PM", "06:00 PM"
     ];
+
+    const handlePayment = async () => {
+        if (!date || !timeSlot) return;
+
+        setIsLoading(true);
+        try {
+            const dateTimeStr = `${format(date, 'yyyy-MM-dd')} ${timeSlot}`;
+
+            const response = await fetch("/api/checkout/session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    teacherProfileId: teacher.id,
+                    dateTime: dateTimeStr,
+                    couponCode: "" // Support coupon later if needed
+                })
+            });
+
+            if (response.status === 401) {
+                toast.error("Please login to book a session");
+                router.push("/login?callbackUrl=" + window.location.pathname);
+                return;
+            }
+
+            if (!response.ok) {
+                const error = await response.text();
+                toast.error(error || "Failed to initiate booking");
+                return;
+            }
+
+            const orderData = await response.json();
+
+            await openCheckout({
+                orderId: orderData.orderId,
+                keyId: orderData.keyId,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: orderData.courseName,
+                description: orderData.courseDescription,
+                user: orderData.user,
+                onSuccess: (paymentId) => {
+                    toast.success("Booking Confirmed!");
+                    if (onOpenChange) onOpenChange(false);
+                    router.push("/dashboard/sessions");
+                },
+                onError: (error) => {
+                    toast.error("Payment Failed");
+                    console.error(error);
+                }
+            });
+
+        } catch (error) {
+            console.error(error);
+            toast.error("Something went wrong");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -64,6 +129,7 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                                     selected={date}
                                     onSelect={setDate}
                                     className="rounded-md border-0"
+                                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                 />
                             </div>
                         </div>
@@ -109,9 +175,18 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                 <SheetFooter className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-muted/10">
                     <Button
                         className="w-full h-12 text-base font-bold shadow-lg shadow-primary/20"
-                        disabled={!date || !timeSlot}
+                        disabled={!date || !timeSlot || isLoading}
+                        onClick={handlePayment}
                     >
-                        Proceed to Payment <ArrowRight className="ml-2 w-4 h-4" />
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
+                            </>
+                        ) : (
+                            <>
+                                Proceed to Payment <ArrowRight className="ml-2 w-4 h-4" />
+                            </>
+                        )}
                     </Button>
                 </SheetFooter>
             </SheetContent>
