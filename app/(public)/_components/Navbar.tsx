@@ -39,7 +39,7 @@ export function Navbar({ settings }: { settings?: any }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Construct proper logo URL from S3 key if needed
-  const logoSrc = settings?.logo 
+  const logoSrc = settings?.logo && settings.logo.trim() !== ""
     ? (settings.logo.startsWith('http') ? settings.logo : constructS3Url(settings.logo))
     : Logo;
   const siteName = settings?.siteName || "KIDOKOOL";
