@@ -8,6 +8,7 @@ import { getS3Client } from "@/lib/S3Client";
 import { protectGeneral } from "@/lib/security";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,46 @@ export async function POST(request: Request) {
       );
     }
 
-    const { fileName, contentType } = validation.data;
+    const { fileName, contentType, size } = validation.data;
+
+    // 1. Enforce 1MB per-file limit
+    const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+    if (size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File size exceeds 1MB limit" },
+        { status: 400 }
+      );
+    }
+
+    // 2. Fetch user to check total storage limit
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const currentUsed = Number(user.storageUsed);
+    const limit = Number(user.storageLimit);
+
+    if (currentUsed + size > limit) {
+      return NextResponse.json(
+        { error: "Storage limit reached (500MB). Please delete some files or upgrade." },
+        { status: 400 }
+      );
+    }
+
+    // 3. Increment storageUsed (reservation)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        storageUsed: {
+          increment: size
+        }
+      }
+    });
+
     const uniqueKey = `${uuidv4()}-${fileName}`;
 
     // Author: Sanket - Include ContentType to ensure proper file serving

@@ -62,6 +62,10 @@ model User {
   savedByStudents             StudentSavedTutor[]      @relation("TutorSavedBy")
   freeClassUsage              FreeClassUsage?
   couponUsage                 CouponUsage[]
+  
+  // Storage Limits (in bytes)
+  storageUsed                 BigInt                   @default(0)
+  storageLimit                BigInt                   @default(524288000) // Default 500 MB
 
   @@map("user")
 }

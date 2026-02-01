@@ -94,6 +94,18 @@ export async function deleteResource(resourceId: string) {
             throw new Error("Resource not found or unauthorized");
         }
 
+        // Reclaim storage
+        if (resource.size) {
+            await prisma.user.update({
+                where: { id: teacher.userId },
+                data: {
+                    storageUsed: {
+                        decrement: resource.size
+                    }
+                }
+            });
+        }
+
         await prisma.resource.delete({
             where: { id: resourceId }
         });
