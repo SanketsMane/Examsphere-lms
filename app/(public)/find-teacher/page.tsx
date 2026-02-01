@@ -35,7 +35,11 @@ export default async function FindTeacherPage() {
 
     // Fetch Advertised Packages (Group Classes)
     const packages = await prisma.groupClass.findMany({
-        where: { isAdvertised: true, status: "Scheduled" },
+        where: { 
+            isAdvertised: true, 
+            status: "Scheduled",
+            scheduledAt: { gt: new Date() } // Only future classes
+        },
         include: { teacher: { include: { user: true } } },
         orderBy: { scheduledAt: 'asc' }
     });
