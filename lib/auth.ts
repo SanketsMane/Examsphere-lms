@@ -12,6 +12,7 @@ const authOptions = {
   database: prismaAdapter(prisma, {
     provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   secret: process.env.BETTER_AUTH_SECRET || (process.env.NODE_ENV === "production" ? (() => { throw new Error("BETTER_AUTH_SECRET is missing in production"); })() : "dummy_secret_for_dev_only"),
   trustedOrigins: [
     "http://localhost:3000", // Keep localhost for dev
