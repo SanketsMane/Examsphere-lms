@@ -161,32 +161,7 @@ export function SettingsForm({ user, preferences, categories }: SettingsFormProp
                     </CardContent>
                 </Card>
 
-                {/* Security Settings */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ShieldCheck className="h-5 w-5" />
-                            Security
-                        </CardTitle>
-                        <CardDescription>Manage your account security and password</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="current-password">Current Password</Label>
-                                <Input id="current-password" type="password" placeholder="••••••••" disabled />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="new-password">New Password</Label>
-                                <Input id="new-password" type="password" placeholder="••••••••" disabled />
-                            </div>
-                        </div>
-                        <p className="text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                            Password management is currently handled via your initial sign-up method.
-                            Individual password change UI coming soon.
-                        </p>
-                    </CardContent>
-                </Card>
+
 
                 {/* Notification Settings */}
                 <Card>
