@@ -30,15 +30,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Apply rate limiting for file uploads (1250 per minute)
-    const securityCheck = await protectGeneral(request, session?.user.id as string, {
-      maxRequests: 1250, // Increased 25x from 50
-      windowMs: 60000,
-    });
-
-    if (!securityCheck.success) {
-      return NextResponse.json({ error: securityCheck.error }, { status: securityCheck.status });
-    }
+    // Rate limiting removed as per user request
 
     const body = await request.json();
     const validation = fileUploadSchema.safeParse(body);
