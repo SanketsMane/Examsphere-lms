@@ -80,6 +80,23 @@ const data = {
       title: "Payments",
       url: "/admin/payments",
       icon: IconCreditCard,
+      items: [
+        {
+          title: "All Transactions",
+          url: "/admin/payments/transactions",
+          icon: IconListDetails,
+        },
+        {
+          title: "Withdraw Requests",
+          url: "/admin/payments/payouts",
+          icon: IconWallet,
+        },
+        {
+          title: "Refund Requests",
+          url: "/admin/payments/refunds",
+          icon: IconTicket,
+        },
+      ],
     },
     {
       title: "Coupons",

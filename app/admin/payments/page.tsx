@@ -2,7 +2,7 @@ import { requireUser } from "@/app/data/user/require-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { IconCreditCard, IconTrendingUp, IconDownload } from "@tabler/icons-react";
+import { IconCreditCard, IconTrendingUp, IconDownload, IconWallet } from "@tabler/icons-react";
 import { prisma as db } from "@/lib/db";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -35,11 +35,23 @@ export default async function PaymentsPage() {
           </h1>
           <p className="text-muted-foreground">Monitor platform revenue and transactions</p>
         </div>
-        <div>
+        <div className="flex gap-2">
             <Link href="/admin/payments/transactions">
-                <Button>
+                <Button variant="outline">
                     <IconTrendingUp className="mr-2 h-4 w-4" />
-                    Transaction Logs
+                    Transactions
+                </Button>
+            </Link>
+            <Link href="/admin/payments/payouts">
+                <Button variant="outline">
+                    <IconWallet className="mr-2 h-4 w-4" />
+                    Withdrawals
+                </Button>
+            </Link>
+            <Link href="/admin/payments/refunds">
+                <Button variant="outline">
+                    <IconCreditCard className="mr-2 h-4 w-4" />
+                    Refunds
                 </Button>
             </Link>
         </div>

@@ -37,7 +37,7 @@ export default async function TeacherProfilePage({ params }: Props) {
                         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 text-center">
                             <div className="relative w-32 h-32 mx-auto mb-4">
                                 <Image
-                                    src={constructS3Url(teacher.user.image) || "https://github.com/shadcn.png"}
+                                    src={teacher.user.image ? constructS3Url(teacher.user.image) : "https://github.com/shadcn.png"}
                                     alt={teacher.user.name || "Instructor"}
                                     fill
                                     className="object-cover rounded-full border-4 border-blue-50 dark:border-blue-900"
