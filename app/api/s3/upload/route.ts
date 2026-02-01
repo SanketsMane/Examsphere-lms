@@ -52,11 +52,11 @@ export async function POST(request: Request) {
 
     const { fileName, contentType, size } = validation.data;
 
-    // 1. Enforce 1MB per-file limit
-    const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+    // 1. Enforce 5MB per-file limit
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     if (size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File size exceeds 1MB limit" },
+        { error: "File size exceeds 5MB limit" },
         { status: 400 }
       );
     }

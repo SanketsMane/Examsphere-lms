@@ -24,10 +24,10 @@ interface FileUploadProps {
         let file = e.target.files?.[0];
         if (!file) return;
 
-        // Force 1MB Limit
-        const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+        // Force 5MB Limit
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
         if (file.size > MAX_FILE_SIZE) {
-            toast.error("File size exceeds 1MB limit. Please upload a smaller file.");
+            toast.error("File size exceeds 5MB limit. Please upload a smaller file.");
             e.target.value = "";
             return;
         }
