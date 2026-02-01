@@ -59,7 +59,7 @@ export function BookingWidget({
             <div className="flex items-center justify-between mb-6 pb-6 border-b border-border">
                 <span className="text-muted-foreground">Hourly Rate</span>
                 <span className="text-2xl font-bold text-primary">
-                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(hourlyRate / 100)}
+                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(hourlyRate)}
                 </span>
             </div>
 

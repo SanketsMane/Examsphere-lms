@@ -31,7 +31,7 @@ interface TeacherCardProps {
     currency?: { code: string; symbol: string; factor: number };
 }
 
-export function HorizontalTeacherCard({ teacher, currency = { code: "USD", symbol: "$", factor: 1 } }: TeacherCardProps) {
+export function HorizontalTeacherCard({ teacher, currency = { code: "INR", symbol: "₹", factor: 1 } }: TeacherCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
 

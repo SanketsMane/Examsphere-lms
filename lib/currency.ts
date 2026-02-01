@@ -1,14 +1,14 @@
 
 export const CURRENCIES = {
-  USD: { code: "USD", symbol: "$", factor: 1 },
-  INR: { code: "INR", symbol: "₹", factor: 80 }, // Example conversion rate
-  AED: { code: "AED", symbol: "AED", factor: 3.67 }, // Example conversion rate
+  INR: { code: "INR", symbol: "₹", factor: 1 },
+  USD: { code: "USD", symbol: "$", factor: 0.012 }, // Approx conversion from INR
+  AED: { code: "AED", symbol: "AED", factor: 0.044 }, // Approx conversion from INR
 };
 
 export type CurrencyCode = keyof typeof CURRENCIES;
 
 export const countryToCurrency = (country?: string | null): CurrencyCode => {
-  if (!country) return "USD";
+  if (!country) return "INR";
   
   const normalizedCountry = country.toLowerCase().trim();
   
@@ -16,7 +16,7 @@ export const countryToCurrency = (country?: string | null): CurrencyCode => {
   if (normalizedCountry === "uae" || normalizedCountry === "united arab emirates" || normalizedCountry === "dubai") return "AED";
   if (normalizedCountry === "usa" || normalizedCountry === "united states") return "USD";
   
-  return "USD"; // Default to USD for all except India and Dubai
+  return "INR"; // Default to INR
 };
 
 export const getCurrencyData = (country?: string | null) => {
