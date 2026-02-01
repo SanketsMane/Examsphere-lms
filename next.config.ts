@@ -60,6 +60,14 @@ const nextConfig: NextConfig = {
       // Merged from next.config.js
       {
           protocol: 'https',
+          hostname: 's3.ap-southeast-2.amazonaws.com',
+      },
+      {
+          protocol: 'https',
+          hostname: 's3.**.amazonaws.com',
+      },
+      {
+          protocol: 'https',
           hostname: '**.s3.**.amazonaws.com',
       },
       {
