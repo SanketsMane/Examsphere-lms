@@ -33,6 +33,7 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
     const [isLoading, setIsLoading] = useState(false);
     const { openCheckout } = useRazorpay();
     const router = useRouter();
+    const [imgSrc, setImgSrc] = useState(teacher.image);
 
     const timeSlots = [
         "09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "04:00 PM", "06:00 PM"
@@ -43,7 +44,17 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
 
         setIsLoading(true);
         try {
-            const dateTimeStr = `${format(date, 'yyyy-MM-dd')} ${timeSlot}`;
+            // Parse Time Slot to get Hours/Minutes
+            const [time, period] = timeSlot.split(' ');
+            let [hours, minutes] = time.split(':').map(Number);
+            if (period === 'PM' && hours !== 12) hours += 12;
+            if (period === 'AM' && hours === 12) hours = 0;
+
+            const bookingDate = new Date(date);
+            bookingDate.setHours(hours, minutes, 0, 0);
+            
+            // Send ISO String to ensure backend parses it correctly
+            const dateTimeStr = bookingDate.toISOString();
 
             const response = await fetch("/api/checkout/session", {
                 method: "POST",
@@ -107,11 +118,12 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                 <SheetHeader className="p-6 border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-4">
                         <Image
-                            src={teacher.image}
+                            src={imgSrc}
                             alt={teacher.name}
                             width={50}
                             height={50}
-                            className="rounded-full object-cover border-2 border-primary/10"
+                            className="rounded-full object-cover border-2 border-primary/10 w-12 h-12"
+                            onError={() => setImgSrc("https://ui-avatars.com/api/?name=" + teacher.name)}
                         />
                         <div>
                             <SheetTitle className="text-lg font-bold">Book a Trial with {teacher.name.split(' ')[0]}</SheetTitle>
@@ -127,12 +139,12 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                             <Label className="font-bold flex items-center gap-2">
                                 <CalendarDays className="w-4 h-4 text-primary" /> Select Date
                             </Label>
-                            <div className="border rounded-xl p-3 bg-gray-50/50 dark:bg-muted/20 flex justify-center">
+                            <div className="border rounded-xl p-3 bg-gray-50/50 dark:bg-muted/20">
                                 <Calendar
                                     mode="single"
                                     selected={date}
                                     onSelect={setDate}
-                                    className="rounded-md border-0"
+                                    className="rounded-md border-0 w-full flex justify-center"
                                     disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                 />
                             </div>
@@ -149,7 +161,7 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                                         <RadioGroupItem value={time} id={time} className="peer sr-only" />
                                         <Label
                                             htmlFor={time}
-                                            className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary cursor-pointer transition-all text-xs font-medium"
+                                            className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-2 hover:bg-primary/5 hover:border-primary/50 cursor-pointer transition-all text-xs font-medium text-center peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-white shadow-sm"
                                         >
                                             {time}
                                         </Label>
@@ -158,7 +170,18 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                             </RadioGroup>
                         </div>
 
-                        {/* Summary */}
+                        {/* Summary & Feedback */}
+                        {(date || timeSlot) && (
+                            <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-1">
+                                <p className="text-xs font-bold text-primary uppercase tracking-wider">Selected Slot</p>
+                                <div className="flex justify-between items-center text-sm font-medium">
+                                    <span>{date ? format(date, "EEE, MMM d, yyyy") : "Date not selected"}</span>
+                                    <span>{timeSlot || "Time not selected"}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Cost Summary */}
                         <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Rate (1 Hour)</span>

@@ -1,6 +1,7 @@
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { env } from "@/lib/env";
 import { protectGeneral, getClientIP } from "@/lib/security";
 import { logger } from "@/lib/logger";
