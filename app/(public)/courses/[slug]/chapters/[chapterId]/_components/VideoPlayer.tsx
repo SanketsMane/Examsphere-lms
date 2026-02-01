@@ -3,6 +3,7 @@
 import { Loader2, Lock } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { constructS3Url } from "@/lib/s3-utils";
 
 interface VideoPlayerProps {
     videoKey?: string | null;
@@ -24,11 +25,24 @@ export function VideoPlayer({
     const [isReady, setIsReady] = useState(false);
 
     // Determine source
-    // If videoKey exists (UploadThing), construct URL
-    // If videoUrl exists (External/Vimeo/Youtube), use it (might need specific handling)
+    // If videoKey exists, it could be either:
+    // 1. UploadThing key (starts with specific pattern)
+    // 2. S3 key (UUID-like pattern)
+    // If videoUrl exists (External/Vimeo/Youtube), use it
 
-    const uploadThingUrl = videoKey ? `https://utfs.io/f/${videoKey}` : null;
-    const sourceUrl = uploadThingUrl || videoUrl;
+    let sourceUrl: string | null = null;
+    
+    if (videoKey) {
+        // Check if it's an UploadThing key (typically shorter, alphanumeric)
+        if (videoKey.length < 40 && !videoKey.includes('-')) {
+            sourceUrl = `https://utfs.io/f/${videoKey}`;
+        } else {
+            // Assume it's an S3 key
+            sourceUrl = constructS3Url(videoKey);
+        }
+    } else if (videoUrl) {
+        sourceUrl = videoUrl;
+    }
 
     if (isLocked) {
         return (
@@ -55,12 +69,15 @@ export function VideoPlayer({
                 </div>
             )}
 
-            {/* Standard HTML5 Video for UploadThing/MP4 */}
+            {/* Standard HTML5 Video for UploadThing/S3/MP4 */}
             <video
                 src={sourceUrl}
                 className={cn("w-full h-full", !isReady && "opacity-0")}
                 controls
                 autoPlay={autoPlay}
+                preload="metadata"
+                playsInline
+                crossOrigin="anonymous"
                 onLoadedData={() => setIsReady(true)}
                 onEnded={onEnded}
             />

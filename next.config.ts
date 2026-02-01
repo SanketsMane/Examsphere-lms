@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
   },
 
   images: {
+    loader: 'custom',
+    loaderFile: './lib/image-loader.ts',
     remotePatterns: [
       {
         protocol: "https",
@@ -83,6 +85,15 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [
+      {
+        source: '/_next/image(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [
