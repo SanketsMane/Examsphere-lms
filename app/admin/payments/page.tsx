@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { IconCreditCard, IconTrendingUp, IconDownload } from "@tabler/icons-react";
 import { prisma as db } from "@/lib/db";
 import { format } from "date-fns";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,14 @@ export default async function PaymentsPage() {
           </h1>
           <p className="text-muted-foreground">Monitor platform revenue and transactions</p>
         </div>
-
+        <div>
+            <Link href="/admin/payments/transactions">
+                <Button>
+                    <IconTrendingUp className="mr-2 h-4 w-4" />
+                    Transaction Logs
+                </Button>
+            </Link>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-4 gap-4">

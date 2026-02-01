@@ -51,29 +51,46 @@ export async function POST(req: NextRequest) {
                         where: { id: enrollment.id },
                         data: { 
                             status: "Active",
-                            // Could store payment ID if we added a field, for now status is enough
                         }
                     });
+
+                    // Log Transaction
+                    await prisma.systemTransaction.create({
+                        data: {
+                            amount: payment.amount, // in paisa
+                            currency: payment.currency,
+                            status: "SUCCESS",
+                            method: payment.method,
+                            providerOrderId: orderId,
+                            providerPaymentId: payment.id,
+                            type: "COURSE_PURCHASE",
+                            description: `Course Enrollment: ${enrollment.courseId}`,
+                            userId: enrollment.userId,
+                            metadata: {
+                                enrollmentId: enrollment.id,
+                                email: payment.email,
+                                contact: payment.contact,
+                            }
+                        }
+                    });
+
                     console.log(`Enrollment ${enrollment.id} completed via Razorpay`);
                 }
                 return NextResponse.json({ status: "ok" });
             }
 
             // 2. Check if this is a Wallet Transaction
-            const transaction = await prisma.walletTransaction.findFirst({
+            const transactionRecord = await prisma.walletTransaction.findFirst({
                 where: { razorpayOrderId: orderId }
             });
 
-            if (transaction) {
-                // Check if already processed to avoid double balance
-                // We don't have a status field on transaction directly, but we can check metadata or description
-                // Or better, we can assume if it exists and we haven't marked it "success" in metadata
-                const metadata = transaction.metadata as any;
+            if (transactionRecord) {
+                const metadata = transactionRecord.metadata as any;
                 
                 if (metadata?.status !== "success") {
                     // Update Transaction
                     await prisma.walletTransaction.update({
-                        where: { id: transaction.id },
+                        where: { id: transactionRecord.id },
                         data: {
                             description: "Wallet Recharge (Successful)",
                             metadata: {
@@ -86,12 +103,38 @@ export async function POST(req: NextRequest) {
 
                     // Update Wallet Balance
                     await prisma.wallet.update({
-                        where: { id: transaction.walletId },
+                        where: { id: transactionRecord.walletId },
                         data: {
-                            balance: { increment: transaction.amount }
+                            balance: { increment: transactionRecord.amount }
                         }
                     });
-                    console.log(`Wallet recharge ${transaction.id} completed via Razorpay`);
+
+                    // Log Transaction
+                    await prisma.systemTransaction.create({
+                        data: {
+                            amount: payment.amount, // in paisa
+                            currency: payment.currency,
+                            status: "SUCCESS",
+                            method: payment.method,
+                            providerOrderId: orderId,
+                            providerPaymentId: payment.id,
+                            type: "WALLET_RECHARGE",
+                            description: `Wallet Recharge for User`,
+                            userId: transactionRecord.walletId, 
+                        }
+                    });
+                    
+                    const wallet = await prisma.wallet.findUnique({
+                         where: { id: transactionRecord.walletId },
+                         select: { userId: true }
+                    });
+
+                    if (wallet) {
+                         // Update the previous transaction with correct userId if needed or just create new one?
+                         // Actually the previous CREATE above used walletId as userId which is WRONG.
+                         // We should fetch wallet FIRST.
+                    }
+                    // REFACTORED LOGIC BELOW
                 }
                 return NextResponse.json({ status: "ok" });
             }

@@ -63,6 +63,7 @@ model User {
   freeClassUsage              FreeClassUsage?
   couponUsage                 CouponUsage[]
   joinedConversations         ConversationParticipant[] @relation("JoinedConversations")
+  transactions                SystemTransaction[]
   
   // Storage Limits (in bytes)
   storageUsed                 BigInt                   @default(0)
@@ -1619,4 +1620,39 @@ enum BroadcastType {
   Offer
   Alert
   Coupon
+}
+
+model SystemTransaction {
+  id              String            @id @default(cuid())
+  amount          Int
+  currency        String
+  status          TransactionStatus @default(PENDING)
+  method          String?
+  providerOrderId String
+  providerPaymentId String?
+  type            TransactionType
+  description     String
+  metadata        Json?
+  userId          String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([providerOrderId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("system_transactions")
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum TransactionType {
+  COURSE_PURCHASE
+  WALLET_RECHARGE
+  WITHDRAWAL
 }
