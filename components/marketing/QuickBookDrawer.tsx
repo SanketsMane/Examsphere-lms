@@ -143,9 +143,10 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                                 <Calendar
                                     mode="single"
                                     selected={date}
-                                    onSelect={setDate}
+                                    onSelect={(d) => d && setDate(d)}
                                     className="rounded-md border-0 w-full flex justify-center"
                                     disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                    required
                                 />
                             </div>
                         </div>
@@ -171,15 +172,25 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                         </div>
 
                         {/* Summary & Feedback */}
-                        {(date || timeSlot) && (
-                            <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-1">
-                                <p className="text-xs font-bold text-primary uppercase tracking-wider">Selected Slot</p>
-                                <div className="flex justify-between items-center text-sm font-medium">
-                                    <span>{date ? format(date, "EEE, MMM d, yyyy") : "Date not selected"}</span>
-                                    <span>{timeSlot || "Time not selected"}</span>
+                        <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-2">
+                            <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                                <CheckCircle2 className="w-3 h-3" /> Selected Slot
+                            </p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white dark:bg-card p-2 rounded-md border flex flex-col items-center justify-center text-center">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Date</span>
+                                    <span className="text-sm font-semibold text-primary">
+                                        {date ? format(date, "MMM d, yyyy") : "---"}
+                                    </span>
+                                </div>
+                                <div className="bg-white dark:bg-card p-2 rounded-md border flex flex-col items-center justify-center text-center">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Time</span>
+                                    <span className="text-sm font-semibold text-primary">
+                                        {timeSlot || "---"}
+                                    </span>
                                 </div>
                             </div>
-                        )}
+                        </div>
 
                         {/* Cost Summary */}
                         <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl space-y-2">
