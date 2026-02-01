@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { CourseSidebar } from "./CourseSidebar";
 import { VideoPlayer } from "./VideoPlayer";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, ArrowRight, ArrowLeft } from "lucide-react";
+import { CheckCircle, ArrowRight, ArrowLeft, Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { updateLessonProgress } from "@/app/actions/progress";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface CoursePlayerProps {
     course: any; // Using permissive types for simpler integration
@@ -74,13 +75,30 @@ export function CoursePlayer({
         <div className="flex h-screen bg-slate-50 dark:bg-[#020817] overflow-hidden">
             {showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} />}
 
-            {/* Sidebar (Hidden on Mobile, Toggleable - TODO) */}
+            {/* Desktop Sidebar */}
             <div className="hidden lg:flex w-80 flex-col border-r bg-background h-full z-20">
                 <CourseSidebar course={course} activeLessonId={lesson?.id} />
             </div>
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-full overflow-y-auto">
+                {/* Mobile Header */}
+                <div className="lg:hidden p-4 border-b bg-background flex items-center justify-between sticky top-0 z-50">
+                    <div className="font-semibold truncate max-w-[200px]">
+                        {course.title}
+                    </div>
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <Menu className="h-6 w-6" />
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="p-0 w-80">
+                            <CourseSidebar course={course} activeLessonId={lesson?.id} />
+                        </SheetContent>
+                    </Sheet>
+                </div>
+
                 <main className="flex-1 p-6 md:p-10 max-w-5xl mx-auto w-full">
                     {/* Video Section */}
                     <div className="space-y-6">
@@ -155,3 +173,4 @@ export function CoursePlayer({
         </div>
     );
 }
+

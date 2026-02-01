@@ -175,16 +175,11 @@ export default async function TeacherSessionsPage() {
                 Create sessions with specific times or set your recurring availability so students
                 can book sessions that fit their schedule. You'll receive notifications for new bookings.
               </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled className="opacity-50 cursor-not-allowed" title="Coming Soon">
-                  View Guide
+              <Link href="/teacher/sessions/create?tutorial=true">
+                <Button variant="outline" size="sm">
+                  Take Tutorial
                 </Button>
-                <Link href="/teacher/sessions/create?tutorial=true">
-                  <Button variant="outline" size="sm">
-                    Take Tutorial
-                  </Button>
-                </Link>
-              </div>
+              </Link>
             </div>
           </div>
         </CardContent>

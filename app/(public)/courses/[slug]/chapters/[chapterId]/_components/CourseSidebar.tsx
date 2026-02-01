@@ -102,8 +102,9 @@ export function CourseSidebar({ course, activeLessonId }: CourseSidebarProps) {
 
                                     {/* Quizzes */}
                                     {chapter.quizzes && chapter.quizzes.map((quiz: any) => {
-                                        // TODO: Check quiz attempt status for styling
                                         const isQuizActive = pathname?.includes(`/quiz/${quiz.id}`);
+                                        const isPassed = quiz.attempts?.[0]?.passed || false;
+                                        const attemptStatus = quiz.attempts?.[0]?.status;
 
                                         return (
                                             <button
@@ -113,13 +114,20 @@ export function CourseSidebar({ course, activeLessonId }: CourseSidebarProps) {
                                                     "flex items-center gap-x-3 px-6 py-3.5 text-sm font-[500] hover:text-slate-600 dark:hover:text-slate-300 transition-all text-left w-full border-l-[4px]",
                                                     isQuizActive
                                                         ? "text-slate-700 dark:text-slate-100 bg-purple-50/50 dark:bg-purple-900/20 border-purple-600"
-                                                        : "text-slate-500 border-transparent hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                                                        : "text-slate-500 border-transparent hover:bg-slate-50 dark:hover:bg-slate-900/50",
+                                                    isPassed && "text-emerald-700 dark:text-emerald-400"
                                                 )}
                                             >
                                                 <div className="flex-shrink-0">
-                                                    <HelpCircle className={cn("h-4 w-4", isQuizActive ? "text-purple-600" : "text-slate-400")} />
+                                                    {isPassed ? (
+                                                        <CheckCircle className="h-4 w-4 text-emerald-600" />
+                                                    ) : attemptStatus === "InProgress" ? (
+                                                        <Radio className="h-4 w-4 text-orange-500 animate-pulse" />
+                                                    ) : (
+                                                        <HelpCircle className={cn("h-4 w-4", isQuizActive ? "text-purple-600" : "text-slate-400")} />
+                                                    )}
                                                 </div>
-                                                <span className="line-clamp-1">
+                                                <span className={cn("line-clamp-1", isPassed && "line-through opacity-60")}>
                                                     Quiz: {quiz.title}
                                                 </span>
                                             </button>

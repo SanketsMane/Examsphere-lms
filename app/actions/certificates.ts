@@ -12,6 +12,11 @@ export async function generateCertificate(courseId: string) {
         const course = await prisma.course.findUnique({
             where: { id: courseId },
             include: {
+                user: {
+                    select: {
+                        name: true,
+                    },
+                },
                 chapter: {
                     include: {
                         lessons: true,
@@ -73,7 +78,7 @@ export async function generateCertificate(courseId: string) {
                 certificateNumber: certNumber,
                 studentName: session.name || "Student",
                 courseName: course.title,
-                teacherName: "Kidokool Instructor", // Placeholder usually fetched from TeacherProfile
+                teacherName: course.user?.name || "Kidokool Instructor",
                 completionDate: new Date(),
             },
         });

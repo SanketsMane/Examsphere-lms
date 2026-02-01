@@ -30,6 +30,23 @@ export async function submitQuizAttempt(payload: {
             throw new Error("Quiz not found");
         }
 
+        // CRITICAL FIX: Validate quiz is published and active
+        if (!quiz.isPublished || !quiz.isActive) {
+            throw new Error("This quiz is not available for submission.");
+        }
+
+        // CRITICAL FIX: Check attempt count and enforce limits
+        const attemptCount = await prisma.quizAttempt.count({
+            where: {
+                quizId: quizId,
+                userId: userId
+            }
+        });
+
+        if (quiz.maxAttempts && attemptCount >= quiz.maxAttempts) {
+            throw new Error(`Maximum attempts (${quiz.maxAttempts}) reached for this quiz.`);
+        }
+
         // 2. Calculate Score
         let totalPoints = 0;
         let earnedPoints = 0;
@@ -91,13 +108,7 @@ export async function submitQuizAttempt(payload: {
         // We use upsert if attemptId is provided (though usually it's a new create on submit)
         // For simple flow, just create a new attempt on submit
 
-        // Check attempt count
-        const attemptCount = await prisma.quizAttempt.count({
-            where: {
-                quizId: quizId,
-                userId: userId
-            }
-        });
+        // Attempt count already checked above for validation
 
         const attempt = await prisma.quizAttempt.create({
             data: {

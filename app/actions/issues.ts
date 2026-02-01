@@ -8,8 +8,12 @@ import { requireAdmin } from "@/lib/action-security";
 import { sendEmail } from "@/lib/email"; // Using generic email sender, will refine after viewing email-notifications.ts
 import { IssueStatus, Priority } from "@prisma/client";
 
-// Placeholder for admin email - ideally from settings
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@example.com";
+// Admin email configuration - set ADMIN_EMAIL environment variable
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+
+if (!ADMIN_EMAIL) {
+    console.warn("⚠️  ADMIN_EMAIL environment variable not set. Admin notifications will be disabled.");
+}
 
 export async function createIssue(data: {
     subject: string;
@@ -40,22 +44,24 @@ export async function createIssue(data: {
             include: { reporter: true }
         });
 
-        // Notify Admin
-        try {
-            await sendEmail({
-                to: ADMIN_EMAIL,
-                subject: `[New Issue] ${data.subject}`,
-                html: `
-                <h1>New Issue Reported</h1>
-                <p><strong>Reporter:</strong> ${session.user.name} (${session.user.email})</p>
-                <p><strong>Category:</strong> ${data.category}</p>
-                <p><strong>Priority:</strong> ${data.priority}</p>
-                <hr />
-                <p>${data.description}</p>
-            `
-            });
-        } catch (emailError) {
-            console.error("Failed to send admin notification", emailError);
+        // Notify Admin (only if ADMIN_EMAIL is configured)
+        if (ADMIN_EMAIL) {
+            try {
+                await sendEmail({
+                    to: ADMIN_EMAIL,
+                    subject: `[New Issue] ${data.subject}`,
+                    html: `
+                    <h1>New Issue Reported</h1>
+                    <p><strong>Reporter:</strong> ${session.user.name} (${session.user.email})</p>
+                    <p><strong>Category:</strong> ${data.category}</p>
+                    <p><strong>Priority:</strong> ${data.priority}</p>
+                    <hr />
+                    <p>${data.description}</p>
+                `
+                });
+            } catch (emailError) {
+                console.error("Failed to send admin notification", emailError);
+            }
         }
 
         // Notify User

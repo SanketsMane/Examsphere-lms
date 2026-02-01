@@ -93,8 +93,14 @@ export async function POST(
         stripeRefundId = refund.id;
       } catch (stripeError: any) {
         console.error('Stripe refund error:', stripeError);
-        // Continue with cancellation even if refund fails? 
-        // Ideally we should stop, but let's assume we proceed to cancel the booking state.
+        // CRITICAL FIX: Stop execution if refund fails to prevent database inconsistency
+        return NextResponse.json(
+          { 
+            error: "Refund processing failed. Please contact support or try again later.",
+            details: stripeError.message 
+          },
+          { status: 500 }
+        );
       }
     }
 
@@ -127,16 +133,58 @@ export async function POST(
       const reversalCommission = Math.round(refundAmount * commissionRate);
       const reversalNet = refundAmount - reversalCommission;
 
+      // CRITICAL FIX: Check teacher's available balance before reversal
+      const teacherProfile = await db.teacherProfile.findUnique({
+        where: { id: booking.session.teacherId },
+        select: { totalEarnings: true }
+      });
+
+      if (!teacherProfile) {
+        console.error('Teacher profile not found for commission reversal', { teacherId: booking.session.teacherId });
+        // Continue with cancellation but log the issue
+      } else {
+        // Calculate available balance (total earnings minus pending/completed payouts)
+        const payouts = await db.payoutRequest.findMany({
+          where: {
+            teacherId: booking.session.teacherId,
+            status: { notIn: ['Rejected', 'Failed', 'Cancelled'] }
+          }
+        });
+
+        const totalPaidOut = payouts.reduce((sum, p) => sum + Number(p.requestedAmount), 0);
+        const availableBalance = Number(teacherProfile.totalEarnings) - totalPaidOut;
+
+        // If insufficient balance, create a debt record instead of allowing negative balance
+        if (availableBalance < reversalNet) {
+          console.warn('Insufficient teacher balance for commission reversal', {
+            teacherId: booking.session.teacherId,
+            availableBalance,
+            reversalAmount: reversalNet
+          });
+          
+          // Create notification for admin to handle manually
+          await db.notification.create({
+            data: {
+              userId: booking.session.teacher.userId,
+              title: 'Commission Reversal - Insufficient Balance',
+              message: `A refund of $${(refundAmount / 100).toFixed(2)} requires commission reversal, but your available balance is insufficient. This will be deducted from future earnings.`,
+              type: 'Payment'
+            }
+          });
+        }
+      }
+
       await db.commission.create({
         data: {
           teacherId: booking.session.teacherId,
           sessionId: booking.sessionId,
-          type: 'LiveSession', // Reusing existing type
+          type: 'LiveSession',
           amount: -refundAmount, // Negative
           commission: -reversalCommission, // Negative
           netAmount: -reversalNet, // Negative
           status: 'Pending' // Will be deducted from next payout
         }
+
       });
     }
 

@@ -51,6 +51,31 @@ export async function getCourseSidebarData(slug: string) {
               },
             },
           },
+          quizzes: {
+            orderBy: {
+              createdAt: "asc",
+            },
+            select: {
+              id: true,
+              title: true,
+              passingScore: true,
+              attempts: {
+                where: {
+                  userId: session.user.id,
+                },
+                select: {
+                  id: true,
+                  passed: true,
+                  percentage: true,
+                  status: true,
+                },
+                orderBy: {
+                  createdAt: "desc",
+                },
+                take: 1, // Get only the latest attempt
+              },
+            },
+          },
         },
       },
     },
