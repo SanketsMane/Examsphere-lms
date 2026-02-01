@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { constructS3Url } from "@/lib/s3-utils";
 
 const defaultFooterLinks = {
   learn: [
@@ -49,6 +50,11 @@ import { getSiteSettings } from "@/app/data/settings/get-site-settings";
 export async function Footer() {
   const settings = await getSiteSettings();
   const footerLinks = settings?.footerLinks ? (settings.footerLinks as any) : defaultFooterLinks;
+  
+  // Construct proper logo URL from S3 key if needed
+  const logoSrc = settings?.logo 
+    ? (settings.logo.startsWith('http') ? settings.logo : constructS3Url(settings.logo))
+    : Logo;
 
   return (
     <footer className="bg-[#0b1120] text-slate-300 border-t border-slate-800/50 font-sans">
@@ -62,7 +68,7 @@ export async function Footer() {
             <Link href="/" className="flex items-center gap-2">
               <div className="relative w-10 h-10">
                   <Image 
-                    src={settings?.logo || Logo} 
+                    src={logoSrc} 
                     alt={settings?.siteName || "KIDOKOOL"} 
                     fill 
                     className="object-contain" 

@@ -9,6 +9,7 @@ import { authClient } from "@/lib/auth-client";
 import { UserDropdown } from "./UserDropdown";
 import { Search, Menu as MenuIcon, X } from "lucide-react";
 import Menu, { IMenu } from "@/components/ui/navbar";
+import { constructS3Url } from "@/lib/s3-utils";
 
 const navigationItems: IMenu[] = [
   {
@@ -37,7 +38,10 @@ export function Navbar({ settings }: { settings?: any }) {
   const { data: session, isPending } = authClient.useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const logoSrc = settings?.logo || Logo;
+  // Construct proper logo URL from S3 key if needed
+  const logoSrc = settings?.logo 
+    ? (settings.logo.startsWith('http') ? settings.logo : constructS3Url(settings.logo))
+    : Logo;
   const siteName = settings?.siteName || "KIDOKOOL";
 
   return (
