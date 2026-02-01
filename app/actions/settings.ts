@@ -53,6 +53,8 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     youtube,
                     footerLinks: JSON.parse(formData.get("footerLinks") as string || "{}"),
                     maxGroupClassSize,
+                    razorpayKeyId,
+                    razorpayKeySecret
                 },
             });
         } else {
@@ -71,6 +73,8 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     youtube,
                     footerLinks: JSON.parse(formData.get("footerLinks") as string || "{}"),
                     maxGroupClassSize,
+                    razorpayKeyId, 
+                    razorpayKeySecret
                 },
             });
         }
