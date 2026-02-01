@@ -31,9 +31,13 @@ export function NavMain({
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               {(() => {
-                const isActive = ["/admin", "/dashboard", "/teacher"].includes(item.url)
-                  ? pathname === item.url
-                  : pathname.startsWith(item.url);
+                // Normalizing paths to remove trailing slashes for consistent comparison
+                const normalizedPath = pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+                const normalizedItemUrl = item.url.endsWith("/") && item.url.length > 1 ? item.url.slice(0, -1) : item.url;
+
+                const isActive = ["/admin", "/dashboard", "/teacher"].includes(normalizedItemUrl)
+                  ? normalizedPath === normalizedItemUrl
+                  : normalizedPath.startsWith(normalizedItemUrl);
                 return (
                   <SidebarMenuButton tooltip={item.title} asChild>
                     <Link

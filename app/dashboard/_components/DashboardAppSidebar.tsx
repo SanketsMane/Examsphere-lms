@@ -97,11 +97,7 @@ const data = {
       url: "/dashboard/calendar",
       icon: IconCalendar,
     },
-    {
-      title: "Settings",
-      url: "/dashboard/settings",
-      icon: IconSettings,
-    },
+
     {
       title: "Kidokool Ai",
       url: "/dashboard/ai",
