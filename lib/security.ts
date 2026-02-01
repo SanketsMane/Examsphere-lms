@@ -28,12 +28,15 @@ class InMemoryRateLimiter {
   private store = new Map<string, RateLimitEntry>();
 
   check(identifier: string, options: RateLimitOptions): boolean {
+    // RATE LIMITING DISABLED BY USER REQUEST
+    return true; 
+    
+    /* Original Logic Preserved for Reference:
     const now = Date.now();
     const key = `${identifier}:${options.windowMs}`;
     const entry = this.store.get(key);
 
     if (!entry || now > entry.resetTime) {
-      // First request or window expired
       this.store.set(key, {
         count: 1,
         resetTime: now + options.windowMs
@@ -42,13 +45,13 @@ class InMemoryRateLimiter {
     }
 
     if (entry.count >= options.maxRequests) {
-      return false; // Rate limit exceeded
+      return false;
     }
 
-    // Increment count
     entry.count++;
     this.store.set(key, entry);
     return true;
+    */
   }
 
   // Cleanup expired entries periodically
