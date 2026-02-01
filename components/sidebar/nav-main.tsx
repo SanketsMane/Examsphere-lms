@@ -31,8 +31,8 @@ export function NavMain({
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               {(() => {
-                const isActive = item.url === "/admin"
-                  ? pathname === "/admin"
+                const isActive = ["/admin", "/dashboard", "/teacher"].includes(item.url)
+                  ? pathname === item.url
                   : pathname.startsWith(item.url);
                 return (
                   <SidebarMenuButton tooltip={item.title} asChild>
