@@ -16,6 +16,7 @@ export async function createGroupClass(data: {
     price: number;
     maxStudents: number;
     isAdvertised?: boolean;
+    isFreeTrialEligible?: boolean;  // Free trial option - Author: Sanket
     bannerUrl?: string; // Optional for packages
 }) {
     // Enforce max students limit of 12
@@ -40,6 +41,7 @@ export async function createGroupClass(data: {
                 price: data.price,
                 maxStudents: maxStudents,
                 isAdvertised: data.isAdvertised || false,
+                isFreeTrialEligible: data.isFreeTrialEligible || false,  // Save free trial flag - Author: Sanket
                 bannerUrl: data.bannerUrl,
                 status: "Scheduled"
             }
@@ -174,7 +176,28 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
             }
         }
 
-        // If wallet payment or FREE class
+        // Check Free Trial Eligibility (Per-Teacher System)
+        // Author: Sanket - Email-based tracking prevents multi-account abuse
+        const { checkFreeTrialEligibility, recordFreeTrialUsage } = await import("./free-trial-helpers");
+        
+        const isEligibleForFreeTrial = await checkFreeTrialEligibility({
+            studentId: (user as any).id,
+            studentEmail: (user as any).email,
+            teacherId: groupClass.teacherId
+        });
+
+        // Determine if this is a free trial enrollment
+        const isFreeTrialEnrollment = groupClass.isFreeTrialEligible && isEligibleForFreeTrial;
+
+        // If class is marked as free trial eligible but student already used trial, reject free enrollment
+        if (groupClass.isFreeTrialEligible && finalPrice === 0 && !isEligibleForFreeTrial) {
+            return { 
+                success: false, 
+                error: "You have already used your free trial with this teacher." 
+            };
+        }
+
+        // If wallet payment or FREE class (including free trial)
         if ((paymentMethod === "wallet" && finalPrice > 0) || finalPrice === 0) {
             
             // If wallet
@@ -189,14 +212,16 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
                 );
             }
 
-            // Transaction: Create Enrollment + Update FreeUsage + Update CouponUsage
+            // Transaction: Create Enrollment + Record Free Trial + Update CouponUsage
             await prisma.$transaction(async (tx) => {
-                // If free, mark usage
-                if (groupClass.price === 0) {
-                    await tx.freeClassUsage.upsert({
-                        where: { studentId: (user as any).id },
-                        create: { studentId: (user as any).id, groupUsed: true, groupSessionId: groupClass.id },
-                        update: { groupUsed: true, groupSessionId: groupClass.id }
+                // If free trial, record usage
+                if (isFreeTrialEnrollment) {
+                    await recordFreeTrialUsage({
+                        studentId: (user as any).id,
+                        studentEmail: (user as any).email,
+                        teacherId: groupClass.teacherId,
+                        sessionType: "group_class",
+                        sessionId: groupClass.id
                     });
                 }
 
@@ -237,18 +262,51 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
             return { success: true, message: "Successfully joined group class" };
         }
 
-        // Stripe Flow (Pending)
+        // Stripe Flow
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        
+        // Import stripe lazily
+        const { stripe } = await import("@/lib/stripe");
+
+        const stripeSession = await stripe.checkout.sessions.create({
+            mode: "payment",
+            line_items: [
+                {
+                    price_data: {
+                        currency: "usd",
+                        product_data: {
+                            name: `Group Class: ${groupClass.title}`,
+                            description: `Enrollment for ${groupClass.title}`,
+                            images: groupClass.bannerUrl ? [groupClass.bannerUrl] : [],
+                        },
+                        unit_amount: Math.round(finalPrice * 100), // Stripe expects cents
+                    },
+                    quantity: 1,
+                },
+            ],
+            metadata: {
+                type: "group_enrollment",
+                userId: (user as any).id,
+                groupId: groupId,
+                couponCode: couponCode || "",
+                couponId: couponId || ""
+            },
+            success_url: `${appUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}&type=group`,
+            cancel_url: `${appUrl}/payment/cancel`,
+            customer_email: (user as any).email,
+        });
+
+        // Create pending enrollment for tracking
         await prisma.groupEnrollment.create({
             data: {
                 classId: groupId,
                 studentId: (user as any).id,
-                status: "Pending" // Note: Normally Stripe would handle completion, 
-                // but this simplified flow records it immediately.
+                status: "Pending" // Will be updated to Active by webhook
             }
         });
 
         revalidatePath("/dashboard/groups");
-        return { success: true, message: "Join request sent", finalPrice, couponId };
+        return { success: true, url: stripeSession.url };
 
     } catch (error: any) {
         console.error("Join group error:", error);

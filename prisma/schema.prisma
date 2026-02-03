@@ -64,12 +64,72 @@ model User {
   couponUsage                 CouponUsage[]
   joinedConversations         ConversationParticipant[] @relation("JoinedConversations")
   transactions                SystemTransaction[]
+  freeTrialsUsed              FreeTrialUsage[]         @relation("StudentFreeTrials")  // Free trials claimed by this student
+  notificationPreferences     NotificationPreferences?  // User notification settings - Author: Sanket
+  sentNotifications           SentNotification[]        // Notification history - Author: Sanket
+  studentProgress             StudentProgress?          // Progress tracking - Author: Sanket
+  learningGoals               LearningGoal[]            // Learning goals - Author: Sanket
+  achievements                UserAchievement[]         // Badges/Certificates - Author: Sanket
+  sessionRatings              SessionRating[]           @relation("StudentRatings") // Session feedback - Author: Sanket
+  subscription                UserSubscription?         // Active subscription - Author: Sanket
+  bundleBookings              BundleBooking[]           // Bundles purchased by student - Author: Sanket
+  referralsMade               Referral[]                @relation("Referrer") // Referrals by this user - Author: Sanket
+  referral                    Referral?                 @relation("Referee")  // Who referred this user - Author: Sanket
+  sentGiftCards               GiftCard[]                @relation("SentGiftCards") // Gift cards sent by this user - Author: Sanket
+  redeemedGiftCards           GiftCard[]                @relation("RedeemedGiftCards") // Gift cards redeemed by this user - Author: Sanket
   
   // Storage Limits (in bytes)
   storageUsed                 BigInt                   @default(0)
   storageLimit                BigInt                   @default(524288000) // Default 500 MB
 
   @@map("user")
+}
+
+// Notification Preferences Model - Author: Sanket
+model NotificationPreferences {
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Email preferences
+  emailReminders        Boolean @default(true)
+  email24hBefore        Boolean @default(true)
+  email1hBefore         Boolean @default(true)
+  
+  // SMS preferences
+  smsReminders          Boolean @default(false)
+  sms24hBefore          Boolean @default(false)
+  sms1hBefore           Boolean @default(false)
+  phoneNumber           String?
+  
+  // Other notifications
+  emailSessionUpdates   Boolean @default(true)
+  emailNewMessages      Boolean @default(true)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@map("notification_preferences")
+}
+
+// Sent Notification Tracking - Author: Sanket
+model SentNotification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  sessionId   String
+  session     LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  type        String   // "email_24h", "email_1h", "sms_24h", "sms_1h"
+  status      String   // "sent", "failed", "pending"
+  sentAt      DateTime @default(now())
+  
+  errorMessage String?
+  
+  @@index([userId, sessionId])
+  @@index([sentAt])
+  @@map("sent_notifications")
 }
 
 // ... existing models ...
@@ -303,6 +363,10 @@ model TeacherProfile {
   pricing             TeacherPricing[]
   allowFreeDemo       Boolean               @default(true)
   allowFreeGroup      Boolean               @default(true)
+  freeTrialsOffered   FreeTrialUsage[]      @relation("TeacherFreeTrials")  // Free trials offered by this teacher
+  sessionRatings      SessionRating[]       @relation("TeacherRatings")     // Feedback from sessions - Author: Sanket
+  templates           SessionTemplate[]     @relation("TeacherTemplates")   // Scheduling templates - Author: Sanket
+  bundles             SessionBundle[]       @relation("TeacherBundles")     // Session bundles - Author: Sanket
 }
 
 model LiveSession {
@@ -317,7 +381,11 @@ model LiveSession {
   price               Int
   maxParticipants     Int?
   status              SessionStatus    @default(scheduled)
+  actualStartTime     DateTime?
+  actualEndTime       DateTime?
   meetingUrl          String?
+  meetingRoomId       String?
+  meetingProvider     String?
   recordingUrl        String?
   notes               String?
   stripePriceId       String?
@@ -336,15 +404,158 @@ model LiveSession {
   sessionNotes        String?
   studentRating       Int?
   teacherRating       Int?
+  recordingStatus     RecordingStatus @default(pending)
+  
+  // Free Trial System - Author: Sanket
+  isFreeTrialEligible Boolean          @default(false)  // Teacher sets this when creating session
+  isFreeTrialUsed     Boolean          @default(false)  // System sets this after a free trial booking
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   student             User?            @relation("StudentSessions", fields: [studentId], references: [id], onDelete: Cascade)
   teacher             TeacherProfile   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  sentNotifications   SentNotification[] // Reminder notifications tracked here - Author: Sanket
   bookings            SessionBooking[] @relation("SessionBookings")
+  ratings             SessionRating[]  // Feedback for this session - Author: Sanket
 
   @@index([teacherId, scheduledAt])
   @@index([studentId, scheduledAt])
   @@index([status, scheduledAt])
+}
+
+// Session Template for recurrence - Author: Sanket
+model SessionTemplate {
+  id               String         @id @default(uuid())
+  teacherId        String
+  teacher          TeacherProfile @relation("TeacherTemplates", fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  title            String
+  description      String?
+  subject          String
+  duration         Int            // Duration in minutes
+  price            Int            // Price in cents
+  
+  // Recurrence Rules
+  recurrenceType   String         @default("NONE") // NONE, DAILY, WEEKLY, MONTHLY
+  dayOfWeek        Int?           // 0-6 (Sunday to Saturday)
+  startTime        String         // "HH:mm" format
+  
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([teacherId])
+  @@map("session_templates")
+}
+
+// Session Rating & Feedback Model - Author: Sanket
+model SessionRating {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  studentId   String
+  student     User     @relation("StudentRatings", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  teacherId   String
+  teacher     TeacherProfile @relation("TeacherRatings", fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  rating      Int      // 1 to 5
+  comment     String?  @db.Text
+  
+  type        String   @default("student_to_teacher") // "student_to_teacher" or "teacher_to_student"
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sessionId])
+  @@index([studentId])
+  @@index([teacherId])
+  @@map("session_ratings")
+}
+
+// Student Progress Tracking - Author: Sanket
+model StudentProgress {
+  id                String   @id @default(cuid())
+  studentId         String   @unique
+  student           User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  totalSessions     Int      @default(0)
+  attendedSessions  Int      @default(0)
+  totalHours        Float    @default(0)
+  coursesCompleted  Int      @default(0)
+  
+  currentLevel      String   @default("Beginner")
+  points            Int      @default(0)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("student_progress")
+}
+
+// Learning Goals - Author: Sanket
+model LearningGoal {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  status      String   @default("in_progress") // "in_progress", "completed", "archived"
+  targetDate  DateTime?
+  
+  milestones  Milestone[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("learning_goals")
+}
+
+// Milestones for Goals - Author: Sanket
+model Milestone {
+  id          String   @id @default(cuid())
+  goalId      String
+  goal        LearningGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  
+  title       String
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("goal_milestones")
+}
+
+// Achievement System - Author: Sanket
+model Achievement {
+  id          String   @id @default(cuid())
+  title       String   @unique
+  description String
+  badgeUrl    String?
+  type        String   // "session_count", "hours_spent", "special_event"
+  threshold   Int      // Value to unlock (e.g., 5 sessions)
+  
+  users       UserAchievement[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  unlockedAt    DateTime @default(now())
+  
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
 }
 
 model SessionAvailability {
@@ -412,6 +623,9 @@ model GroupClass {
   // Package / Ads fields
   isAdvertised    Boolean          @default(false)
   bannerUrl       String?
+  
+  // Free Trial System - Author: Sanket
+  isFreeTrialEligible Boolean          @default(false)  // Teacher can offer first session free
   
   // Chat
   chatGroupId     String?          
@@ -1211,6 +1425,47 @@ enum SessionStatus {
   no_show
 }
 
+model SubscriptionPlan {
+  id              String             @id @default(cuid())
+  name            String
+  description     String?
+  price           Float
+  interval        String             @default("month") // month, year
+  stripePriceId   String             @unique
+  features        String[]           // List of feature descriptions
+  isDefault       Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  subscriptions   UserSubscription[]
+
+  @@map("subscription_plan")
+}
+
+model UserSubscription {
+  id                     String           @id @default(cuid())
+  userId                 String           @unique
+  user                   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId                 String
+  plan                   SubscriptionPlan @relation(fields: [planId], references: [id])
+  stripeSubscriptionId   String?          @unique
+  status                 String           // active, trialing, past_due, canceled, unpaid
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean          @default(false)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@map("user_subscription")
+}
+
+enum RecordingStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
 enum BookingStatus {
   pending
   confirmed
@@ -1549,6 +1804,36 @@ model FreeClassUsage {
   @@map("free_class_usage")
 }
 
+// Free Trial System - Per-Teacher Email-Based Tracking
+// Author: Sanket
+// Tracks which students have used their free trial with each teacher
+model FreeTrialUsage {
+  id          String   @id @default(cuid())
+  
+  // Student info (email-based to prevent multi-account abuse)
+  studentId   String
+  studentEmail String  // Primary tracking field
+  student     User     @relation("StudentFreeTrials", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  // Teacher info
+  teacherId   String
+  teacher     TeacherProfile @relation("TeacherFreeTrials", fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  // Session info
+  sessionType String   // "live_session" or "group_class"
+  sessionId   String   // ID of the LiveSession or GroupClass
+  
+  // Timestamps
+  usedAt      DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  // Ensure one free trial per email per teacher
+  @@unique([studentEmail, teacherId])
+  @@index([studentId, teacherId])
+  @@index([teacherId])
+  @@map("free_trial_usage")
+}
+
 model StudentSavedTutor {
   id        String   @id @default(cuid())
   studentId String
@@ -1657,4 +1942,77 @@ enum TransactionType {
   WALLET_RECHARGE
   WITHDRAWAL
   SESSION_BOOKING
+}
+
+model SessionBundle {
+  id              String          @id @default(cuid())
+  teacherId       String
+  teacher         TeacherProfile  @relation("TeacherBundles", fields: [teacherId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  price           Float
+  sessionCount    Int
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  bookings        BundleBooking[]
+
+  @@map("session_bundles")
+}
+
+model BundleBooking {
+  id              String        @id @default(cuid())
+  bundleId        String
+  bundle          SessionBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sessionsLeft    Int
+  status          String        @default("active") // active, exhausted
+  stripeSessionId String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("bundle_bookings")
+}
+
+model Referral {
+  id              String   @id @default(cuid())
+  referrerId      String
+  referrer        User     @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId       String   @unique
+  referee         User     @relation("Referee", fields: [refereeId], references: [id], onDelete: Cascade)
+  code            String
+  status          String   @default("pending") // pending, completed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("referrals")
+}
+
+model ReferralReward {
+  id              String   @id @default(cuid())
+  userId          String
+  amount          Float
+  type            String   // DISCOUNT, CREDITS
+  isUsed          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@map("referral_rewards")
+}
+
+model GiftCard {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  amount          Float
+  senderId        String
+  sender          User      @relation("SentGiftCards", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientEmail  String
+  message         String?
+  isRedeemed      Boolean   @default(false)
+  redeemedById    String?
+  redeemedBy      User?     @relation("RedeemedGiftCards", fields: [redeemedById], references: [id])
+  redeemedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@map("gift_cards")
 }

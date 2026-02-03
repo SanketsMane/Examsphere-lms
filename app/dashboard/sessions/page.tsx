@@ -22,6 +22,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { StudentSessionCard } from "./_components/StudentSessionCard";
 import { SuccessHandler } from "./_components/SuccessHandler";
+import { FeedbackDialog } from "@/components/sessions/FeedbackDialog";
 
 export const dynamic = "force-dynamic";
 
@@ -308,7 +309,7 @@ function SessionCard({ session }: { session: any }) {
             </Button>
           )}
 
-          {session.status === "Completed" && (
+          {session.status === "completed" && (
             <>
               {session.recordingUrl && (
                 <Button variant="outline">
@@ -316,10 +317,16 @@ function SessionCard({ session }: { session: any }) {
                   Recording
                 </Button>
               )}
-              <Button variant="outline">
-                <Star className="mr-2 h-4 w-4" />
-                Rate Session
-              </Button>
+              <FeedbackDialog 
+                sessionId={session.id} 
+                sessionTitle={session.title}
+                trigger={
+                  <Button variant="outline">
+                    <Star className="mr-2 h-4 w-4" />
+                    Rate Session
+                  </Button>
+                }
+              />
             </>
           )}
 

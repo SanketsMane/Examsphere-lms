@@ -8,6 +8,7 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -38,6 +39,7 @@ const sessionSchema = z.object({
   duration: z.number().min(15, "Minimum 15 minutes").max(180, "Maximum 180 minutes"),
   price: z.number().min(5, "Minimum price is $5"),
   timezone: z.string(),
+  isFreeTrialEligible: z.boolean().default(false),  // Free trial option - Author: Sanket
 });
 
 type SessionFormData = z.infer<typeof sessionSchema>;
@@ -82,6 +84,7 @@ export function CreateSessionForm() {
   const [loading, setLoading] = useState(false);
   const [sessionType, setSessionType] = useState<"specific" | "available">("specific");
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [isFreeTrialEligible, setIsFreeTrialEligible] = useState(false);  // Free trial state - Author: Sanket
 
   const {
     register,
@@ -90,12 +93,13 @@ export function CreateSessionForm() {
     watch,
     formState: { errors }
   } = useForm<SessionFormData>({
-    resolver: zodResolver(sessionSchema),
+    resolver: zodResolver(sessionSchema) as any,
     defaultValues: {
       sessionType: "specific",
       duration: 60,
       price: 50,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      isFreeTrialEligible: false,
     }
   });
 
@@ -131,7 +135,8 @@ export function CreateSessionForm() {
           duration: data.duration,
           price: Math.round(data.price * 100), // Convert to cents
           timezone: data.timezone,
-          isAvailableSlot: data.sessionType === "available"
+          isAvailableSlot: data.sessionType === "available",
+          isFreeTrialEligible: data.isFreeTrialEligible  // Include free trial flag - Author: Sanket
         })
       });
 
@@ -370,6 +375,31 @@ export function CreateSessionForm() {
           {errors.price && (
             <p className="text-sm text-destructive">{errors.price.message}</p>
           )}
+        </div>
+      </div>
+
+      {/* Free Trial Option - Author: Sanket */}
+      <div className="flex items-start space-x-3 rounded-lg border bg-blue-50/50 dark:bg-blue-950/20 p-4">
+        <Checkbox
+          id="isFreeTrialEligible"
+          checked={isFreeTrialEligible}
+          onCheckedChange={(checked) => {
+            setIsFreeTrialEligible(checked as boolean);
+            setValue("isFreeTrialEligible", checked as boolean);
+          }}
+          className="mt-1"
+        />
+        <div className="flex-1">
+          <Label
+            htmlFor="isFreeTrialEligible"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            Offer as Free Trial Session
+          </Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            Students can book this session for free (one free trial per student with you).
+            Great for attracting new students!
+          </p>
         </div>
       </div>
 

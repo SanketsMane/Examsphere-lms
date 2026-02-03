@@ -169,3 +169,55 @@ export async function sendCourseSubmissionEmail(
     }
   );
 }
+
+/**
+ * Send booking notification to teacher
+ */
+export async function sendTeacherBookingNotification(
+  teacherEmail: string,
+  teacherName: string,
+  studentName: string,
+  sessionTitle: string,
+  scheduledAt: Date,
+  sessionLink: string
+): Promise<boolean> {
+  return await sendTemplatedEmail(
+    'notification',
+    teacherEmail,
+    `New Booking: ${sessionTitle}`,
+    {
+      userName: teacherName,
+      title: "New Session Booking",
+      messageTitle: sessionTitle,
+      message: `Great news! ${studentName} has booked your session. It is scheduled for ${scheduledAt.toLocaleString()}.`,
+      actionLabel: "View Session",
+      actionUrl: sessionLink
+    }
+  );
+}
+
+/**
+ * Send new session alert to students
+ */
+export async function sendNewSessionNotification(
+  studentEmail: string,
+  studentName: string,
+  teacherName: string,
+  sessionTitle: string,
+  sessionDescription: string,
+  sessionLink: string
+): Promise<boolean> {
+  return await sendTemplatedEmail(
+    'notification',
+    studentEmail,
+    `New Session from ${teacherName}`,
+    {
+      userName: studentName,
+      title: "New Session Alert",
+      messageTitle: sessionTitle,
+      message: `${teacherName} has scheduled a new live session: "${sessionDescription}". Book your spot now!`,
+      actionLabel: "View Session",
+      actionUrl: sessionLink
+    }
+  );
+}

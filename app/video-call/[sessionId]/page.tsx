@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import VideoCall from "@/components/video/VideoCall";
+import AgoraVideoCall from "@/components/video/AgoraVideoCall";
 import { getMeetingRoom } from "@/app/actions/video-call";
 
 interface VideoCallPageProps {
@@ -16,7 +16,7 @@ export default async function VideoCallPage({ params }: VideoCallPageProps) {
 
     return (
       <div className="h-screen w-screen bg-gray-900">
-        <VideoCall
+        <AgoraVideoCall
           sessionId={sessionId}
         />
       </div>

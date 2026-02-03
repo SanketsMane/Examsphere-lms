@@ -13,8 +13,8 @@ export default function s3ImageLoader({
   width: number;
   quality?: number;
 }) {
-  // If already a full URL (http/https), return as-is
-  if (src.startsWith('http://') || src.startsWith('https://')) {
+  // If already a full URL (http/https) or a local path (starts with /), return as-is
+  if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/')) {
     return src;
   }
   

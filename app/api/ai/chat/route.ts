@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { ai, AI_MODEL } from "@/lib/ai";
 
 export async function POST(req: Request) {
   try {
@@ -18,18 +19,6 @@ export async function POST(req: Request) {
       return new NextResponse("Invalid messages format", { status: 400 });
     }
 
-    const baseUrl = process.env.AI_BASE_URL;
-    const user = process.env.AI_AUTH_USER;
-    const pass = process.env.AI_AUTH_PASS;
-    const model = process.env.AI_MODEL || "qwen2.5:3b";
-
-    if (!baseUrl || !user || !pass) {
-      console.error("AI Configuration missing in environment variables");
-      return new NextResponse("AI Configuration Error", { status: 500 });
-    }
-
-    const authHeader = `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}`;
-
     // System prompt based on role
     const systemPrompt = `You are Kidokool Ai, a helpful AI assistant for the Kidokool LMS platform. 
     The current user is a ${(session.user as any).role}. 
@@ -41,27 +30,12 @@ export async function POST(req: Request) {
       ...messages,
     ];
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": authHeader,
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: chatMessages,
-        stream: false, // Keeping it simple without streaming for now for stability
-      }),
+    const response = await ai.chat.completions.create({
+      model: AI_MODEL,
+      messages: chatMessages as any,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI API Error:", errorText);
-      return new NextResponse(`AI API Error: ${response.statusText}`, { status: response.status });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data.choices[0].message);
+    return NextResponse.json(response.choices[0].message);
   } catch (error: any) {
     console.error("[AI_CHAT_ERROR]", error);
     return new NextResponse("Internal Server Error", { status: 500 });

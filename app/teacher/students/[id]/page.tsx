@@ -18,6 +18,8 @@ import {
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
+import { getStudentPerformanceMetrics, generateStudentCSVReport } from "@/lib/teacher/analytics-service";
+import { CheckCircle2, UserX, BarChart3, Download, Activity } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +63,8 @@ export default async function StudentDetailPage({ params }: PageProps) {
         return notFound();
     }
 
+    const performance = await getStudentPerformanceMetrics(studentId, teacherId);
+
     // Process course progress
     const coursesProgress = student.enrollment.map(enrollment => {
         const course = enrollment.Course;
@@ -84,19 +88,27 @@ export default async function StudentDetailPage({ params }: PageProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Link href="/teacher/students">
-                    <Button variant="ghost" size="icon">
-                        <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <div>
-                    <h1 className="text-2xl font-bold">Student Profile</h1>
-                    <p className="text-muted-foreground text-sm">Viewing details for {student.name}</p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Link href="/teacher/students">
+                        <Button variant="ghost" size="icon">
+                            <ChevronLeft className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold">Student Profile</h1>
+                        <p className="text-muted-foreground text-sm">Viewing details for {student.name}</p>
+                    </div>
                 </div>
+                <Button variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export Report
+                </Button>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
+                {/* Profile Card */}
+                {/* ... existing card ... */}
                 {/* Profile Card */}
                 <Card className="md:col-span-1 border-none shadow-md">
                     <CardContent className="pt-6 text-center">
@@ -125,6 +137,36 @@ export default async function StudentDetailPage({ params }: PageProps) {
 
                 {/* Main Content */}
                 <div className="md:col-span-2 space-y-6">
+                    {/* Performance Insights */}
+                    <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                                <BarChart3 className="h-5 w-5" />
+                                Performance Insights
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-blue-100 dark:border-slate-700">
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Attendance</p>
+                                    <p className="text-2xl font-bold text-blue-600">{performance.attendance.rate.toFixed(1)}%</p>
+                                </div>
+                                <div className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-blue-100 dark:border-slate-700">
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Avg Quiz</p>
+                                    <p className="text-2xl font-bold text-indigo-600">{performance.quizzes.averageScore.toFixed(1)}%</p>
+                                </div>
+                                <div className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-blue-100 dark:border-slate-700">
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Sessions</p>
+                                    <p className="text-2xl font-bold text-slate-700 dark:text-slate-200">{performance.attendance.completed}</p>
+                                </div>
+                                <div className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-blue-100 dark:border-slate-700">
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">No-Shows</p>
+                                    <p className="text-2xl font-bold text-red-500">{performance.attendance.noShow}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* About & Education */}
                     <Card className="border-none shadow-md">
                         <CardHeader>

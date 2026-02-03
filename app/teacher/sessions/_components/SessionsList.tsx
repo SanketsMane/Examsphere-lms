@@ -34,9 +34,12 @@ import {
   XCircle,
   RefreshCcw,
   User,
-  FileText
+  FileText,
+  CheckCircle2,
+  UserX
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import { updateSessionStatus } from "@/app/actions/teacher-sessions";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -149,6 +152,20 @@ export function SessionsList({ status, filter = 'all' }: SessionsListProps) {
     }
   };
 
+  const handleStatusUpdate = async (sessionId: string, status: 'completed' | 'no_show') => {
+    try {
+      const result = await updateSessionStatus(sessionId, status);
+      if (result.success) {
+        toast.success(`Session marked as ${status}`);
+        fetchSessions();
+      } else {
+        toast.error(result.error);
+      }
+    } catch (error) {
+      toast.error("Failed to update status");
+    }
+  };
+
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -252,6 +269,25 @@ export function SessionsList({ status, filter = 'all' }: SessionsListProps) {
                               Reschedule
                             </Link>
                           </DropdownMenuItem>
+                        )}
+
+                        {session.student && session.status === 'scheduled' && (
+                          <>
+                            <DropdownMenuItem
+                              className="text-green-600"
+                              onClick={() => handleStatusUpdate(session.id, 'completed')}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              Mark Completed
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => handleStatusUpdate(session.id, 'no_show')}
+                            >
+                              <UserX className="h-4 w-4 mr-2" />
+                              Mark No-Show
+                            </DropdownMenuItem>
+                          </>
                         )}
 
                         <DropdownMenuSeparator />

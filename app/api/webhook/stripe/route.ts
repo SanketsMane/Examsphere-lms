@@ -35,10 +35,35 @@ export async function POST(req: NextRequest) {
       await handleWalletRecharge(session);
     } else if (session.metadata?.type === "live_session") {
       await handleLiveSessionPayment(session);
+    } else if (session.metadata?.type === "group_enrollment") {
+      await handleGroupEnrollmentPayment(session);
+    } else if (session.metadata?.type === "subscription") {
+      await handleSubscriptionPayment(session);
+    } else if (session.metadata?.type === "bundle_purchase") {
+      await handleBundlePayment(session);
+    } else if (session.metadata?.type === "gift_card_purchase") {
+      await handleGiftCardPayment(session);
     } else {
       // Default to Course Enrollment (Standard flow)
       await handleCourseEnrollmentPayment(session);
     }
+  }
+
+  if (event.type === "invoice.paid") {
+    const invoice = event.data.object as Stripe.Invoice;
+    if ((invoice as any).subscription) {
+      await handleSubscriptionRenewal(invoice);
+    }
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    const subscription = event.data.object as Stripe.Subscription;
+    await handleSubscriptionDeletion(subscription);
+  }
+
+  if (event.type === "customer.subscription.updated") {
+    const subscription = event.data.object as Stripe.Subscription;
+    await handleSubscriptionUpdate(subscription);
   }
 
   return new NextResponse(null, { status: 200 });
@@ -134,12 +159,25 @@ async function handleLiveSessionPayment(session: Stripe.Checkout.Session) {
 
     // Send Emails (Lazy import)
     const { sendTemplatedEmail } = await import("@/lib/email");
+    const { sendTeacherBookingNotification } = await import("@/lib/email-notifications");
+    
+    // Email Student
     await sendTemplatedEmail("notification", booking.student.email, "Booking Confirmed", {
       userName: booking.student.name || 'Student',
       title: "Session Booked",
       messageTitle: booking.session.title,
       message: `Your session is scheduled for ${new Date(booking.session.scheduledAt).toLocaleString()}.`
     });
+
+    // Email Teacher
+    await sendTeacherBookingNotification(
+      booking.session.teacher.user.email,
+      booking.session.teacher.user.name || "Teacher",
+      booking.student.name || "Student",
+      booking.session.title,
+      booking.session.scheduledAt,
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/teacher/sessions`
+    );
 
     logger.info(`Live session booking confirmed`, { bookingId: booking.id });
   } catch (error) {
@@ -351,6 +389,266 @@ async function handleCourseEnrollmentPayment(session: Stripe.Checkout.Session) {
     // Note: Enrollment is already Active, but commission/notifs failed.
     // In strict system, we might want to revert enrollment, but that complicates things.
     // Ideally use interactive transaction for ALL of it, but updateMany + relations is tricky.
+
     // This is "good enough" for now as double-commission is the main financial risk, which is solved by updateMany gate.
+  }
+}
+
+// ----------------
+// Helper: Group Enrollment Payment
+// ----------------
+async function handleGroupEnrollmentPayment(session: Stripe.Checkout.Session) {
+  const metadata = session.metadata || {};
+  const groupId = metadata.groupId;
+  const userId = metadata.userId;
+  const couponId = metadata.couponId; // If coupon was used
+
+  if (!groupId || !userId) {
+    logger.error("Missing metadata for group enrollment", { sessionId: session.id });
+    return;
+  }
+
+  try {
+     const updateResult = await prisma.groupEnrollment.updateMany({
+        where: {
+           classId: groupId,
+           studentId: userId,
+           status: "Pending"
+        },
+        data: {
+           status: "Active"
+        }
+     });
+
+     if (updateResult.count === 0) {
+        logger.info("Group enrollment already active or not found", { sessionId: session.id });
+        return;
+     }
+
+     const groupClass = await prisma.groupClass.findUnique({
+        where: { id: groupId },
+        include: { teacher: { include: { user: true } } }
+     });
+
+     if (!groupClass) return;
+
+     const amount = session.amount_total || 0;
+     const platformFeeRate = 0.20; 
+     const commissionAmount = Math.round(amount * platformFeeRate);
+     const netAmount = amount - commissionAmount;
+
+     await prisma.$transaction([
+        prisma.commission.create({
+            data: {
+                teacherId: groupClass.teacherId,
+                sessionId: groupClass.id, 
+                type: "LiveSession", 
+                amount: amount,
+                commission: commissionAmount,
+                netAmount: netAmount,
+                status: "Pending"
+            }
+        }),
+        ...(couponId ? [
+            prisma.couponUsage.create({
+                data: {
+                    couponId,
+                    userId: userId,
+                    orderId: `group_stripe_${session.id}`
+                }
+            }),
+            prisma.coupon.update({
+                where: { id: couponId },
+                data: { usedCount: { increment: 1 } }
+            })
+        ] : []),
+        prisma.notification.create({
+            data: {
+                userId: userId,
+                title: "Group Class Confirmed",
+                message: `You are confirmed for "${groupClass.title}"`,
+                type: "Session"
+            }
+        })
+     ]);
+
+     logger.info(`Group enrollment confirmed`, { groupId, userId });
+
+  } catch (error) {
+    logger.error("Group enrollment webhook error", error as Error);
+    throw error;
+  }
+}
+
+// ----------------
+// Helper: Subscription Payment (New)
+// ----------------
+async function handleSubscriptionPayment(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId;
+  const planId = session.metadata?.planId;
+
+  if (!userId || !planId) {
+    logger.error("Missing metadata for subscription checkout", { sessionId: session.id });
+    return;
+  }
+
+  try {
+    const stripeSubscription = await stripe.subscriptions.retrieve(session.subscription as string) as any;
+
+    await prisma.userSubscription.upsert({
+      where: { userId },
+      update: {
+        planId,
+        stripeSubscriptionId: session.subscription as string,
+        status: stripeSubscription.status,
+        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+      },
+      create: {
+        userId,
+        planId,
+        stripeSubscriptionId: session.subscription as string,
+        status: stripeSubscription.status,
+        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+      }
+    });
+
+    logger.info("Subscription created/updated via checkout", { userId, planId });
+  } catch (error) {
+    logger.error("Subscription payment error", error as Error);
+    throw error;
+  }
+}
+
+// ----------------
+// Helper: Subscription Renewal
+// ----------------
+async function handleSubscriptionRenewal(invoice: Stripe.Invoice) {
+  const subscriptionId = (invoice as any).subscription as string;
+
+  try {
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
+
+    await prisma.userSubscription.update({
+      where: { stripeSubscriptionId: subscriptionId },
+      data: {
+        status: stripeSubscription.status,
+        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+      }
+    });
+
+    logger.info("Subscription renewed via invoice.paid", { subscriptionId });
+  } catch (error) {
+    logger.error("Subscription renewal error", error as Error);
+  }
+}
+
+// ----------------
+// Helper: Subscription Deletion
+// ----------------
+async function handleSubscriptionDeletion(subscription: Stripe.Subscription) {
+  try {
+    await prisma.userSubscription.update({
+      where: { stripeSubscriptionId: subscription.id },
+      data: {
+        status: "canceled",
+      }
+    });
+    logger.info("Subscription marked as canceled in DB", { subscriptionId: subscription.id });
+  } catch (error) {
+    logger.error("Subscription deletion webhook error", error as Error);
+  }
+}
+
+// ----------------
+// Helper: Subscription Update
+// ----------------
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+  try {
+    await prisma.userSubscription.update({
+      where: { stripeSubscriptionId: subscription.id },
+      data: {
+        status: subscription.status,
+        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      }
+    });
+  } catch (error) {
+    logger.error("Subscription update webhook error", error as Error);
+  }
+}
+
+// ----------------
+// Helper: Bundle Payment (New)
+// ----------------
+async function handleBundlePayment(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId;
+  const bundleId = session.metadata?.bundleId;
+
+  if (!userId || !bundleId) {
+    logger.error("Missing metadata for bundle purchase", { sessionId: session.id });
+    return;
+  }
+
+  try {
+    const bundle = await prisma.sessionBundle.findUnique({
+      where: { id: bundleId }
+    });
+
+    if (!bundle) {
+      logger.error("Bundle not found during webhook processing", { bundleId });
+      return;
+    }
+
+    await prisma.bundleBooking.create({
+      data: {
+        bundleId,
+        studentId: userId,
+        sessionsLeft: bundle.sessionCount,
+        stripeSessionId: session.id,
+        status: "active"
+      }
+    });
+
+    logger.info("Bundle purchase recorded", { userId, bundleId });
+  } catch (error) {
+    logger.error("Bundle payment error", error as Error);
+    throw error;
+  }
+}
+
+// ----------------
+// Helper: Gift Card Payment (New)
+// ----------------
+async function handleGiftCardPayment(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId;
+  const recipientEmail = session.metadata?.recipientEmail;
+  const amount = parseFloat(session.metadata?.amount || "0");
+  const message = session.metadata?.message;
+
+  if (!userId || !recipientEmail || amount <= 0) {
+    logger.error("Missing metadata for gift card purchase", { sessionId: session.id });
+    return;
+  }
+
+  try {
+    // Generate a secure random code
+    const code = `GIFT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+    await prisma.giftCard.create({
+      data: {
+        code,
+        amount,
+        senderId: userId,
+        recipientEmail,
+        message,
+      }
+    });
+
+    logger.info("Gift card created", { userId, recipientEmail, code });
+    // In a real app, send email to recipient here
+  } catch (error) {
+    logger.error("Gift card payment error", error as Error);
+    throw error;
   }
 }

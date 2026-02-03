@@ -15,8 +15,8 @@ const stats = [
     },
     {
         label: "Active Students",
-        value: 15000,
-        suffix: "+",
+        value: 6400,
+        suffix: "",
         icon: Users,
         color: "text-blue-500",
     },
@@ -29,7 +29,7 @@ const stats = [
     },
     {
         label: "Countries",
-        value: 120,
+        value: 14,
         suffix: "+",
         icon: Globe,
         color: "text-blue-500",

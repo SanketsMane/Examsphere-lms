@@ -232,6 +232,56 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    // ----------------------------------------------------------------
+    // NOTIFICATION: Alert previous students about new session
+    // ----------------------------------------------------------------
+    (async () => {
+      try {
+        // Find students who have enrolled in ANY course by this teacher
+        const previousEnrollments = await prisma.enrollment.findMany({
+           where: {
+             Course: {
+               userId: teacherProfile.userId
+             },
+             status: 'Active' // Only active students
+           },
+           distinct: ['userId'], // Avoid duplicate emails
+           include: {
+             User: {
+               select: { email: true, name: true }
+             },
+             Course: {
+               select: { title: true }
+             }
+           }
+        });
+
+        if (previousEnrollments.length > 0) {
+           const { sendNewSessionNotification } = await import("@/lib/email-notifications");
+           const sessionLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/live-sessions/${newSession.id}`;
+           const teacherName = session.user.name || "Your Instructor";
+
+           // Send emails in parallel
+           await Promise.all(previousEnrollments.map(enrollment => {
+              // Check if user and email exist to satisfy TS
+              if (enrollment.User?.email) {
+                  return sendNewSessionNotification(
+                    enrollment.User.email,
+                    enrollment.User.name || "Student",
+                    teacherName,
+                    newSession.title,
+                    newSession.description || "Join my new live session!",
+                    sessionLink
+                  ).catch(e => console.error(`Failed to email student ${enrollment.User.email}`, e));
+              }
+           }));
+           console.log(`Sent new session alerts to ${previousEnrollments.length} students`);
+        }
+      } catch (err) {
+        console.error("Error sending new session notifications:", err);
+      }
+    })(); 
+
     return NextResponse.json({
       message: "Session created successfully",
       session: newSession

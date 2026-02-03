@@ -5,58 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 // Generate a unique meeting room for a live session
-export async function createMeetingRoom(sessionId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user?.id) {
-    redirect("/sign-in");
-  }
 
-  const liveSession = await prisma.liveSession.findUnique({
-    where: { id: sessionId },
-    include: {
-      teacher: {
-        include: { user: true }
-      },
-      student: true,
-    },
-  });
-
-  if (!liveSession) {
-    throw new Error("Session not found");
-  }
-
-  // Check if user is either the teacher or student
-  const isTeacher = liveSession.teacher.userId === session.user.id;
-  const isStudent = liveSession.studentId === session.user.id;
-
-  if (!isTeacher && !isStudent) {
-    throw new Error("Unauthorized to access this session");
-  }
-
-  // Generate meeting room ID and details
-  const meetingRoomId = `room_${sessionId}_${Date.now()}`;
-  const meetingData = {
-    roomId: meetingRoomId,
-    sessionId: sessionId,
-    teacherId: liveSession.teacherId,
-    studentId: liveSession.studentId,
-    scheduledStart: liveSession.scheduledAt,
-    provider: "agora", // Default provider
-    status: "scheduled",
-  };
-
-  // Update the live session with meeting room details
-  await prisma.liveSession.update({
-    where: { id: sessionId },
-    data: {
-      // Add meeting room details to the session (you might want to add these fields to your schema)
-      // meetingRoomId: meetingRoomId,
-      // meetingProvider: "agora",
-    },
-  });
-
-  return meetingData;
-}
 
 // Get meeting room details for a session
 export async function getMeetingRoom(sessionId: string) {
@@ -102,7 +51,12 @@ export async function getMeetingRoom(sessionId: string) {
 }
 
 // Update session status when meeting starts/ends
-export async function updateSessionStatus(sessionId: string, status: "in_progress" | "completed") {
+export async function updateSessionStatus(
+  sessionId: string, 
+  status: "in_progress" | "completed",
+  meetingRoomId?: string,
+  meetingProvider?: string
+) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     redirect("/sign-in");
@@ -125,13 +79,18 @@ export async function updateSessionStatus(sessionId: string, status: "in_progres
     throw new Error("Unauthorized to access this session");
   }
 
+  const data: any = {
+    status,
+    ...(status === "in_progress" && { actualStartTime: new Date() }),
+    ...(status === "completed" && { actualEndTime: new Date() }),
+  };
+
+  if (meetingRoomId) data.meetingRoomId = meetingRoomId;
+  if (meetingProvider) data.meetingProvider = meetingProvider;
+
   await prisma.liveSession.update({
     where: { id: sessionId },
-    data: {
-      status,
-      ...(status === "in_progress" && { actualStartTime: new Date() }),
-      ...(status === "completed" && { actualEndTime: new Date() }),
-    },
+    data,
   });
 
   revalidatePath("/dashboard/sessions");
@@ -174,6 +133,43 @@ export async function generateAgoraToken(channelName: string, userId: string) {
   return {
     token,
     channelName,
+    userId,
+    appId,
+  };
+}
+
+// Generate Agora RTM token
+export async function generateAgoraRtmToken(userId: string) {
+  const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID;
+  const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+
+  if (!appId || !appCertificate) {
+    console.warn("Agora credentials missing in .env");
+    return {
+      token: "mock-rtm-token",
+      userId,
+      appId: appId || "mock-app-id"
+    };
+  }
+
+  // Dynamic import to avoid build issues
+  const { RtmTokenBuilder, RtmRole } = await import('agora-access-token');
+
+  const role = RtmRole.Rtm_User;
+  const expirationTimeInSeconds = 3600;
+  const currentTimestamp = Math.floor(Date.now() / 1000);
+  const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+
+  const token = RtmTokenBuilder.buildToken(
+    appId,
+    appCertificate,
+    userId,
+    role,
+    privilegeExpiredTs
+  );
+
+  return {
+    token,
     userId,
     appId,
   };

@@ -26,18 +26,46 @@ export async function bookSessionAction(data: BookSessionInput) {
 
         const scheduledAt = new Date(data.dateTime);
 
-        // Enforce Free Trial Limits (1 Demo per student)
-        if (data.price === 0) {
-            const usage = await prisma.freeClassUsage.findUnique({
-                where: { studentId: session.user.id }
-            });
-            if (usage?.demoUsed) {
-                return { success: false, error: "You have already used your free demo session trial." };
-            }
+        // Get teacher profile to check free trial eligibility
+        const teacherProfile = await prisma.teacherProfile.findUnique({
+            where: { id: data.teacherProfileId }
+        });
+
+        if (!teacherProfile) {
+            return { success: false, error: "Teacher not found" };
         }
 
+        // Check Free Trial Eligibility (Per-Teacher System)
+        // Author: Sanket - Email-based tracking prevents multi-account abuse
+        const { checkFreeTrialEligibility, recordFreeTrialUsage } = await import("./free-trial-helpers");
+        
+        const isEligibleForFreeTrial = await checkFreeTrialEligibility({
+            studentId: session.user.id,
+            studentEmail: session.user.email,
+            teacherId: data.teacherProfileId
+        });
+
+        // If price is 0 and student has already used free trial with this teacher, reject
+        if (data.price === 0 && !isEligibleForFreeTrial) {
+            return { 
+                success: false, 
+                error: "You have already used your free trial session with this teacher." 
+            };
+        }
+
+        // Check for Active Subscription
+        // Author: Sanket - Students with active plans (Pro/Unlimited) get sessions included
+        const userSubscription = await prisma.userSubscription.findUnique({
+            where: { userId: session.user.id },
+            include: { plan: true }
+        });
+
+        const hasActiveSubscription = userSubscription?.status === "active";
+        // For simplicity: Unlimited plan covers any 1-on-1 session. Pro might have limits, but we'll stick to Unlimited check for now.
+        const isSubscriptionBooking = hasActiveSubscription && (userSubscription.plan.name === "Unlimited" || userSubscription.plan.name === "Pro");
+
         // Coupon Logic
-        let finalPrice = data.price;
+        let finalPrice = isSubscriptionBooking ? 0 : data.price;
         let couponId: string | undefined;
 
         if (data.couponCode) {
@@ -78,6 +106,9 @@ export async function bookSessionAction(data: BookSessionInput) {
              return { success: false, error: "Paid sessions must be completed via secure checkout." };
         }
 
+        // Determine if this is a free trial booking
+        const isFreeTrialBooking = data.price === 0 && isEligibleForFreeTrial;
+
         // Create Session
         const liveSession = await prisma.liveSession.create({
             data: {
@@ -89,18 +120,23 @@ export async function bookSessionAction(data: BookSessionInput) {
                 duration: 60,
                 price: finalPrice,
                 status: "scheduled",
-                meetingUrl: `/video-call/${crypto.randomUUID()}`
+                meetingUrl: `/video-call/${crypto.randomUUID()}`,
+                isFreeTrialEligible: isFreeTrialBooking,  // Mark if this was offered as free trial
+                isFreeTrialUsed: isFreeTrialBooking       // Mark as used immediately
             }
         });
 
-        // Mark free trial as used if applicable
-        if (data.price === 0 || finalPrice === 0) {
-            await prisma.freeClassUsage.upsert({
-                where: { studentId: session.user.id },
-                create: { studentId: session.user.id, demoUsed: true },
-                update: { demoUsed: true }
+        // Record free trial usage if applicable
+        if (isFreeTrialBooking) {
+            await recordFreeTrialUsage({
+                studentId: session.user.id,
+                studentEmail: session.user.email,
+                teacherId: data.teacherProfileId,
+                sessionType: "live_session",
+                sessionId: liveSession.id
             });
         }
+
 
         // If coupon used, record usage
         if (couponId) {

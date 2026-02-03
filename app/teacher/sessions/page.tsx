@@ -14,11 +14,14 @@ import {
   TrendingUp,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  Layers
 } from "lucide-react";
 import Link from "next/link";
 import { SessionsList } from "./_components/SessionsList";
 import { SessionStats } from "./_components/SessionStats";
+import { SessionTemplatesManager } from "@/components/teacher/SessionTemplatesManager";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +43,12 @@ export default async function TeacherSessionsPage() {
             <Button variant="outline">
               <Settings className="h-4 w-4 mr-2" />
               Set Availability
+            </Button>
+          </Link>
+          <Link href="/teacher/sessions/bulk">
+            <Button variant="outline" className="border-indigo-600/50 text-indigo-600 hover:bg-indigo-50">
+              <Upload className="h-4 w-4 mr-2" />
+              Bulk Schedule
             </Button>
           </Link>
           <Link href="/teacher/sessions/create">
@@ -141,6 +150,10 @@ export default async function TeacherSessionsPage() {
                 <XCircle className="h-4 w-4" />
                 Cancelled
               </TabsTrigger>
+              <TabsTrigger value="templates" className="flex items-center gap-2">
+                <Layers className="h-4 w-4" />
+                Templates
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="upcoming">
@@ -157,6 +170,10 @@ export default async function TeacherSessionsPage() {
 
             <TabsContent value="cancelled">
               <SessionsList status="Cancelled" />
+            </TabsContent>
+
+            <TabsContent value="templates">
+              <SessionTemplatesManager />
             </TabsContent>
           </Tabs>
         </CardContent>

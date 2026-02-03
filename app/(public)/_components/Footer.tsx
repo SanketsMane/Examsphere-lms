@@ -163,7 +163,7 @@ export async function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-slate-800 bg-[#060a15]">
         <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} {settings?.siteName || "KIDOKOOL Inc."} All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {settings?.siteName || "KidoKool"} All rights reserved.</p>
           <div className="flex items-center gap-6">
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>

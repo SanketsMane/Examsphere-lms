@@ -100,10 +100,10 @@ export default async function Home() {
       <HeroSection
         title={
           <>
-            A new way to learn <br /> <span className="text-primary">& get knowledge</span>
+            A smarter way to Learn <br /> <span className="text-primary">and grow</span>
           </>
         }
-        subtitle="EduFlex is here for you with various courses & materials from skilled tutors all around the world."
+        subtitle="Kidokool is here for you with various courses & materials from skilled tutors all around the world."
         actions={[
           {
             text: 'Join the Class',
@@ -118,7 +118,7 @@ export default async function Home() {
         ]}
         stats={[
           {
-            value: '15,2K',
+            value: '6400',
             label: 'Active students',
             icon: <Users className="h-5 w-5 text-muted-foreground" />,
           },

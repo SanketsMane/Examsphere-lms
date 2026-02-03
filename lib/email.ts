@@ -506,6 +506,120 @@ const emailTemplates = {
       </div>
     </body>
     </html>
+  `,
+  
+  sessionReminder24h: (data: TemplateData) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Session Reminder - 24 Hours</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #f5f5f5; margin: 0; padding: 40px 20px; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; }
+        .header { background: #ffffff; padding: 32px 40px; border-bottom: 1px solid #e5e5e5; }
+        .logo { font-size: 20px; font-weight: 700; color: #000000; margin-bottom: 8px; }
+        .content { padding: 40px; }
+        .title { font-size: 18px; font-weight: 600; color: #000000; margin-bottom: 16px; }
+        .session-info { background: #f9f9f9; padding: 24px; border: 1px solid #e5e5e5; margin: 24px 0; }
+        .session-info h3 { font-size: 16px; font-weight: 600; color: #000000; margin: 0 0 12px 0; }
+        .session-info p { font-size: 14px; color: #666666; margin: 8px 0; }
+        .cta-button { display: inline-block; background: #000000; color: #ffffff; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 500; margin: 20px 0; }
+        .footer { border-top: 1px solid #e5e5e5; padding: 32px 40px; background: #fafafa; text-align: center; }
+        .footer-text { font-size: 13px; color: #666666; margin: 4px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">KIDOKOOL</div>
+        </div>
+        
+        <div class="content">
+          <h1 class="title">Session Reminder: 24 Hours to Go</h1>
+          <p>Hi ${data.userName},</p>
+          <p>Just a friendly reminder that your session with <strong>${data.teacherName}</strong> is scheduled for tomorrow.</p>
+          
+          <div class="session-info">
+            <h3>${data.sessionTitle}</h3>
+            <p><strong>Time:</strong> ${data.sessionTimeDisplay}</p>
+            <p><strong>Duration:</strong> ${data.duration} minutes</p>
+          </div>
+          
+          <p>Make sure you're prepared and ready to join at the scheduled time.</p>
+          
+          <div style="text-align: center;">
+            <a href="${data.sessionUrl}" class="cta-button">View Session Details</a>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <div class="footer-text"><strong>KIDOKOOL</strong></div>
+          <div class="footer-text">Learning Management System</div>
+          <div class="footer-text">© 2026 KIDOKOOL. All rights reserved.</div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `,
+
+  sessionReminder1h: (data: TemplateData) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Starting Soon - 1 Hour Reminder</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #f5f5f5; margin: 0; padding: 40px 20px; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; }
+        .header { background: #ffffff; padding: 32px 40px; border-bottom: 1px solid #e5e5e5; }
+        .logo { font-size: 20px; font-weight: 700; color: #000000; margin-bottom: 8px; }
+        .content { padding: 40px; }
+        .title { font-size: 18px; font-weight: 600; color: #000000; margin-bottom: 16px; }
+        .starting-soon { background: #f0f0f0; border-left: 4px solid #000000; padding: 20px; margin: 24px 0; }
+        .starting-soon p { font-size: 15px; font-weight: 600; color: #000000; margin: 0; }
+        .session-details { color: #666666; font-size: 14px; margin: 20px 0; }
+        .cta-button { display: inline-block; background: #000000; color: #ffffff; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 500; margin: 20px 0; }
+        .footer { border-top: 1px solid #e5e5e5; padding: 32px 40px; background: #fafafa; text-align: center; }
+        .footer-text { font-size: 13px; color: #666666; margin: 4px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">KIDOKOOL</div>
+        </div>
+        
+        <div class="content">
+          <h1 class="title">Your Session starts in 1 hour!</h1>
+          <p>Hi ${data.userName},</p>
+          
+          <div class="starting-soon">
+            <p>Ready to go? Your session with ${data.teacherName} is starting soon.</p>
+          </div>
+          
+          <div class="session-details">
+            <p><strong>Session:</strong> ${data.sessionTitle}</p>
+            <p><strong>Starts at:</strong> ${data.sessionTimeDisplay}</p>
+          </div>
+          
+          <p>Please ensure your camera and microphone are working correctly.</p>
+          
+          <div style="text-align: center;">
+            <a href="${data.sessionUrl}" class="cta-button">Join Session</a>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <div class="footer-text"><strong>KIDOKOOL</strong></div>
+          <div class="footer-text">Learning Management System</div>
+          <div class="footer-text">© 2026 KIDOKOOL. All rights reserved.</div>
+        </div>
+      </div>
+    </body>
+    </html>
   `
 };
 

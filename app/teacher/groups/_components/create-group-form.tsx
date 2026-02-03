@@ -25,6 +25,7 @@ export function CreateGroupForm() {
         const price = Number(formData.get("price"));
         const maxStudents = Number(formData.get("maxStudents"));
         const isAdvertised = formData.get("isAdvertised") === "on";
+        const isFreeTrialEligible = formData.get("isFreeTrialEligible") === "on";  // Free trial option - Author: Sanket
         const bannerUrl = formData.get("bannerUrl") as string;
 
         if (maxStudents > 12) {
@@ -42,6 +43,7 @@ export function CreateGroupForm() {
                 price,
                 maxStudents,
                 isAdvertised,
+                isFreeTrialEligible,  // Include free trial flag - Author: Sanket
                 bannerUrl
             });
 
@@ -98,6 +100,17 @@ export function CreateGroupForm() {
                 <div>
                     <Label htmlFor="isAdvertised" className="font-bold">Advertise this Class (Package)</Label>
                     <p className="text-xs text-muted-foreground">This will display the class on the Find Mentor marketplace.</p>
+                </div>
+            </div>
+
+            {/* Free Trial Option - Author: Sanket */}
+            <div className="flex items-center space-x-2 border p-4 rounded-md bg-blue-50/50 dark:bg-blue-950/20">
+                <Checkbox id="isFreeTrialEligible" name="isFreeTrialEligible" />
+                <div>
+                    <Label htmlFor="isFreeTrialEligible" className="font-bold">Offer as Free Trial Class</Label>
+                    <p className="text-xs text-muted-foreground">
+                        Students can join this class for free (one free trial per student with you).
+                    </p>
                 </div>
             </div>
 

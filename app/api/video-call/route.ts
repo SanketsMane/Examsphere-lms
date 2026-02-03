@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMeetingRoom, generateAgoraToken, updateSessionStatus } from "@/app/actions/video-call";
+import { getMeetingRoom, generateAgoraToken, updateSessionStatus, generateAgoraRtmToken } from "@/app/actions/video-call";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +35,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ token });
     }
 
+    if (action === "generateRtmToken") {
+      const token = await generateAgoraRtmToken(uid);
+      return NextResponse.json({ token });
+    }
+
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
     console.error("Error in video call API:", error);
@@ -47,8 +52,8 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { sessionId, status } = await request.json();
-    await updateSessionStatus(sessionId, status);
+    const { sessionId, status, meetingRoomId, meetingProvider } = await request.json();
+    await updateSessionStatus(sessionId, status, meetingRoomId, meetingProvider);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error updating session status:", error);
