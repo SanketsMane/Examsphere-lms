@@ -82,6 +82,8 @@ export async function POST(req: Request) {
         const currencyCode = "INR";
         const amountInPaisa = Math.round(finalPrice * 100);
 
+        const isFree = amountInPaisa === 0;
+
         console.log("[Checkout] Creating LiveSession in DB...");
         
         const liveSession = await prisma.liveSession.create({
@@ -99,7 +101,7 @@ export async function POST(req: Request) {
                     create: {
                         studentId: user.id,
                         amount: amountInPaisa,
-                        status: "pending", 
+                        status: isFree ? "confirmed" : "pending", 
                     }
                 }
             },
@@ -109,6 +111,25 @@ export async function POST(req: Request) {
         console.log("[Checkout] LiveSession Created:", liveSession.id);
 
         const bookingId = liveSession.bookings[0].id;
+        
+        if (isFree) {
+            console.log("[Checkout] Free session confirmed (skipping Razorpay):", bookingId);
+            return NextResponse.json({
+                orderId: "free_" + bookingId,
+                amount: 0,
+                currency: currencyCode,
+                keyId: null,
+                courseName: `Session with ${teacher.user.name}`,
+                courseDescription: `1-hour session on ${scheduledAt.toDateString()}`,
+                bookingId: bookingId,
+                isFree: true,
+                user: {
+                    name: user.name,
+                    email: user.email,
+                    contact: "",
+                }
+            });
+        }
 
         // Create Razorpay Order
         const options = {
@@ -135,6 +156,7 @@ export async function POST(req: Request) {
             keyId: await import("@/lib/razorpay").then(m => m.getRazorpayKeyId()),
             courseName: `Session with ${teacher.user.name}`,
             courseDescription: `1-hour session on ${scheduledAt.toDateString()}`,
+            isFree: false,
             user: {
                 name: user.name,
                 email: user.email,

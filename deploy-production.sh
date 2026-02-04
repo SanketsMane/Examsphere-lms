@@ -86,6 +86,7 @@ npx prisma db push
 
 # Build the application
 echo "Building application..."
+rm -rf .next
 npm run build
 
 # Copy public and static files for standalone mode
