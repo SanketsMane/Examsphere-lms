@@ -1,13 +1,22 @@
 "use client";
 
-import { type Icon } from "@tabler/icons-react";
+import { ChevronRight, type Icon } from "lucide-react";
 
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,7 +28,12 @@ export function NavMain({
   items: {
     title: string;
     url: string;
-    icon?: Icon;
+    icon?: any;
+    items?: {
+      title: string;
+      url: string;
+      icon?: any;
+    }[];
   }[];
 }) {
   const pathname = usePathname();
@@ -28,37 +42,69 @@ export function NavMain({
       <SidebarGroupContent className="flex flex-col gap-2">
 
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              {(() => {
-                // Normalizing paths to remove trailing slashes for consistent comparison
-                const normalizedPath = pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
-                const normalizedItemUrl = item.url.endsWith("/") && item.url.length > 1 ? item.url.slice(0, -1) : item.url;
+          {items.map((item) => {
+            const hasSubItems = item.items && item.items.length > 0;
+            
+            // Normalizing paths
+            const normalizedPath = pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+            const normalizedItemUrl = item.url.endsWith("/") && item.url.length > 1 ? item.url.slice(0, -1) : item.url;
+            
+            // Check if active (either current page matches or is a child path)
+            // Check if active (either current page matches, is a child path, or any sub-item is active)
+            const isSubItemActive = item.items?.some(subItem => {
+               const normalizedSubUrl = subItem.url.endsWith("/") && subItem.url.length > 1 ? subItem.url.slice(0, -1) : subItem.url;
+               return normalizedPath === normalizedSubUrl || normalizedPath.startsWith(normalizedSubUrl);
+            });
 
-                const isActive = ["/admin", "/dashboard", "/teacher"].includes(normalizedItemUrl)
-                  ? normalizedPath === normalizedItemUrl
-                  : normalizedPath.startsWith(normalizedItemUrl);
-                return (
-                  <SidebarMenuButton tooltip={item.title} asChild>
+            const isActive = isSubItemActive || (["/admin", "/dashboard", "/teacher"].includes(normalizedItemUrl)
+              ? normalizedPath === normalizedItemUrl
+              : normalizedPath.startsWith(normalizedItemUrl));
+
+            return (
+              <SidebarMenuItem key={item.title}>
+                {hasSubItems ? (
+                  <Collapsible defaultOpen={isActive} className="group/collapsible">
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton tooltip={item.title}>
+                        {item.icon && <item.icon />}
+                        <span>{item.title}</span>
+                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {item.items?.map((subItem) => {
+                          const normalizedSubUrl = subItem.url.endsWith("/") && subItem.url.length > 1 ? subItem.url.slice(0, -1) : subItem.url;
+                          const isSubActive = normalizedPath === normalizedSubUrl;
+                          
+                          return (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton asChild isActive={isSubActive}>
+                                <Link href={subItem.url}>
+                                  {subItem.icon && <subItem.icon className="size-4 opacity-70" />}
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ) : (
+                  <SidebarMenuButton tooltip={item.title} asChild isActive={isActive}>
                     <Link
                       href={item.url}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors hover:bg-muted dark:hover:bg-white/5",
-                        isActive && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                      )}
+                      className="font-medium"
                     >
-                      {item.icon && (
-                        <item.icon
-                          className={cn("h-4 w-4", isActive && "text-white")}
-                        />
-                      )}
+                      {item.icon && <item.icon />}
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                );
-              })()}
-            </SidebarMenuItem>
-          ))}
+                )}
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup >

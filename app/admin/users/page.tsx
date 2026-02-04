@@ -10,13 +10,36 @@ import { AddUserDialog } from "./_components/add-user-dialog";
 import { BulkImportDialog } from "./_components/bulk-import-dialog";
 import { BulkExportDialog } from "./_components/bulk-export-dialog";
 
+import { UserFilters } from "./_components/user-filters";
+
 export const dynamic = "force-dynamic";
 
-export default async function UsersManagementPage() {
+export default async function UsersManagementPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ role?: string; search?: string }>;
+}) {
   await requireUser();
+  const params = await searchParams;
+  const role = params.role;
+  const search = params.search;
 
   const users = await db.user.findMany({
+    where: {
+      AND: [
+        role ? { role } : {},
+        search ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ]
+        } : {},
+      ]
+    },
     take: 50,
+    include: {
+      teacherProfile: true,
+    },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -83,22 +106,19 @@ export default async function UsersManagementPage() {
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <CardTitle>All Users</CardTitle>
               <CardDescription>View and manage user accounts</CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Input placeholder="Search users..." className="w-64" />
-              <Button variant="outline" size="icon">
-                <IconSearch className="h-4 w-4" />
-              </Button>
+            <div className="flex-1 max-w-2xl">
+              <UserFilters />
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {users.map((user: any) => (
+            {users.length > 0 ? users.map((user: any) => (
               <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -124,11 +144,17 @@ export default async function UsersManagementPage() {
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    banned: user.banned
+                    banned: user.banned,
+                    bio: user.bio,
+                    teacherProfile: user.teacherProfile
                   }} />
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-10 border rounded-lg bg-muted/20">
+                <p className="text-muted-foreground">No users found matching your filters.</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

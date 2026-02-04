@@ -71,49 +71,51 @@ else
     echo -e "${RED}Warning: No .env.production file found. You'll need to create one on the server.${NC}"
 fi
 
-# Build and run Docker container on EC2
-echo -e "${GREEN}Building and starting Docker container on EC2...${NC}"
+# Build and start with PM2 on EC2
+echo -e "${GREEN}Building and starting application on EC2...${NC}"
 ssh -i "$PEM_KEY" "$EC2_USER@$EC2_IP" << 'ENDSSH'
+set -e
 cd /home/ubuntu/kidokool-lms
 
-# Stop and remove existing container if running
-if [ "$(docker ps -q -f name=kidokool-lms)" ]; then
-    echo "Stopping existing container..."
-    docker stop kidokool-lms
-    docker rm kidokool-lms
-fi
+# 1. Install Dependencies
+echo "📦 Installing dependencies..."
+npm install --legacy-peer-deps
 
-# Remove old image if exists
-if [ "$(docker images -q kidokool-lms:latest)" ]; then
-    echo "Removing old image..."
-    docker rmi kidokool-lms:latest
-fi
+# 2. Generate Prisma Client
+echo "🧬 Generating Prisma Client..."
+npx prisma generate
 
-# Build new Docker image
-echo "Building Docker image..."
-docker build -t kidokool-lms:latest .
+# 3. Migrate/Push Database
+echo "🗄️ Pushing database schema..."
+npx prisma db push
 
-# Run the container
-echo "Starting container..."
-docker run -d \
-    --name kidokool-lms \
-    --restart unless-stopped \
-    -p 3000:3000 \
-    --env-file .env.production \
-    kidokool-lms:latest
+# 4. Build Application
+echo "🏗️ Building application..."
+npm run build
 
-# Wait for container to start
-sleep 5
+# 5. Preparing standalone assets (Author: Sanket)
+echo "📦 Preparing standalone assets..."
+mkdir -p .next/standalone/.next/static
+cp -r public .next/standalone/
+cp -r .next/static/* .next/standalone/.next/static/
 
-# Check if container is running
-if [ "$(docker ps -q -f name=kidokool-lms)" ]; then
-    echo "✓ Container started successfully"
-    docker ps -f name=kidokool-lms
+# 6. Start/Restart with PM2
+echo "♻️ Restarting server..."
+if pm2 list | grep -q "kidokool-lms"; then
+    echo "Reloading existing process..."
+    # If using standalone mode, we should point PM2 to server.js
+    pm2 stop kidokool-lms || true
+    pm2 delete kidokool-lms || true
+    PORT=3000 pm2 start .next/standalone/server.js --name "kidokool-lms"
 else
-    echo "✗ Container failed to start"
-    docker logs kidokool-lms
-    exit 1
+    echo "Starting new process..."
+    PORT=3000 pm2 start .next/standalone/server.js --name "kidokool-lms"
 fi
+
+# Save PM2 list so it restarts on reboot
+pm2 save
+
+echo "✅ Deployment steps completed on server."
 ENDSSH
 
 echo -e "${GREEN}========================================${NC}"

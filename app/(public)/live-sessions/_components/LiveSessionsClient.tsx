@@ -7,7 +7,7 @@ import { SessionGrid } from "./SessionGrid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, Calendar } from "lucide-react";
 import { SessionCalendarView } from "@/components/marketing/SessionCalendarView";
-import { useDebounce } from "@/lib/hooks/use-debounce";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface Session {
   id: string;

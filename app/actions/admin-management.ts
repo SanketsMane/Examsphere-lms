@@ -59,6 +59,60 @@ export async function updateUserRole(userId: string, role: string) {
     }
 }
 
+export async function updateUserAndTeacherProfile(userId: string, data: {
+    name?: string;
+    email?: string;
+    role?: string;
+    bio?: string;
+    teacherProfile?: {
+        bio?: string;
+        expertise?: string[];
+        languages?: string[];
+        hourlyRate?: number | null;
+        experience?: number | null;
+        isVerified?: boolean;
+        isApproved?: boolean;
+    }
+}) {
+    try {
+        await requireAdmin();
+        
+        // Update User
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name: data.name,
+                email: data.email,
+                role: data.role,
+                bio: data.bio,
+            },
+        });
+
+        // Update TeacherProfile if data provided
+        if (data.teacherProfile) {
+            await prisma.teacherProfile.upsert({
+                where: { userId },
+                create: {
+                    userId,
+                    ...data.teacherProfile,
+                },
+                update: {
+                    ...data.teacherProfile,
+                },
+            });
+        }
+
+        revalidatePath("/admin/users");
+        revalidatePath("/admin/teachers");
+        revalidatePath(`/admin/teachers/${userId}`);
+
+        return { success: true, message: "Profile updated successfully" };
+    } catch (error) {
+        logger.error("Failed to update profile", error as Error, userId);
+        return { success: false, message: "Failed to update profile" };
+    }
+}
+
 export async function deleteUser(userId: string) {
     try {
         await requireAdmin();

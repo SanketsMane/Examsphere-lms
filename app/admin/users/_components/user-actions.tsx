@@ -33,7 +33,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoreHorizontal, Shield, Trash, Ban, CheckCircle, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { suspendUser, unsuspendUser, deleteUser, updateUserRole } from "@/app/actions/admin-management";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { suspendUser, unsuspendUser, deleteUser, updateUserAndTeacherProfile } from "@/app/actions/admin-management";
 import { useRouter } from "next/navigation";
 
 interface UserActionsProps {
@@ -43,6 +45,17 @@ interface UserActionsProps {
         email: string;
         role: string | null;
         banned: boolean | null;
+        bio?: string | null;
+        teacherProfile?: {
+            id: string;
+            bio: string | null;
+            expertise: string[];
+            languages: string[];
+            hourlyRate: number | null;
+            experience: number | null;
+            isVerified: boolean;
+            isApproved: boolean;
+        } | null;
     };
 }
 
@@ -52,7 +65,20 @@ export function UserActions({ user }: UserActionsProps) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // Form State
+    const [name, setName] = useState(user.name);
+    const [email, setEmail] = useState(user.email);
     const [role, setRole] = useState(user.role || "student");
+    const [bio, setBio] = useState(user.bio || "");
+    
+    // Teacher Profile Form State
+    const [teacherBio, setTeacherBio] = useState(user.teacherProfile?.bio || "");
+    const [expertise, setExpertise] = useState(user.teacherProfile?.expertise.join(", ") || "");
+    const [languages, setLanguages] = useState(user.teacherProfile?.languages.join(", ") || "");
+    const [hourlyRate, setHourlyRate] = useState(user.teacherProfile?.hourlyRate?.toString() || "");
+    const [experience, setExperience] = useState(user.teacherProfile?.experience?.toString() || "");
+    const [isVerified, setIsVerified] = useState(user.teacherProfile?.isVerified || false);
+    const [isApproved, setIsApproved] = useState(user.teacherProfile?.isApproved || false);
 
     const handleSuspendToggle = async () => {
         setLoading(true);
@@ -86,15 +112,33 @@ export function UserActions({ user }: UserActionsProps) {
         }
     };
 
-    const handleRoleUpdate = async () => {
+    const handleUpdate = async () => {
         setLoading(true);
         try {
-            await updateUserRole(user.id, role);
-            toast.success("Role updated");
+            const data = {
+                name,
+                email,
+                role,
+                bio,
+                ...(role === "teacher" ? {
+                    teacherProfile: {
+                        bio: teacherBio,
+                        expertise: expertise.split(",").map(s => s.trim()).filter(Boolean),
+                        languages: languages.split(",").map(s => s.trim()).filter(Boolean),
+                        hourlyRate: hourlyRate ? parseInt(hourlyRate) : null,
+                        experience: experience ? parseInt(experience) : null,
+                        isVerified,
+                        isApproved,
+                    }
+                } : {})
+            };
+
+            await updateUserAndTeacherProfile(user.id, data);
+            toast.success("User updated successfully");
             setIsEditDialogOpen(false);
             router.refresh();
         } catch (error) {
-            toast.error("Failed to update role");
+            toast.error("Failed to update user");
         } finally {
             setLoading(false);
         }
@@ -142,15 +186,19 @@ export function UserActions({ user }: UserActionsProps) {
 
             {/* Edit Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Edit User</DialogTitle>
-                        <DialogDescription>Update user role and details.</DialogDescription>
+                        <DialogTitle>Edit User & Profile</DialogTitle>
+                        <DialogDescription>Update user details and teacher profile information.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label className="text-right">Name</Label>
-                            <Input value={user.name} disabled className="col-span-3" />
+                            <Input value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label className="text-right">Email</Label>
+                            <Input value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label className="text-right">Role</Label>
@@ -165,10 +213,59 @@ export function UserActions({ user }: UserActionsProps) {
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div className="grid grid-cols-4 items-start gap-4">
+                            <Label className="text-right mt-2">User Bio</Label>
+                            <Textarea value={bio} onChange={(e) => setBio(e.target.value)} className="col-span-3" rows={3} />
+                        </div>
+
+                        {role === "teacher" && (
+                            <>
+                                <div className="border-t my-2 pt-4">
+                                    <h4 className="font-semibold text-sm mb-4">Teacher Profile Settings</h4>
+                                </div>
+                                <div className="grid grid-cols-4 items-start gap-4">
+                                    <Label className="text-right mt-2">Teacher Bio</Label>
+                                    <Textarea value={teacherBio} onChange={(e) => setTeacherBio(e.target.value)} className="col-span-3" rows={3} />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Expertise</Label>
+                                    <Input value={expertise} onChange={(e) => setExpertise(e.target.value)} placeholder="Math, Physics, Science" className="col-span-3" />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Languages</Label>
+                                    <Input value={languages} onChange={(e) => setLanguages(e.target.value)} placeholder="English, Hindi, Spanish" className="col-span-3" />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Hourly Rate ($)</Label>
+                                    <Input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="col-span-3" />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Experience (Yrs)</Label>
+                                    <Input type="number" value={experience} onChange={(e) => setExperience(e.target.value)} className="col-span-3" />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Verification</Label>
+                                    <div className="flex items-center gap-6 col-span-3">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="isVerified" checked={isVerified} onCheckedChange={(checked) => setIsVerified(!!checked)} />
+                                            <label htmlFor="isVerified" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                Verified
+                                            </label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="isApproved" checked={isApproved} onCheckedChange={(checked) => setIsApproved(!!checked)} />
+                                            <label htmlFor="isApproved" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                Approved
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleRoleUpdate} disabled={loading}>
+                        <Button onClick={handleUpdate} disabled={loading}>
                             {loading ? "Saving..." : "Save Changes"}
                         </Button>
                     </DialogFooter>

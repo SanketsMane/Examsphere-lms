@@ -91,8 +91,9 @@ npm run build
 
 # Copy public and static files for standalone mode
 echo "Preparing standalone assets..."
+mkdir -p .next/standalone/.next/static
 cp -r public .next/standalone/
-cp -r .next/static .next/standalone/.next/
+cp -r .next/static/* .next/standalone/.next/static/
 
 # Restart PM2 process
 echo "Restarting application..."

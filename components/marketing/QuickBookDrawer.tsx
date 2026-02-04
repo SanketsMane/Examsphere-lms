@@ -80,6 +80,14 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
 
             const orderData = await response.json();
 
+            // Handle Free Session (Bypass Razorpay)
+            if (orderData.isFree) {
+                toast.success("Booking Confirmed!");
+                if (onOpenChange) onOpenChange(false);
+                router.push("/dashboard/sessions");
+                return;
+            }
+
             await openCheckout({
                 orderId: orderData.orderId,
                 keyId: orderData.keyId,

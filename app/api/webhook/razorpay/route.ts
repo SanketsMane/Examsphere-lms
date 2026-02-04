@@ -132,6 +132,16 @@ export async function POST(req: NextRequest) {
                 const metadata = transactionRecord.metadata as any;
                 
                 if (metadata?.status !== "success") {
+                    // Fetch wallet and user first
+                    const wallet = await prisma.wallet.findUnique({
+                        where: { id: transactionRecord.walletId },
+                        select: { userId: true }
+                    });
+
+                    if (!wallet) {
+                        return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+                    }
+
                     // Update Transaction
                     await prisma.walletTransaction.update({
                         where: { id: transactionRecord.id },
@@ -153,7 +163,7 @@ export async function POST(req: NextRequest) {
                         }
                     });
 
-                    // Log Transaction
+                    // Log System Transaction
                     await prisma.systemTransaction.create({
                         data: {
                             amount: payment.amount, // in paisa
@@ -164,21 +174,9 @@ export async function POST(req: NextRequest) {
                             providerPaymentId: payment.id,
                             type: "WALLET_RECHARGE",
                             description: `Wallet Recharge for User`,
-                            userId: transactionRecord.walletId, 
+                            userId: wallet.userId, 
                         }
                     });
-                    
-                    const wallet = await prisma.wallet.findUnique({
-                         where: { id: transactionRecord.walletId },
-                         select: { userId: true }
-                    });
-
-                    if (wallet) {
-                         // Update the previous transaction with correct userId if needed or just create new one?
-                         // Actually the previous CREATE above used walletId as userId which is WRONG.
-                         // We should fetch wallet FIRST.
-                    }
-                    // REFACTORED LOGIC BELOW
                 }
                 return NextResponse.json({ status: "ok" });
             }

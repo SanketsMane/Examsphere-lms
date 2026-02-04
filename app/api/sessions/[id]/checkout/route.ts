@@ -214,12 +214,54 @@ export async function POST(
         }
     }
 
-    // Razorpay Initialization
-    const razorpay = await getRazorpayInstance();
-    if (!razorpay) throw new Error("Razorpay Failed to Initialize");
-
+    // Prepare for Booking Creation
     const currencyCode = "INR";
     const amountInPaisa = finalPrice; 
+
+    // Handle 100% Discount / Free via Coupon
+    if (amountInPaisa === 0) {
+         await db.$transaction(async (tx) => {
+            // Create confirmed booking directly
+            await tx.sessionBooking.create({
+              data: {
+                sessionId: liveSession.id,
+                studentId: userId,
+                status: 'confirmed', // Directly confirmed
+                amount: 0,
+                paymentCompletedAt: new Date(),
+                razorpayOrderId: `free_${crypto.randomUUID()}_coupon` // Dummy ID
+              }
+            });
+
+            // Create Notifications
+            await tx.notification.create({
+              data: {
+                userId: userId,
+                title: "Booking Confirmed",
+                message: `Your session "${liveSession.title}" is confirmed!`,
+                type: "Session"
+              }
+            });
+
+            await tx.notification.create({
+              data: {
+                userId: liveSession.teacher.userId,
+                title: "New Session Booking",
+                message: `${session.user.name} booked "${liveSession.title}"`,
+                type: "Session"
+              }
+            });
+         });
+
+         return NextResponse.json({
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/sessions?booking=success`,
+            isFree: true
+         });
+    }
+
+    // Initialize Razorpay for Paid Sessions
+    const razorpay = await getRazorpayInstance();
+    if (!razorpay) throw new Error("Razorpay Failed to Initialize");
 
     // Create pending booking first to get booking ID for receipt
     const booking = await db.sessionBooking.create({
