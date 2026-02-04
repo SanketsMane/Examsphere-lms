@@ -93,8 +93,8 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                             <input type="hidden" name="logoSize" value={logoSize} />
                             <Slider
                                 defaultValue={[logoSize]}
-                                max={200}
-                                min={50}
+                                max={100}
+                                min={0}
                                 step={1}
                                 onValueChange={(vals) => setLogoSize(vals[0])}
                             />

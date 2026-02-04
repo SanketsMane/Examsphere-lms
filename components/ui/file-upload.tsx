@@ -103,7 +103,7 @@ interface FileUploadProps {
         <div className="space-y-2">
             <Label>{label}</Label>
             {value ? (
-                <div className="relative aspect-video w-full max-w-[200px] overflow-hidden rounded-md border">
+                <div className="relative w-32 h-32 overflow-hidden rounded-md border">
                     {/* Check if video or image for preview */}
                     {value.match(/\.(mp4|webm|ogg)$/i) ? (
                          <video src={value} className="object-cover w-full h-full" controls />
@@ -112,7 +112,7 @@ interface FileUploadProps {
                             src={value}
                             alt="Upload"
                             fill
-                            className="object-cover"
+                            className="object-contain"
                         />
                     )}
                     <Button
