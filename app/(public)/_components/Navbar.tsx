@@ -41,7 +41,7 @@ export function Navbar({ settings }: { settings?: any }) {
   const logoSrc = settings?.logo && settings.logo.trim() !== ""
     ? (settings.logo.startsWith('http') ? settings.logo : constructS3Url(settings.logo))
     : "/logo.png";
-  const siteName = settings?.siteName || "KIDOKOOL";
+  const siteName = settings?.siteName?.trim() || "";
   const logoSize = settings?.logoSize || 100;
 
   return (
@@ -58,14 +58,16 @@ export function Navbar({ settings }: { settings?: any }) {
             >
                 <Image 
                     src={logoSrc} 
-                    alt={siteName} 
+                    alt={siteName || "Logo"} 
                     fill 
                     className="object-contain" 
                 />
             </div>
-          <span className="font-bold text-xl text-foreground hidden sm:block">
-            {siteName}
-          </span>
+          {siteName && (
+            <span className="font-bold text-xl text-foreground hidden sm:block">
+              {siteName}
+            </span>
+          )}
         </Link>
 
         {/* Categories / Desktop Nav */}

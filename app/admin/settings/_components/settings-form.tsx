@@ -51,10 +51,10 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                             <Input 
                                 id="siteName" 
                                 name="siteName" 
-                                placeholder="Enter site name"
-                                defaultValue={settings?.siteName || "KidoKool LMS"} 
+                                placeholder="Enter site name (optional)"
+                                defaultValue={settings?.siteName || ""} 
                             />
-                            <p className="text-xs text-muted-foreground">The display name for your platform.</p>
+                            <p className="text-xs text-muted-foreground">The display name for your platform. Leave blank to show only the logo.</p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="siteUrl">Site URL</Label>
