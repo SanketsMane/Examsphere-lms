@@ -130,21 +130,21 @@ export function SessionFiltersComponent({
             </div>
           </div>
 
-          {/* Subject Filter (Author: Sanket) */}
+            {/* Subject Filter (Author: Sanket) */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               Subject
             </Label>
             <Select
-              value={filters.subject}
-              onValueChange={(value) => updateFilter("subject", value)}
+              value={filters.subject || "ALL"}
+              onValueChange={(value) => updateFilter("subject", value === "ALL" ? "" : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All subjects" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All subjects</SelectItem>
+                <SelectItem value="ALL">All subjects</SelectItem>
                 {subjects.map((subject) => (
                   <SelectItem key={subject} value={subject}>
                     {subject}
@@ -210,14 +210,14 @@ export function SessionFiltersComponent({
               Time of Day
             </Label>
             <Select
-              value={filters.timeOfDay}
-              onValueChange={(value) => updateFilter("timeOfDay", value)}
+              value={filters.timeOfDay || "ALL"}
+              onValueChange={(value) => updateFilter("timeOfDay", value === "ALL" ? "" : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Any time" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any time</SelectItem>
+                <SelectItem value="ALL">Any time</SelectItem>
                 <SelectItem value="morning">Morning (6 AM - 12 PM)</SelectItem>
                 <SelectItem value="afternoon">Afternoon (12 PM - 6 PM)</SelectItem>
                 <SelectItem value="evening">Evening (6 PM - 12 AM)</SelectItem>
@@ -288,14 +288,14 @@ export function SessionFiltersComponent({
             <div className="space-y-2">
               <Label>Teacher</Label>
               <Select
-                value={filters.teacherId}
-                onValueChange={(value) => updateFilter("teacherId", value)}
+                value={filters.teacherId || "ALL"}
+                onValueChange={(value) => updateFilter("teacherId", value === "ALL" ? "" : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All teachers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All teachers</SelectItem>
+                  <SelectItem value="ALL">All teachers</SelectItem>
                   {teachers.map((teacher) => (
                     <SelectItem key={teacher.id} value={teacher.id}>
                       {teacher.name}

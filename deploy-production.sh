@@ -72,7 +72,7 @@ echo "✓ Latest code pulled successfully"
 
 # Install dependencies
 echo "Installing dependencies..."
-npm install
+npm install --legacy-peer-deps
 
 # Generate Prisma client
 echo "Generating Prisma client..."
@@ -80,6 +80,8 @@ npx prisma generate
 
 # Run database push (since migration deploy fails with P3005 on existing schema)
 echo "Synchronizing database schema..."
+# Try to rename table first to avoid data loss
+node scripts/rename_table.js || true
 npx prisma db push
 
 # Build the application
