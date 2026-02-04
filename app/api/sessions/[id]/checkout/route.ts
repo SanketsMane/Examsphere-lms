@@ -42,8 +42,7 @@ export async function POST(
             user: {
               select: { name: true }
             }
-          },
-          select: { userId: true, allowFreeDemo: true } // Need teacher's userId and policy
+          }
         },
         _count: {
           select: {
