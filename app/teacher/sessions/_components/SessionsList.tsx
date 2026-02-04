@@ -223,7 +223,7 @@ export function SessionsList({ status, filter = 'all' }: SessionsListProps) {
                         <h3 className="font-semibold text-lg">{session.title}</h3>
                         <Badge variant={
                           session.status === 'scheduled' ? 'default' :
-                          session.status === 'Completed' ? 'secondary' :
+                          session.status.toLowerCase() === 'completed' ? 'secondary' :
                           'destructive'
                         }>
                           {session.status}
@@ -253,7 +253,7 @@ export function SessionsList({ status, filter = 'all' }: SessionsListProps) {
                           </Link>
                         </DropdownMenuItem>
                         
-                        {!session.student && session.status === 'Scheduled' && (
+                        {!session.student && session.status.toLowerCase() === 'scheduled' && (
                           <DropdownMenuItem asChild>
                             <Link href={`/teacher/sessions/${session.id}/edit`}>
                               <Edit className="h-4 w-4 mr-2" />
@@ -302,7 +302,7 @@ export function SessionsList({ status, filter = 'all' }: SessionsListProps) {
                           </DropdownMenuItem>
                         )}
 
-                        {!session.student && session.status === 'Scheduled' && (
+                        {!session.student && session.status.toLowerCase() === 'scheduled' && (
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => setSessionToDelete(session.id)}

@@ -60,7 +60,7 @@ export default async function DashboardPage() {
       title: "Sessions Attended",
       amount: analytics.stats.completedSessions.toString(),
       subTitle: `${analytics.stats.totalSessionsBooked} booked total`,
-      icon: <BookOpen className="h-5 w-5" />,
+      icon: <IconSparkles className="h-5 w-5" />,
       variant: "purple" as const
     }
   ];
@@ -111,11 +111,11 @@ export default async function DashboardPage() {
         {/* Left Column (Span 2) */}
         <div className="xl:col-span-2 space-y-8">
           
-          {/* Top Row Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Top Row Cards - Fixed Grid to 3 columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {topStats.map((stat, i) => (
               <MotionWrapper key={i} delay={i * 0.1} variant="scale">
-                <div className="bg-white dark:bg-card p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all group">
+                <div className="bg-white dark:bg-card p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all group h-full">
                    <div className="flex items-center gap-4">
                       <div className={cn(
                         "p-3 rounded-xl transition-transform group-hover:scale-110",
@@ -138,8 +138,8 @@ export default async function DashboardPage() {
             ))}
           </div>
 
-          {/* Activity Section / Learning Progress */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Activity Section / Learning Progress - Stacked for better mobile/desktop flow */}
+          <div className="space-y-8">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
@@ -152,21 +152,21 @@ export default async function DashboardPage() {
                 </div>
                 
                 {enrolledCourses.length > 0 ? (
-                  <div className="space-y-4">
-                    {enrolledCourses.slice(0, 2).map((enrollment: any) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {enrolledCourses.slice(0, 4).map((enrollment: any) => (
                       <CourseProgressCard key={enrollment.Course.id} data={enrollment} />
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-white dark:bg-card p-12 rounded-2xl border-2 border-dashed border-gray-100 dark:border-gray-800 flex flex-col items-center justify-center text-center">
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-full mb-4">
-                      <BookOpen className="h-8 w-8 text-blue-600" />
+                  <div className="bg-white dark:bg-card p-8 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center justify-center text-center shadow-sm">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-full mb-3">
+                      <BookOpen className="h-6 w-6 text-blue-600" />
                     </div>
-                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">No courses yet</h4>
-                    <p className="text-sm text-gray-500 mb-6">Explore our library and start your learning journey!</p>
+                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">Start Your Journey</h4>
+                    <p className="text-sm text-gray-500 mb-4 max-w-md">You haven't enrolled in any courses yet. Browse our library to find the perfect course for you.</p>
                     <Link href="/courses">
-                        <Button variant="outline" className="rounded-full font-bold border-blue-200">
-                          Find a Course
+                        <Button className="rounded-full font-bold bg-blue-600 hover:bg-blue-700 text-white px-8">
+                          Browse Library
                         </Button>
                     </Link>
                   </div>
@@ -229,21 +229,12 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-            {/* Replaced WalletWidget with Enrollment Stats since no wallet exists */}
-            {/* Free Class Usage Widget */}
-             <FreeClassWidget usage={freeUsage} />
-
-             {/* Stat Box replaced Wallet */}
-            <StatBox
-            title="Overview"
-            mainStat={{ label: "Active Courses", value: enrolledCourses.length.toString(), subValue: "In Progress" }}
-            secondaryStat={{ label: "Total Completed", value: analytics.stats.completedCourses.toString(), subValue: "Lifetime" }}
-            accentColor="bg-green-500"
-          />
+           {/* Free Class Usage Widget */}
+            <FreeClassWidget usage={freeUsage} />
 
           <ScheduleWidget items={scheduleItems} />
 
-          {/* Quick Stats Box */}
+          {/* Quick Stats Box - Removed redundant Overview, kept Achievements */}
           <StatBox
             title="Achievements"
             mainStat={{ label: "Certificates", value: analytics.stats.certificatesCount.toString(), subValue: "Earned" }}

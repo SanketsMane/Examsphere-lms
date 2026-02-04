@@ -6,12 +6,12 @@
 set -e  # Exit on error
 
 # Configuration
-EC2_IP="13.48.30.48"
+EC2_IP="16.176.20.69"
 EC2_USER="ubuntu"
-PEM_KEY="/Users/sanket/Documents/LMS-Organomed copy/AWS/kidokool-lms-key.pem"
+PEM_KEY="/Users/sanket/Documents/Kidokool-LMS/Kidokool-latest-key.pem"
 APP_NAME="kidokool-lms"
 REMOTE_DIR="/home/ubuntu/kidokool-lms"
-LOCAL_DIR="/Users/sanket/Documents/LMS-Organomed copy"
+LOCAL_DIR="/Users/sanket/Documents/Kidokool-LMS"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -63,12 +63,12 @@ rsync -avz --progress \
 echo -e "${GREEN}✓ Files synced successfully${NC}"
 
 # Copy .env file separately (if exists)
-if [ -f "$LOCAL_DIR/.env" ]; then
+if [ -f "$LOCAL_DIR/.env.production" ]; then
     echo -e "${GREEN}Copying environment variables...${NC}"
-    scp -i "$PEM_KEY" "$LOCAL_DIR/.env" "$EC2_USER@$EC2_IP:$REMOTE_DIR/.env.production"
+    scp -i "$PEM_KEY" "$LOCAL_DIR/.env.production" "$EC2_USER@$EC2_IP:$REMOTE_DIR/.env.production"
     echo -e "${GREEN}✓ Environment variables copied${NC}"
 else
-    echo -e "${RED}Warning: No .env file found. You'll need to create one on the server.${NC}"
+    echo -e "${RED}Warning: No .env.production file found. You'll need to create one on the server.${NC}"
 fi
 
 # Build and run Docker container on EC2

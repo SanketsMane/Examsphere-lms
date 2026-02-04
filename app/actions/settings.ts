@@ -17,6 +17,7 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
         const siteName = formData.get("siteName") as string;
         const siteUrl = formData.get("siteUrl") as string;
         const logo = formData.get("logo") as string;
+        const logoSize = parseInt(formData.get("logoSize") as string) || 100;
 
         // Contact
         const contactEmail = formData.get("contactEmail") as string;
@@ -37,12 +38,13 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
         const existing = await prisma.siteSettings.findFirst();
 
         if (existing) {
-            await prisma.siteSettings.update({
+            await (prisma.siteSettings as any).update({
                 where: { id: existing.id },
                 data: {
                     siteName,
                     siteUrl,
                     logo,
+                    logoSize,
                     contactEmail,
                     contactPhone,
                     contactAddress,
@@ -55,14 +57,15 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     maxGroupClassSize,
                     razorpayKeyId,
                     razorpayKeySecret
-                },
+                } as any,
             });
         } else {
-            await prisma.siteSettings.create({
+            await (prisma.siteSettings as any).create({
                 data: {
                     siteName: siteName || "Kidokool LMS",
                     siteUrl: siteUrl || "",
                     logo,
+                    logoSize,
                     contactEmail,
                     contactPhone,
                     contactAddress,
@@ -75,7 +78,7 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     maxGroupClassSize,
                     razorpayKeyId, 
                     razorpayKeySecret
-                },
+                } as any,
             });
         }
 

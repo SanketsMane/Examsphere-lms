@@ -82,7 +82,36 @@ model User {
   storageUsed                 BigInt                   @default(0)
   storageLimit                BigInt                   @default(524288000) // Default 500 MB
 
+  aiConversations             AiConversation[]         // AI Chat History - Author: Sanket
+
   @@map("user")
+}
+
+// AI Chat History Models - Author: Sanket
+model AiConversation {
+  id        String      @id @default(uuid())
+  userId    String
+  title     String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AiMessage[]
+  
+  @@index([userId])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String         @id @default(uuid())
+  conversationId String
+  role           String         // "user" or "assistant"
+  content        String
+  attachments    String[]       // URLs to uploaded files
+  createdAt      DateTime       @default(now())
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  @@index([conversationId])
+  @@map("ai_messages")
 }
 
 // Notification Preferences Model - Author: Sanket
@@ -870,7 +899,8 @@ model SiteSettings {
   maxGroupClassSize Int @default(12)
   razorpayKeyId     String?
   razorpayKeySecret String?
-  updatedAt      DateTime @updatedAt
+  logoSize          Int      @default(100)
+  updatedAt         DateTime @updatedAt
 }
 
 model Page {

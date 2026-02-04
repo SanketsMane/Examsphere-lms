@@ -28,10 +28,10 @@ const defaultLinks: FooterLinks = {
         { name: "Group Classes", href: "/live-sessions" },
     ],
     teach: [
-        { name: "Become a Tutor", href: "/teacher/register" },
-        { name: "Teacher Rules", href: "/teacher/rules" },
-        { name: "Success Stories", href: "/teacher/stories" },
-        { name: "Teacher Verify", href: "/teacher/verify" },
+        { name: "Become a Tutor", href: "/register/teacher" },
+        { name: "Teacher Rules", href: "/terms" },
+        { name: "Success Stories", href: "/testimonials-demo" },
+        { name: "Teacher Verification", href: "/teacher/verification" },
     ],
     support: [
         { name: "Help Center", href: "/help" },

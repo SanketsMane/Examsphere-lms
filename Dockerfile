@@ -7,22 +7,16 @@ RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.23.0 --activate
-
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.23.0 --activate
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -32,7 +26,7 @@ RUN npx prisma generate
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm build
+RUN npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner

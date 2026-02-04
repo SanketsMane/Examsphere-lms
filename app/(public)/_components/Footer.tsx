@@ -26,7 +26,7 @@ const defaultFooterLinks = {
     { name: "Become a Tutor", href: "/register/teacher" },
     { name: "Teacher Rules", href: "/terms" },
     { name: "Success Stories", href: "/testimonials-demo" },
-    { name: "Teacher Verify", href: "/teacher/verification" },
+    { name: "Teacher Verification", href: "/teacher/verification" },
   ],
   support: [
     { name: "Help Center", href: "/help" },
@@ -163,7 +163,7 @@ export async function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-slate-800 bg-[#060a15]">
         <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} {settings?.siteName || "KidoKool"} All rights reserved.</p>
+          <p>© {new Date().getFullYear()} KidoKool. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>

@@ -193,7 +193,7 @@ export default async function Home() {
                 <p className="text-gray-300 mb-8 text-lg">
                   Share your knowledge, inspire students, and earn money by teaching what you love.
                 </p>
-                <Link href="/teacher/register" className="inline-flex items-center px-6 py-3 rounded-lg bg-white text-slate-900 font-bold hover:bg-gray-100 transition-colors">
+                <Link href="/register/teacher" className="inline-flex items-center px-6 py-3 rounded-lg bg-white text-slate-900 font-bold hover:bg-gray-100 transition-colors">
                   Become a Teacher <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </div>

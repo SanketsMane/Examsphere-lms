@@ -12,6 +12,7 @@ import { SiteSettings } from "@prisma/client";
 import { FileUpload } from "@/components/ui/file-upload";
 import { FooterLinksEditor } from "./footer-links-editor";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
+import { Slider } from "@/components/ui/slider";
 
 export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
     const [state, formAction, isPending] = useActionState(updateSiteSettings, {
@@ -20,7 +21,9 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
     });
 
     // Initialize logo URL state from settings or empty string
-    const [logoUrl, setLogoUrl] = useState(settings?.logo || "");
+    // Initialize logo URL state from settings or empty string
+    const [logoUrl, setLogoUrl] = useState((settings as any)?.logo || "");
+    const [logoSize, setLogoSize] = useState((settings as any)?.logoSize || 100);
 
     useEffect(() => {
         if (state?.success) {
@@ -45,7 +48,13 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="siteName">Site Name</Label>
-                            <Input id="siteName" name="siteName" defaultValue={settings?.siteName || "KidoKool LMS"} />
+                            <Input 
+                                id="siteName" 
+                                name="siteName" 
+                                placeholder="Enter site name"
+                                defaultValue={settings?.siteName || "KidoKool LMS"} 
+                            />
+                            <p className="text-xs text-muted-foreground">The display name for your platform.</p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="siteUrl">Site URL</Label>
@@ -75,6 +84,21 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                 }}
                             />
                             <p className="text-xs text-muted-foreground">Max size: 512x512px (Locked). Transparent PNG recommended.</p>
+                        </div>
+                        <div className="space-y-4 pt-2">
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="logoSize">Logo Size Percentage</Label>
+                                <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{logoSize}%</span>
+                            </div>
+                            <input type="hidden" name="logoSize" value={logoSize} />
+                            <Slider
+                                defaultValue={[logoSize]}
+                                max={200}
+                                min={50}
+                                step={1}
+                                onValueChange={(vals) => setLogoSize(vals[0])}
+                            />
+                            <p className="text-xs text-muted-foreground italic">Drag the slider to adjust how large the logo appears in the top navigation bar.</p>
                         </div>
                         <div className="space-y-2">
                              <Label htmlFor="maxGroupClassSize">Global Max Group Class Size</Label>
