@@ -452,6 +452,7 @@ model LiveSession {
   @@index([subject]) // For subject filtering - Author: Sanket
   @@index([price]) // For price filtering - Author: Sanket
   @@index([scheduledAt]) // For date range queries - Author: Sanket
+  @@map("live_sessions")
 }
 
 // Session Template for recurrence - Author: Sanket
