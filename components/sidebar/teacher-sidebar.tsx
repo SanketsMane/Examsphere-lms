@@ -92,7 +92,7 @@ const teacherData = {
     },
     {
       title: "Payouts & Earnings",
-      url: "/teacher/payouts",
+      url: "/teacher/finance",
       icon: IconWallet,
     },
     {

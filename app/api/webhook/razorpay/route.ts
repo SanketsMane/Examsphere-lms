@@ -160,19 +160,28 @@ export async function POST(req: NextRequest) {
             const sessionBooking = await prisma.sessionBooking.findFirst({
                  where: { id: payment.notes.bookingId } 
             }) || await prisma.sessionBooking.findFirst({
-                 where: { stripeSessionId: orderId } // Backup if we reused stripeSessionId field
+                 where: { stripeSessionId: orderId } // Backup for Razorpay Order ID
             });
-            // Note: In our checkout/session API we did not set stripeSessionId to orderId immediately to avoid unique constraint if empty?
-            // Actually we didn't set it at all. We should rely on `notes.bookingId`.
             
             if (sessionBooking || (payment.notes.type === "SESSION_BOOKING" && payment.notes.bookingId)) {
                  const bookingId = sessionBooking?.id || payment.notes.bookingId;
                  
                  const booking = await prisma.sessionBooking.findUnique({
                      where: { id: bookingId },
-                     include: { session: true }
+                     include: { 
+                         session: {
+                             include: {
+                                 teacher: {
+                                     include: {
+                                         user: true
+                                     }
+                                 }
+                             }
+                         },
+                         student: true
+                     }
                  });
-
+ 
                  if (booking) {
                       if (booking.status !== "confirmed") {
                            await prisma.sessionBooking.update({
@@ -184,6 +193,42 @@ export async function POST(req: NextRequest) {
                                }
                            });
                            
+                           // Send confirmation emails
+                           try {
+                               const { sendTemplatedEmail } = await import("@/lib/email");
+                               const sessionDate = new Date(booking.session.scheduledAt!);
+                               const sessionTime = sessionDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+                               const dateStr = sessionDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+                               const sessionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/sessions`;
+
+                               // 1. Send Student Confirmation
+                               await sendTemplatedEmail("bookingConfirmation", booking.student.email, "Booking Confirmed! ✅", {
+                                   userName: booking.student.name || "Student",
+                                   sessionTitle: booking.session.title,
+                                   teacherName: booking.session.teacher.user.name || "Instructor",
+                                   sessionDate: dateStr,
+                                   sessionTime: sessionTime,
+                                   duration: booking.session.duration,
+                                   sessionUrl: sessionUrl
+                               });
+
+                               // 2. Send Teacher Notification
+                               if (booking.session.teacher.user.email) {
+                                   await sendTemplatedEmail("newBookingNotification", booking.session.teacher.user.email, "New Session Booked! 🎉", {
+                                       teacherName: booking.session.teacher.user.name || "Instructor",
+                                       studentName: booking.student.name || "Student",
+                                       studentEmail: booking.student.email,
+                                       sessionTitle: booking.session.title,
+                                       sessionDate: dateStr,
+                                       sessionTime: sessionTime,
+                                       sessionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/teacher/sessions/${booking.session.id}`
+                                   });
+                               }
+                               console.log(`[Email] Booking confirmation sent for booking ${booking.id}`);
+                           } catch (emailError) {
+                               console.error("[Email] Failed to send booking confirmation emails:", emailError);
+                           }
+
                            // Log Transaction
                            await prisma.systemTransaction.create({
                                 data: {
@@ -203,7 +248,7 @@ export async function POST(req: NextRequest) {
                                     }
                                 }
                            });
-
+ 
                            console.log(`Session Booking ${booking.id} confirmed via Razorpay`);
                       }
                       return NextResponse.json({ status: "ok" });

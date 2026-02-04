@@ -40,6 +40,7 @@ interface StudentSessionCardProps {
       studentRating: number | null;
       teacher: {
         user: {
+          id: string; // Added for messaging
           name: string;
           image: string | null;
         };
@@ -233,7 +234,7 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
           )}
 
           {isUpcoming && !canJoin && (
-            <Link href={`/messages?teacher=${session.teacher.user.name}`} className="flex-1">
+            <Link href={`/dashboard/messages?createChatWith=${session.teacher.user.id}`} className="flex-1">
               <Button variant="outline" className="w-full">
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Message Teacher

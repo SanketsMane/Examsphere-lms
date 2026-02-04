@@ -437,9 +437,26 @@ function VideoCallContent({ sessionId, onCallEnd }: AgoraVideoCallProps) {
            <Badge variant="outline" className="text-green-400 border-green-400">Live</Badge>
          </div>
          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setLayout(l => l === 'grid' ? 'speaker' : 'grid')}>
-               <Grid3x3 className="h-5 w-5" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant={layout === 'grid' ? 'secondary' : 'ghost'} 
+                    size="icon" 
+                    onClick={() => {
+                      const newLayout = layout === 'grid' ? 'speaker' : 'grid';
+                      setLayout(newLayout);
+                      toast.info(`Switched to ${newLayout} view`);
+                    }}
+                  >
+                    <Grid3x3 className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{layout === 'grid' ? 'Switch to Speaker View' : 'Switch to Gallery View'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
          </div>
       </header>
 

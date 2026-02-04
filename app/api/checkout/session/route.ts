@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { protectGeneral, getClientIP } from "@/lib/security";
 import { logger } from "@/lib/logger";
 import { getRazorpayInstance } from "@/lib/razorpay";
+import { sendTemplatedEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -105,24 +106,66 @@ export async function POST(req: Request) {
                     }
                 }
             },
-            include: { bookings: true }
+            include: {
+                bookings: true,
+                teacher: { // Added include for teacher and user
+                    include: {
+                        user: true
+                    }
+                }
+            }
         });
         
         console.log("[Checkout] LiveSession Created:", liveSession.id);
 
         const bookingId = liveSession.bookings[0].id;
         
+        // Send confirmation emails
+        try {
+            if (user.email && liveSession.teacher.user.email) {
+                const sessionDate = new Date(liveSession.scheduledAt);
+                const sessionTime = sessionDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+                const dateStr = sessionDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+                const sessionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/sessions`;
+
+                // 1. Send Student Confirmation
+                await sendTemplatedEmail("bookingConfirmation", user.email, "Booking Confirmed! ✅", {
+                    userName: user.name || "Student",
+                    sessionTitle: liveSession.title,
+                    teacherName: liveSession.teacher.user.name || "Instructor",
+                    sessionDate: dateStr,
+                    sessionTime: sessionTime,
+                    duration: liveSession.duration,
+                    sessionUrl: sessionUrl
+                });
+
+                // 2. Send Teacher Notification
+                await sendTemplatedEmail("newBookingNotification", liveSession.teacher.user.email, "New Session Booked! 🎉", {
+                    teacherName: liveSession.teacher.user.name || "Instructor",
+                    studentName: user.name || "Student",
+                    studentEmail: user.email,
+                    sessionTitle: liveSession.title,
+                    sessionDate: dateStr,
+                    sessionTime: sessionTime,
+                    sessionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/teacher/sessions/${liveSession.id}`
+                });
+
+                console.log(`[Email] Booking confirmation sent to ${user.email} and ${liveSession.teacher.user.email}`);
+            }
+        } catch (emailError) {
+            console.error("[Email] Failed to send booking confirmation emails:", emailError);
+            // Continue execution, do not fail the request
+        }
+
         if (isFree) {
             console.log("[Checkout] Free session confirmed (skipping Razorpay):", bookingId);
             return NextResponse.json({
                 orderId: "free_" + bookingId,
                 amount: 0,
                 currency: currencyCode,
-                keyId: null,
-                courseName: `Session with ${teacher.user.name}`,
-                courseDescription: `1-hour session on ${scheduledAt.toDateString()}`,
-                bookingId: bookingId,
+                keyId: null, // No key needed
                 isFree: true,
+                bookingId: bookingId,
                 user: {
                     name: user.name,
                     email: user.email,
@@ -130,7 +173,7 @@ export async function POST(req: Request) {
                 }
             });
         }
-
+        
         // Create Razorpay Order
         const options = {
             amount: amountInPaisa.toString(),

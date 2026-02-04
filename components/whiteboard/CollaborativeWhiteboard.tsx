@@ -263,8 +263,8 @@ export function CollaborativeWhiteboard({
   }, [elements, zoom, panX, panY, backgroundColor, showGrid, participants]);
 
   const drawGrid = (ctx: CanvasRenderingContext2D) => {
-    const gridSize = 20;
-    ctx.strokeStyle = '#e0e0e0';
+    const gridSize = 30; // Slightly larger grid for visibility
+    ctx.strokeStyle = '#d1d5db'; // Slightly darker gray (gray-300) for better visibility
     ctx.lineWidth = 0.5;
 
     for (let x = 0; x <= width; x += gridSize) {
@@ -986,7 +986,7 @@ export function CollaborativeWhiteboard({
             <PopoverContent className="w-64 p-3">
               <div className="space-y-3">
                 <div>
-                  <Label className="text-sm font-medium">Stroke Color</Label>
+                  <Label className="text-sm font-medium text-gray-900">Stroke Color</Label>
                   <div className="grid grid-cols-5 gap-2 mt-2">
                     {colorPalette.map(color => (
                       <button
@@ -1007,7 +1007,7 @@ export function CollaborativeWhiteboard({
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium">Fill Color</Label>
+                  <Label className="text-sm font-medium text-gray-900">Fill Color</Label>
                   <div className="grid grid-cols-5 gap-2 mt-2">
                     <button
                       className={`w-8 h-8 rounded border-2 ${fillColor === 'transparent' ? 'border-blue-500' : 'border-gray-300'
@@ -1033,7 +1033,7 @@ export function CollaborativeWhiteboard({
 
           {/* Stroke Width */}
           <div className="flex items-center gap-2">
-            <Label className="text-sm">Width:</Label>
+            <Label className="text-sm text-gray-900">Width:</Label>
             <Slider
               value={[strokeWidth]}
               onValueChange={(value) => setStrokeWidth(value[0])}
@@ -1042,7 +1042,7 @@ export function CollaborativeWhiteboard({
               step={1}
               className="w-20"
             />
-            <span className="text-sm w-6">{strokeWidth}</span>
+            <span className="text-sm w-6 text-gray-900">{strokeWidth}</span>
           </div>
 
           <Separator orientation="vertical" className="h-6" />
@@ -1117,7 +1117,7 @@ export function CollaborativeWhiteboard({
               </Tooltip>
             </TooltipProvider>
 
-            <span className="text-sm font-mono px-2">
+            <span className="text-sm font-mono px-2 text-gray-900">
               {Math.round(zoom * 100)}%
             </span>
 
@@ -1157,12 +1157,15 @@ export function CollaborativeWhiteboard({
                   <Button
                     variant={showGrid ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setShowGrid(!showGrid)}
+                    onClick={() => {
+                        setShowGrid(!showGrid);
+                        // toast.info(showGrid ? "Grid hidden" : "Grid visible"); // Whiteboard is often used inside video call where toast might be redundant but helpful
+                    }}
                   >
                     <Grid3X3 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Toggle Grid</TooltipContent>
+                <TooltipContent>Toggle Grid Lines</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>

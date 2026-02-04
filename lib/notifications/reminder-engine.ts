@@ -85,7 +85,7 @@ async function sendReminder(session: any, timeUntil: '24h' | '1h') {
     timeStyle: 'short'
   });
 
-  const sessionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/sessions/${session.id}`;
+  const sessionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/sessions`;
 
   // Send Email
   if (prefs.emailReminders && (timeUntil === '24h' ? prefs.email24hBefore : prefs.email1hBefore)) {

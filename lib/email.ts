@@ -620,6 +620,134 @@ const emailTemplates = {
       </div>
     </body>
     </html>
+  `,
+
+  bookingConfirmation: (data: TemplateData) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Booking Confirmed</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #f5f5f5; margin: 0; padding: 40px 20px; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; }
+        .header { background: #ffffff; padding: 32px 40px; border-bottom: 1px solid #e5e5e5; }
+        .logo { font-size: 20px; font-weight: 700; color: #000000; margin-bottom: 8px; }
+        .content { padding: 40px; }
+        .title { font-size: 18px; font-weight: 600; color: #000000; margin-bottom: 16px; }
+        .info-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 24px; margin: 24px 0; border-radius: 8px; }
+        .info-box h3 { font-size: 16px; font-weight: 600; color: #166534; margin: 0 0 12px 0; }
+        .session-details p { margin: 8px 0; color: #374151; }
+        .cta-button { display: inline-block; background: #000000; color: #ffffff; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 500; margin: 20px 0; }
+        .footer { border-top: 1px solid #e5e5e5; padding: 32px 40px; background: #fafafa; text-align: center; }
+        .footer-text { font-size: 13px; color: #666666; margin: 4px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">KIDOKOOL</div>
+        </div>
+        
+        <div class="content">
+          <h1 class="title">Booking Confirmed! ✅</h1>
+          <p>Hi ${data.userName},</p>
+          <p>Your session has been successfully booked. We're excited to see you there!</p>
+          
+          <div class="info-box">
+            <h3>Session Details</h3>
+            <div class="session-details">
+              <p><strong>Topic:</strong> ${data.sessionTitle}</p>
+              <p><strong>Instructor:</strong> ${data.teacherName}</p>
+              <p><strong>Date:</strong> ${data.sessionDate}</p>
+              <p><strong>Time:</strong> ${data.sessionTime}</p>
+              <p><strong>Duration:</strong> ${data.duration} mins</p>
+            </div>
+          </div>
+          
+          <div style="text-align: center;">
+            <a href="${data.sessionUrl}" class="cta-button">View Session</a>
+          </div>
+
+          <p style="font-size: 13px; color: #666; margin-top: 32px;">
+            Need to reschedule? You can do so from your dashboard at least 24 hours in advance.
+          </p>
+        </div>
+        
+        <div class="footer">
+          <div class="footer-text"><strong>KIDOKOOL</strong></div>
+          <div class="footer-text">Learning Management System</div>
+          <div class="footer-text">© 2026 KIDOKOOL. All rights reserved.</div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `,
+
+  newBookingNotification: (data: TemplateData) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>New Booking Received</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #f5f5f5; margin: 0; padding: 40px 20px; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; }
+        .header { background: #ffffff; padding: 32px 40px; border-bottom: 1px solid #e5e5e5; }
+        .logo { font-size: 20px; font-weight: 700; color: #000000; margin-bottom: 8px; }
+        .content { padding: 40px; }
+        .title { font-size: 18px; font-weight: 600; color: #000000; margin-bottom: 16px; }
+        .info-box { background: #eff6ff; border: 1px solid #dbeafe; padding: 24px; margin: 24px 0; border-radius: 8px; }
+        .info-box h3 { font-size: 16px; font-weight: 600; color: #1e40af; margin: 0 0 12px 0; }
+        .student-details p, .session-details p { margin: 8px 0; color: #374151; }
+        .cta-button { display: inline-block; background: #000000; color: #ffffff; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 500; margin: 20px 0; }
+        .footer { border-top: 1px solid #e5e5e5; padding: 32px 40px; background: #fafafa; text-align: center; }
+        .footer-text { font-size: 13px; color: #666666; margin: 4px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">KIDOKOOL</div>
+        </div>
+        
+        <div class="content">
+          <h1 class="title">New Session Booked! 🎉</h1>
+          <p>Hi ${data.teacherName},</p>
+          <p>Great news! A student has just booked a session with you.</p>
+          
+          <div class="info-box">
+             <h3>Booking Details</h3>
+            <div class="session-details">
+              <p><strong>Session:</strong> ${data.sessionTitle}</p>
+              <p><strong>Date:</strong> ${data.sessionDate}</p>
+              <p><strong>Time:</strong> ${data.sessionTime}</p>
+            </div>
+          </div>
+
+          <div class="info-box" style="background: #f9fafb; border-color: #e5e7eb;">
+            <h3 style="color: #374151;">Student Info</h3>
+            <div class="student-details">
+              <p><strong>Name:</strong> ${data.studentName}</p>
+              <p><strong>Email:</strong> ${data.studentEmail}</p>
+            </div>
+          </div>
+          
+          <div style="text-align: center;">
+            <a href="${data.sessionUrl}" class="cta-button">View Session Details</a>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <div class="footer-text"><strong>KIDOKOOL</strong></div>
+          <div class="footer-text">Learning Management System</div>
+          <div class="footer-text">© 2026 KIDOKOOL. All rights reserved.</div>
+        </div>
+      </div>
+    </body>
+    </html>
   `
 };
 

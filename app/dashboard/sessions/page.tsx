@@ -38,6 +38,7 @@ async function getUserSessions(userId: string) {
                 select: {
                   name: true,
                   image: true,
+                  id: true,
                 }
               }
             }

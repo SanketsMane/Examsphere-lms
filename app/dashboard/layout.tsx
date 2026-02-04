@@ -7,7 +7,7 @@ import { AppSidebar } from "./_components/DashboardAppSidebar";
 import { useAuth } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { DashboardWidgetControl } from "./_components/DashboardWidgetControl";
+
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   /**
@@ -47,7 +47,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     >
       <AppSidebar />
       <SidebarInset>
-        <DashboardWidgetControl />
+
         <SiteHeader />
         <div className="flex flex-1 flex-col h-[calc(100vh-var(--header-height))]">
           <div className="@container/main flex flex-1 flex-col gap-2 h-full">

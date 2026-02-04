@@ -159,25 +159,35 @@ async function handleLiveSessionPayment(session: Stripe.Checkout.Session) {
 
     // Send Emails (Lazy import)
     const { sendTemplatedEmail } = await import("@/lib/email");
-    const { sendTeacherBookingNotification } = await import("@/lib/email-notifications");
     
-    // Email Student
-    await sendTemplatedEmail("notification", booking.student.email, "Booking Confirmed", {
-      userName: booking.student.name || 'Student',
-      title: "Session Booked",
-      messageTitle: booking.session.title,
-      message: `Your session is scheduled for ${new Date(booking.session.scheduledAt).toLocaleString()}.`
+    const sessionDate = new Date(booking.session.scheduledAt);
+    const sessionTime = sessionDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    const dateStr = sessionDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    const sessionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/sessions`;
+
+    // 1. Email Student
+    await sendTemplatedEmail("bookingConfirmation", booking.student.email, "Booking Confirmed! ✅", {
+      userName: booking.student.name || "Student",
+      sessionTitle: booking.session.title,
+      teacherName: booking.session.teacher.user.name || "Instructor",
+      sessionDate: dateStr,
+      sessionTime: sessionTime,
+      duration: booking.session.duration,
+      sessionUrl: sessionUrl
     });
 
-    // Email Teacher
-    await sendTeacherBookingNotification(
-      booking.session.teacher.user.email,
-      booking.session.teacher.user.name || "Teacher",
-      booking.student.name || "Student",
-      booking.session.title,
-      booking.session.scheduledAt,
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/teacher/sessions`
-    );
+    // 2. Email Teacher
+    if (booking.session.teacher.user.email) {
+      await sendTemplatedEmail("newBookingNotification", booking.session.teacher.user.email, "New Session Booked! 🎉", {
+        teacherName: booking.session.teacher.user.name || "Instructor",
+        studentName: booking.student.name || "Student",
+        studentEmail: booking.student.email,
+        sessionTitle: booking.session.title,
+        sessionDate: dateStr,
+        sessionTime: sessionTime,
+        sessionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/teacher/sessions/${booking.session.id}`
+      });
+    }
 
     logger.info(`Live session booking confirmed`, { bookingId: booking.id });
   } catch (error) {
