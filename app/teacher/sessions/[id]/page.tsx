@@ -46,6 +46,17 @@ interface Session {
     email: string;
     image?: string;
   };
+  bookings?: {
+    id: string;
+    status: string;
+    createdAt: string;
+    student: {
+      id: string;
+      name: string;
+      email: string;
+      image?: string;
+    };
+  }[];
 }
 
 export default function SessionDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -112,6 +123,18 @@ export default function SessionDetailsPage({ params }: { params: Promise<{ id: s
   const isScheduled = session.status.toLowerCase() === "scheduled";
   const isCompleted = session.status.toLowerCase() === "completed";
   const isCancelled = session.status.toLowerCase() === "cancelled";
+  
+  // Combine bookings and direct student relation (for backward compatibility)
+  const enrolledStudents = session.bookings && session.bookings.length > 0 
+    ? session.bookings 
+    : session.student 
+      ? [{ 
+          id: 'direct', 
+          status: 'confirmed', 
+          createdAt: session.scheduledAt, // Fallback date? Or leave empty
+          student: session.student 
+        }] 
+      : [];
 
   return (
     <MotionWrapper className="p-6 space-y-6 max-w-5xl mx-auto">
@@ -151,7 +174,7 @@ export default function SessionDetailsPage({ params }: { params: Promise<{ id: s
               </Button>
             </Link>
           )}
-          {isScheduled && !session.student && (
+          {isScheduled && enrolledStudents.length === 0 && (
             <Link href={`/teacher/sessions/${session.id}/edit`}>
               <Button variant="outline" size="lg">Edit Session</Button>
             </Link>
@@ -234,42 +257,44 @@ export default function SessionDetailsPage({ params }: { params: Promise<{ id: s
           )}
         </div>
 
-        {/* Sidebar - Student Info */}
+        {/* Sidebar - Enrolled Students (Updated Logic: Author Sanket) */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <User className="w-5 h-5 text-primary" />
-                Student Profile
+                Enrolled Students
               </CardTitle>
-              <CardDescription>Attendee for this session</CardDescription>
+              <CardDescription>{enrolledStudents.length} Students joined</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {session.student ? (
-                <div className="space-y-6">
-                  <div className="flex flex-col items-center text-center space-y-3">
-                    <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
-                      <AvatarImage src={session.student.image} />
-                      <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
-                        {session.student.name?.substring(0, 2).toUpperCase() || "ST"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-xl">{session.student.name}</h3>
-                      <p className="text-sm text-muted-foreground flex items-center justify-center">
-                        <Mail className="w-3.5 h-3.5 mr-1.5" />
-                        {session.student.email}
-                      </p>
+              {enrolledStudents.length > 0 ? (
+                <div className="space-y-4">
+                  {enrolledStudents.map((booking, idx) => (
+                    <div key={idx} className="flex items-center gap-4 pb-4 border-b last:border-0 last:pb-0">
+                        <Avatar className="h-10 w-10 border border-muted">
+                          <AvatarImage src={booking.student.image} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                            {booking.student.name?.substring(0, 2).toUpperCase() || "ST"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{booking.student.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{booking.student.email}</p>
+                          {booking.createdAt && (
+                             <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                Enrolled: {format(new Date(booking.createdAt), "MMM d, yyyy")}
+                             </p>
+                          )}
+                        </div>
                     </div>
-                  </div>
+                  ))}
                   
                   <div className="grid grid-cols-2 gap-2 pt-2">
-                    <Button variant="outline" className="w-full" size="sm">
-                      <Mail className="w-4 h-4 mr-2" />
-                      Email
-                    </Button>
                     <Button variant="outline" className="w-full" size="sm" disabled>
-                      View Profile
+                      <Mail className="w-4 h-4 mr-2" />
+                      Message All
                     </Button>
                   </div>
                 </div>
@@ -279,9 +304,9 @@ export default function SessionDetailsPage({ params }: { params: Promise<{ id: s
                     <Users className="w-8 h-8 text-muted-foreground" />
                   </div>
                   <div className="space-y-1">
-                    <p className="font-semibold">No student booked yet</p>
+                    <p className="font-semibold">No Bookings Yet</p>
                     <p className="text-sm text-muted-foreground px-4">
-                      This session is currently available for booking in the marketplace.
+                      When students book this session, they will appear here along with their enrollment details.
                     </p>
                   </div>
                 </div>

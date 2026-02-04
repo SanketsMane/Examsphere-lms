@@ -22,6 +22,24 @@ export async function GET(
     const liveSession = await prisma.liveSession.findUnique({
       where: { id },
       include: {
+        bookings: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true
+              }
+            }
+          },
+          where: {
+            status: { in: ['confirmed', 'pending'] }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        },
         student: {
           select: {
             id: true,
@@ -33,7 +51,7 @@ export async function GET(
         teacher: {
           include: {
             user: {
-              select: {
+               select: {
                 id: true,
                 name: true,
                 email: true,
