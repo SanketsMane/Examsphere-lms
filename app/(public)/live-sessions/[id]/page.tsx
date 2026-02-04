@@ -247,11 +247,20 @@ export default async function SessionDetailPage(props: {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center mb-6">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <DollarSign className="h-8 w-8 text-green-600" />
-                      <span className="text-4xl font-bold">${(session.price / 100).toFixed(0)}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">One-time payment</p>
+                    {session.price === 0 ? (
+                      <>
+                        <Badge className="text-2xl px-6 py-2 bg-green-600 hover:bg-green-700 mb-2">FREE</Badge>
+                        <p className="text-sm text-muted-foreground">No payment required</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <DollarSign className="h-8 w-8 text-green-600" />
+                          <span className="text-4xl font-bold">${(session.price / 100).toFixed(0)}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">One-time payment</p>
+                      </>
+                    )}
                   </div>
 
                   {existingBooking ? (
@@ -276,7 +285,7 @@ export default async function SessionDetailPage(props: {
                       <Link href={`/live-sessions/${session.id}/book`}>
                         <Button className="w-full" size="lg">
                           <Video className="mr-2 h-5 w-5" />
-                          Book This Session
+                          {session.price === 0 ? "Enroll for Free" : "Book This Session"}
                         </Button>
                       </Link>
                     ) : (
