@@ -52,8 +52,8 @@ export function Navbar({ settings }: { settings?: any }) {
             <div 
                 className="relative shrink-0"
                 style={{ 
-                    width: `${(40 * logoSize) / 100}px`, 
-                    height: `${(40 * logoSize) / 100}px` 
+                    width: `${Math.max(24, Math.min(56, (56 * logoSize) / 100))}px`, 
+                    height: `${Math.max(24, Math.min(56, (56 * logoSize) / 100))}px` 
                 }}
             >
                 <Image 
