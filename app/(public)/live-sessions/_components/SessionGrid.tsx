@@ -80,26 +80,39 @@ export function SessionGrid({
 
       {/* Session Grid (Author: Sanket) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sessions.map((session) => (
-          <SessionCard
-            key={session.id}
-            id={session.id}
-            title={session.title}
-            date={new Date(session.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            time={new Date(session.scheduledAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
-            duration={`${session.duration} min`}
-            price={session.price === 0 ? "Free" : `₹${(session.price / 100).toFixed(0)}`}
-            instructor={session.teacher.name}
-            level={session.description?.includes("Beginner") ? "Beginner" : "Intermediate"}
-            rating={session.teacher.rating}
-            index={0}
-            subject={session.subject || "General"}
-            type={session.type}
-            participants={session.confirmedBookings || 0}
-            maxParticipants={session.maxParticipants || 1}
-            availableSlots={session.availableSlots}
-          />
-        ))}
+        {sessions.map((session) => {
+          const start = new Date(session.scheduledAt);
+          const end = new Date(start.getTime() + session.duration * 60000);
+          const now = new Date();
+          
+          let status = "Upcoming";
+          if (now > end) {
+            status = "Expired";
+          } else if (now >= start && now <= end) {
+            status = "Ongoing";
+          } else if (now < start && (start.getTime() - now.getTime()) < 24 * 60 * 60 * 1000) {
+             // Optional: Mark as Active if within 24 hours, but user asked for Active->Green
+             status = "Upcoming"; // Or "Active" if we want to differentiate
+          }
+
+          return (
+            <SessionCard
+              key={session.id}
+              id={session.id}
+              title={session.title}
+              date={start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              time={start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
+              duration={`${session.duration} min`}
+              price={session.price === 0 ? "Free" : `₹${(session.price / 100).toFixed(0)}`}
+              instructor={session.teacher.name}
+              level={status}
+              rating={session.teacher.rating}
+              index={0}
+              participants={session.confirmedBookings || 0}
+              maxParticipants={session.maxParticipants || 1}
+            />
+          );
+        })}
       </div>
 
       {/* Pagination Controls (Author: Sanket) */}

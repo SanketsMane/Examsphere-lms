@@ -38,8 +38,8 @@ export function SessionCard({
 
     const isAvailable = participants < maxParticipants;
     const levelColor =
-        level === "Beginner" ? "text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400" :
-            level === "Intermediate" ? "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400" :
+        level === "Beginner" || level === "Upcoming" || level === "Active" ? "text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400" :
+            level === "Intermediate" || level === "Ongoing" ? "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400" :
                 "text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400";
 
     return (
