@@ -4,15 +4,15 @@
 
 ### Wallet Management
 - `GET /api/wallet/balance` - Get current user's wallet balance
-- `POST /api/wallet/recharge` - Create Stripe checkout for recharge
+- `POST /api/wallet/recharge` - Create Razorpay order for recharge
 
 ### Purchases
 - `POST /api/courses/[slug]/enroll-wallet` - Enroll in course using wallet
 - `POST /api/sessions/[id]/book-wallet` - Book session using wallet
-- `POST /app/actions/groups.ts → joinGroupClass(groupId, "wallet")` - Join group with wallet
+- `POST /app/actions/groups.ts → joinGroupClass(groupId, "wallet")` - Join group with wallet (includes 20% platform fee tracking)
 
 ### Webhook
-- `POST /api/webhook/stripe` - Processes wallet recharges and other Stripe events
+- `POST /api/webhook/razorpay` - Processes wallet recharges and other payment events
 
 ---
 
@@ -65,7 +65,7 @@ model WalletTransaction {
   balanceAfter    Int
   description     String
   metadata        Json?
-  stripeSessionId String?
+  razorpayOrderId String?
   createdAt       DateTime              @default(now())
   
   wallet          Wallet                @relation(...)
@@ -73,7 +73,7 @@ model WalletTransaction {
 ```
 
 ### Transaction Types
-- `RECHARGE` - Adding money via Stripe
+- `RECHARGE` - Adding money via Razorpay
 - `COURSE_PURCHASE` - Buying a course
 - `SESSION_BOOKING` - Booking live session
 - `GROUP_ENROLLMENT` - Joining group class
@@ -95,22 +95,13 @@ import { PaymentSelectionDialog } from "@/components/payment/PaymentSelectionDia
   amount={coursePrice}
   itemType="course"
   itemTitle={courseTitle}
-  onStripeCheckout={async () => {
-    // Handle Stripe payment
+  onOnlinePayment={async () => {
+    // Handle Razorpay checkout
   }}
   onWalletPayment={async () => {
     // Handle wallet payment
   }}
 />
-```
-
-### Recharge Dialog
-```tsx
-import { RechargeDialog } from "@/app/dashboard/wallet/_components/RechargeDialog";
-
-<RechargeDialog>
-  <Button>Add Money</Button>
-</RechargeDialog>
 ```
 
 ---
@@ -134,7 +125,9 @@ await prisma.$transaction(async (tx) => {
   // 2. Create enrollment/booking
   const enrollment = await tx.enrollment.create({ ... });
   
-  // 3. Create commission
+  // 3. Create commission (20%)
+  const { calculatePlatformCommission } = await import("@/lib/finance");
+  const { platformFee, teacherNet } = await calculatePlatformCommission(amount * 100);
   await tx.commission.create({ ... });
   
   // 4. Send notification
@@ -157,13 +150,13 @@ try {
 }
 ```
 
-### Webhook Idempotency
+### Webhook Idempotency (Razorpay)
 ```typescript
 const existing = await prisma.walletTransaction.findFirst({
-  where: { stripeSessionId: session.id }
+  where: { razorpayOrderId: orderId }
 });
 
-if (existing) {
+if (existing && existing.status === 'SUCCESS') {
   console.log("Already processed");
   return;
 }
@@ -173,14 +166,9 @@ if (existing) {
 
 ## Testing
 
-### Test Stripe Cards
-- Success: `4242 4242 4242 4242`
-- Decline: `4000 0000 0000 0002`
-- Insufficient funds: `4000 0000 0000 9995`
-
-### Test OTP
-- In development, OTP codes are logged to console
-- Check email for production OTP delivery
+### Test Razorpay
+- Use Razorpay Test Mode credentials
+- Use Test Cards provided in Razorpay documentation (e.g., 4111 1111 1111 1111)
 
 ---
 
@@ -197,16 +185,6 @@ WHERE "createdAt" >= CURRENT_DATE
 GROUP BY type;
 ```
 
-### Top Wallet Users
-```sql
-SELECT 
-  u.email,
-  w.balance
-FROM wallets w
-JOIN "user" u ON w."userId" = u.id
-ORDER BY w.balance DESC
-LIMIT 10;
-```
+---
 
-### Failed Transactions (Insufficient Balance)
-Check application logs for errors containing "Insufficient balance"
+Author: Sanket

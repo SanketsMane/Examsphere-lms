@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma as db } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
 import { headers } from "next/headers";
+import { getRazorpayInstance, getRazorpayKeyId } from "@/lib/razorpay";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,7 @@ export async function POST(
         teacher: {
           include: {
             user: {
-              select: { name: true }
+              select: { name: true, email: true }
             }
           }
         },
@@ -109,9 +110,6 @@ export async function POST(
               { status: 400 }
             );
           }
-          // Check if teacher allows free group (optional, schema didn't have allowFreeGroup on TeacherProfile yet? 
-          // We added it to prompt but maybe not schema? Let's assume implied or check later.
-          // For now, allow if price is 0.)
       } else {
           // 1-on-1 Demo
           if (freeUsage?.demoUsed) {
@@ -157,7 +155,7 @@ export async function POST(
             status: 'confirmed',
             amount: 0,
             paymentCompletedAt: new Date(),
-            stripeSessionId: `free_${crypto.randomUUID()}` // Dummy ID for unique constraint
+            razorpayOrderId: `free_${crypto.randomUUID()}` // Dummy ID for unique constraint
           }
         });
 
@@ -183,7 +181,8 @@ export async function POST(
       });
 
       return NextResponse.json({
-        url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/sessions?booking=success`
+        url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/sessions?booking=success`,
+        isFree: true
       });
     }
 
@@ -198,8 +197,6 @@ export async function POST(
         });
 
         if (coupon && coupon.isActive) {
-            // Basic validation (expiry, limits) - simplified for checkout flow as pre-check was likely done
-            // But strict check is good practice
              const isValid = 
                 (!coupon.expiryDate || new Date() <= coupon.expiryDate) &&
                 (coupon.usedCount < coupon.usageLimit);
@@ -217,49 +214,59 @@ export async function POST(
         }
     }
 
-    // Create Stripe checkout session
-    const checkoutSession = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: liveSession.title,
-              description: `1-on-1 Live Session with ${liveSession.teacher.user.name}`,
-            },
-            unit_amount: finalPrice, // Price in cents
-          },
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        type: 'live_session',
-        sessionId: liveSession.id,
-        studentId: userId,
-        teacherId: liveSession.teacherId, // Fixed property name
-        couponId: couponId || "",
-        couponCode: couponCode || ""  
-      },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/sessions?booking=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/live-sessions/${liveSession.id}?booking=cancelled`,
-      customer_email: session.user.email,
-    });
+    // Razorpay Initialization
+    const razorpay = await getRazorpayInstance();
+    if (!razorpay) throw new Error("Razorpay Failed to Initialize");
 
-    // Create pending booking
-    await db.sessionBooking.create({
+    const currencyCode = "INR";
+    const amountInPaisa = finalPrice; 
+
+    // Create pending booking first to get booking ID for receipt
+    const booking = await db.sessionBooking.create({
       data: {
         sessionId: liveSession.id,
         studentId: userId,
         status: 'pending',
-        stripeSessionId: checkoutSession.id,
-        amount: finalPrice // Store the actual amount to be paid
+        amount: amountInPaisa
       }
     });
 
+    // Create Razorpay Order
+    const options = {
+        amount: amountInPaisa.toString(),
+        currency: currencyCode,
+        receipt: booking.id,
+        notes: {
+            type: "SESSION_BOOKING",
+            sessionId: liveSession.id,
+            bookingId: booking.id,
+            userId: userId,
+            couponId: couponId || "",
+            couponCode: couponCode || ""
+        }
+    };
+
+    const order = await razorpay.orders.create(options);
+
+    // Update booking with Razorpay Order ID
+    await db.sessionBooking.update({
+        where: { id: booking.id },
+        data: { razorpayOrderId: order.id } 
+    });
+
     return NextResponse.json({
-      url: checkoutSession.url
+        orderId: order.id,
+        amount: amountInPaisa,
+        currency: currencyCode,
+        keyId: await getRazorpayKeyId(),
+        courseName: liveSession.title,
+        courseDescription: `Live Session with ${liveSession.teacher.user.name}`,
+        isFree: false,
+        user: {
+            name: session.user.name,
+            email: session.user.email,
+            contact: "",
+        }
     });
 
   } catch (error: any) {

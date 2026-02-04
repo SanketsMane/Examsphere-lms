@@ -2,7 +2,6 @@
 
 import { requireTeacher } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
 import DOMPurify from "isomorphic-dompurify";
 import { ApiResponse } from "@/lib/types";
 import { courseSchema, CourseSchemaType } from "@/lib/zodSchemas";
@@ -33,22 +32,6 @@ export async function CreateCourse(
             };
         }
 
-        let stripePriceId: string | null = null;
-        try {
-            const data = await stripe.products.create({
-                name: validation.data.title,
-                description: validation.data.smallDescription,
-                default_price_data: {
-                    currency: "usd",
-                    unit_amount: validation.data.price * 100,
-                },
-            });
-            stripePriceId = data.default_price as string;
-        } catch (stripeError) {
-            console.error("Stripe creation failed (continuing with dummy ID):", stripeError);
-            // Proceed without stripe ID for dev/testing. Unique constraint allows multiple nulls.
-        }
-
         const course = await prisma.course.create({
             data: {
                 ...validation.data,
@@ -58,7 +41,6 @@ export async function CreateCourse(
                         id: (session.user as any).id,
                     },
                 },
-                stripePriceId: stripePriceId,
             },
         });
 

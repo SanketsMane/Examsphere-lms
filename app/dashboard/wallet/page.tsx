@@ -1,5 +1,6 @@
 import { requireUser } from "@/app/data/user/require-user";
 import { getWallet, getTransactionHistory } from "@/app/actions/wallet";
+import { getSiteSettings } from "@/app/actions/settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wallet, Plus, ArrowUpRight, ArrowDownRight, RefreshCw } from "lucide-react";
@@ -13,6 +14,8 @@ export default async function WalletPage() {
     const user = await requireUser();
     const wallet = await getWallet(user.id);
     const transactions = await getTransactionHistory(50);
+    const settings = await getSiteSettings();
+    const currencySymbol = settings?.currencySymbol || "₹";
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -28,14 +31,18 @@ export default async function WalletPage() {
             </div>
 
             {/* Balance Card */}
-            <Card className="mb-8 bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-none">
+            <Card className="mb-8 bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-none shadow-lg">
                 <CardHeader>
                     <CardDescription className="text-blue-100">Available Balance</CardDescription>
-                    <CardTitle className="text-5xl font-bold">₹{wallet.balance.toLocaleString()}</CardTitle>
+                    <CardTitle className="text-5xl font-bold">{currencySymbol}{wallet.balance.toLocaleString()}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex gap-3">
-                        <RechargeDialog>
+                        <RechargeDialog 
+                            minRecharge={settings?.minWalletRecharge} 
+                            currencyCode={settings?.currencyCode}
+                            currencySymbol={currencySymbol}
+                        >
                             <Button className="bg-white text-blue-600 hover:bg-blue-50">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Money
@@ -99,10 +106,10 @@ export default async function WalletPage() {
                                         </div>
                                         <div className="text-right">
                                             <p className={`text-lg font-bold ${isCredit ? 'text-green-600' : 'text-red-600'}`}>
-                                                {isCredit ? '+' : ''}₹{Math.abs(txn.amount).toLocaleString()}
+                                                {isCredit ? '+' : ''}{currencySymbol}{Math.abs(txn.amount).toLocaleString()}
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                                Balance: ₹{txn.balanceAfter.toLocaleString()}
+                                                Balance: {currencySymbol}{txn.balanceAfter.toLocaleString()}
                                             </p>
                                         </div>
                                     </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
 import { getRazorpayKeyId } from "@/lib/razorpay";
+import { calculatePlatformCommission } from "@/lib/finance";
 
 export const dynamic = "force-dynamic";
 
@@ -16,14 +17,16 @@ export async function POST(req: NextRequest) {
 
         // Fetch secret directly from DB since we store it there
         const settings = await prisma.siteSettings.findFirst();
-        if (!settings?.razorpayKeySecret) {
+        const webhookSecret = settings?.razorpayWebhookSecret || settings?.razorpayKeySecret;
+
+        if (!webhookSecret) {
             console.error("Razorpay secret not configured");
             return NextResponse.json({ error: "Configuration error" }, { status: 500 });
         }
 
         // Verify signature
         const expectedSignature = crypto
-            .createHmac("sha256", settings.razorpayKeySecret)
+            .createHmac("sha256", webhookSecret)
             .update(body)
             .digest("hex");
 
@@ -57,8 +60,32 @@ export async function POST(req: NextRequest) {
                         where: { id: enrollment.id },
                         data: { 
                             status: "Active",
+                            razorpayPaymentId: payment.id // Store Payment ID for refunds - Author: Sanket
                         }
                     });
+
+                    // 1a. Handle Commission (Author: Sanket)
+                    const { platformFee, teacherNet } = await calculatePlatformCommission(payment.amount);
+                    
+                    // Get course with teacher info
+                    const courseWithTeacher = await prisma.course.findUnique({
+                        where: { id: enrollment.courseId },
+                        include: { user: { include: { teacherProfile: true } } }
+                    });
+
+                    if (courseWithTeacher?.user.teacherProfile) {
+                        await prisma.commission.create({
+                            data: {
+                                teacherId: courseWithTeacher.user.teacherProfile.id,
+                                courseId: enrollment.courseId,
+                                type: "Course",
+                                amount: payment.amount,
+                                commission: platformFee,
+                                netAmount: teacherNet,
+                                status: "Pending"
+                            }
+                        });
+                    }
 
                     // Create system notification
                     await prisma.notification.create({
@@ -160,7 +187,7 @@ export async function POST(req: NextRequest) {
             const sessionBooking = await prisma.sessionBooking.findFirst({
                  where: { id: payment.notes.bookingId } 
             }) || await prisma.sessionBooking.findFirst({
-                 where: { stripeSessionId: orderId } // Backup for Razorpay Order ID
+                 where: { razorpayOrderId: orderId } // Backup for Razorpay Order ID
             });
             
             if (sessionBooking || (payment.notes.type === "SESSION_BOOKING" && payment.notes.bookingId)) {
@@ -188,8 +215,24 @@ export async function POST(req: NextRequest) {
                                where: { id: booking.id },
                                data: {
                                    status: "confirmed",
-                                   stripeSessionId: orderId, // Store Razorpay Order ID here for reference
+                                   razorpayOrderId: orderId, // Set the specific Razorpay Order ID field - Author: Sanket
+                                   razorpayPaymentId: payment.id, // Set the Payment ID for refunds - Author: Sanket
                                    paymentCompletedAt: new Date(),
+                               }
+                           });
+
+                           // 3a. Handle Commission (Author: Sanket)
+                           const { platformFee, teacherNet } = await calculatePlatformCommission(payment.amount);
+                           
+                           await prisma.commission.create({
+                               data: {
+                                   teacherId: booking.session.teacherId,
+                                   sessionId: booking.sessionId,
+                                   type: "LiveSession",
+                                   amount: payment.amount,
+                                   commission: platformFee,
+                                   netAmount: teacherNet,
+                                   status: "Pending"
                                }
                            });
                            
@@ -253,6 +296,60 @@ export async function POST(req: NextRequest) {
                       }
                       return NextResponse.json({ status: "ok" });
                  }
+            }
+
+            // 4. Check if this is a Group Enrollment (Author: Sanket)
+            const groupEnrollment = await prisma.groupEnrollment.findFirst({
+                where: { razorpayOrderId: orderId }
+            });
+
+            if (groupEnrollment) {
+                if (groupEnrollment.status !== "Active") {
+                    await prisma.groupEnrollment.update({
+                        where: { id: groupEnrollment.id },
+                        data: { 
+                            status: "Active",
+                            razorpayPaymentId: payment.id
+                        }
+                    });
+
+                    // 4a. Handle Commission
+                    const { platformFee, teacherNet } = await calculatePlatformCommission(payment.amount);
+                    const groupClass = await prisma.groupClass.findUnique({
+                        where: { id: groupEnrollment.classId }
+                    });
+
+                    if (groupClass) {
+                        await prisma.commission.create({
+                            data: {
+                                teacherId: groupClass.teacherId,
+                                type: "GroupClass",
+                                amount: payment.amount,
+                                commission: platformFee,
+                                netAmount: teacherNet,
+                                status: "Pending"
+                            }
+                        });
+                    }
+
+                    // Log Transaction
+                    await prisma.systemTransaction.create({
+                        data: {
+                            amount: payment.amount,
+                            currency: payment.currency,
+                            status: "SUCCESS",
+                            method: payment.method,
+                            providerOrderId: orderId,
+                            providerPaymentId: payment.id,
+                            type: "SESSION_BOOKING",
+                            description: `Group Class Enrollment: ${groupEnrollment.classId}`,
+                            userId: groupEnrollment.studentId,
+                        }
+                    });
+
+                    console.log(`Group Enrollment ${groupEnrollment.id} completed via Razorpay`);
+                }
+                return NextResponse.json({ status: "ok" });
             }
 
             console.log(`Razorpay order ${orderId} match not found in local DB`);

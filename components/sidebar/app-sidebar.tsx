@@ -96,6 +96,11 @@ const data = {
           url: "/admin/payments/refunds",
           icon: IconTicket,
         },
+        {
+          title: "Earnings & Fees",
+          url: "/admin/finance",
+          icon: IconChartBar,
+        },
       ],
     },
     {

@@ -82,7 +82,7 @@ export async function deleteGroupClass(groupId: string) {
  * @param groupId - Group class ID
  * @param paymentMethod - "stripe" or "wallet"
  */
-export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | "wallet" = "stripe", couponCode?: string) {
+export async function joinGroupClass(groupId: string, paymentMethod: "online" | "wallet" = "online", couponCode?: string) {
     /**
      * Handles group class enrollment with coupon support and free trial limits.
      * Author: Sanket
@@ -248,6 +248,23 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
                     }
                 });
 
+                // Record commission for net earning if not free (Author: Sanket)
+                if (finalPrice > 0) {
+                    const { calculatePlatformCommission } = await import("@/lib/finance");
+                    const { platformFee, teacherNet } = await calculatePlatformCommission(finalPrice * 100);
+                    
+                    await tx.commission.create({
+                        data: {
+                            teacherId: groupClass.teacherId,
+                            type: "GroupClass",
+                            amount: finalPrice * 100, // stored in cents/paisa
+                            commission: platformFee,  // platform fee
+                            netAmount: teacherNet,    // teacher's share
+                            status: "Pending"
+                        }
+                    });
+                }
+
                 await tx.notification.create({
                     data: {
                         userId: (user as any).id,
@@ -262,51 +279,57 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
             return { success: true, message: "Successfully joined group class" };
         }
 
-        // Stripe Flow
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        // Razorpay Flow (Author: Sanket)
+        const { getRazorpayInstance, getRazorpayKeyId } = await import("@/lib/razorpay");
+        const razorpay = await getRazorpayInstance();
         
-        // Import stripe lazily
-        const { stripe } = await import("@/lib/stripe");
+        const amountInPaisa = Math.round(finalPrice * 100); // UI cents to paisa
 
-        const stripeSession = await stripe.checkout.sessions.create({
-            mode: "payment",
-            line_items: [
-                {
-                    price_data: {
-                        currency: "usd",
-                        product_data: {
-                            name: `Group Class: ${groupClass.title}`,
-                            description: `Enrollment for ${groupClass.title}`,
-                            images: groupClass.bannerUrl ? [groupClass.bannerUrl] : [],
-                        },
-                        unit_amount: Math.round(finalPrice * 100), // Stripe expects cents
-                    },
-                    quantity: 1,
-                },
-            ],
-            metadata: {
-                type: "group_enrollment",
-                userId: (user as any).id,
-                groupId: groupId,
-                couponCode: couponCode || "",
-                couponId: couponId || ""
-            },
-            success_url: `${appUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}&type=group`,
-            cancel_url: `${appUrl}/payment/cancel`,
-            customer_email: (user as any).email,
-        });
-
-        // Create pending enrollment for tracking
-        await prisma.groupEnrollment.create({
+        // Create pending enrollment first to get ID for receipt
+        const enrollment = await prisma.groupEnrollment.create({
             data: {
                 classId: groupId,
                 studentId: (user as any).id,
-                status: "Pending" // Will be updated to Active by webhook
+                status: "Pending"
             }
         });
 
+        const options = {
+            amount: amountInPaisa.toString(),
+            currency: "INR",
+            receipt: enrollment.id,
+            notes: {
+                type: "GROUP_ENROLLMENT",
+                groupId: groupId,
+                enrollmentId: enrollment.id,
+                userId: (user as any).id,
+                couponCode: couponCode || "",
+                couponId: couponId || ""
+            }
+        };
+
+        const order = await razorpay.orders.create(options);
+
+        // Update enrollment with Razorpay Order ID
+        await prisma.groupEnrollment.update({
+            where: { id: enrollment.id },
+            data: { razorpayOrderId: order.id }
+        });
+
         revalidatePath("/dashboard/groups");
-        return { success: true, url: stripeSession.url };
+        
+        return { 
+            success: true, 
+            orderId: order.id,
+            amount: amountInPaisa,
+            currency: "INR",
+            keyId: await getRazorpayKeyId(),
+            groupTitle: groupClass.title,
+            user: {
+                name: user.name,
+                email: user.email,
+            }
+        };
 
     } catch (error: any) {
         console.error("Join group error:", error);
@@ -323,7 +346,7 @@ export async function joinGroupClass(groupId: string, paymentMethod: "stripe" | 
  * Author: Sanket
  */
 export async function requestToJoinGroup(groupId: string, couponCode?: string) {
-    return joinGroupClass(groupId, "stripe", couponCode);
+    return joinGroupClass(groupId, "online", couponCode);
 }
 
 export async function updateEnrollmentStatus(enrollmentId: string, status: "Active" | "Cancelled") {

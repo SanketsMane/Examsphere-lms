@@ -2,7 +2,6 @@
 
 import { prisma } from "@/lib/db";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
-import { stripe } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
 
 /**
@@ -19,35 +18,36 @@ export async function purchaseGiftCard(data: {
         const session = await getSessionWithRole();
         if (!session) return { error: "Unauthorized" };
 
-        const checkoutSession = await stripe.checkout.sessions.create({
-            mode: "payment",
-            payment_method_types: ["card"],
-            line_items: [
-                {
-                    price_data: {
-                        currency: "usd",
-                        product_data: {
-                            name: `Kidokool Gift Card - $${data.amount}`,
-                            description: `For: ${data.recipientEmail}`,
-                        },
-                        unit_amount: Math.round(data.amount * 100),
-                    },
-                    quantity: 1,
-                },
-            ],
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/gift-cards?success=true`,
-            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/gift-cards?canceled=true`,
-            customer_email: session.user.email!,
-            metadata: {
+        // Razorpay Flow (Author: Sanket)
+        const { getRazorpayInstance, getRazorpayKeyId } = await import("@/lib/razorpay");
+        const razorpay = await getRazorpayInstance();
+        
+        const amountInPaisa = Math.round(data.amount * 100);
+
+        const options = {
+            amount: amountInPaisa.toString(),
+            currency: "INR",
+            receipt: `giftcard_${Date.now()}`,
+            notes: {
+                type: "GIFT_CARD_PURCHASE",
                 userId: session.user.id,
                 recipientEmail: data.recipientEmail,
-                amount: data.amount.toString(),
-                message: data.message || "",
-                type: "gift_card_purchase"
+                message: data.message || ""
             }
-        });
+        };
 
-        return { url: checkoutSession.url };
+        const order = await razorpay.orders.create(options);
+
+        return { 
+            orderId: order.id,
+            amount: amountInPaisa,
+            currency: "INR",
+            keyId: await getRazorpayKeyId(),
+            user: {
+                name: session.user.name,
+                email: session.user.email,
+            }
+        };
     } catch (error) {
         logger.error("Gift Card Purchase Error", { error });
         return { error: "Failed to initiate purchase" };

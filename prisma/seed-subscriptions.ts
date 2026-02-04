@@ -14,7 +14,6 @@ async function main() {
       description: "Perfect for casual learners.",
       price: 19,
       interval: "month",
-      stripePriceId: "price_starter_monthly", // Replace with real ID
       features: ["2 Live Sessions per month", "Access to Basic Courses", "Basic Support"],
       isDefault: true,
     },
@@ -23,7 +22,6 @@ async function main() {
       description: "Our most popular plan for active students.",
       price: 49,
       interval: "month",
-      stripePriceId: "price_pro_monthly", // Replace with real ID
       features: ["10 Live Sessions per month", "All Premium Courses", "Priority Support", "Session Recordings"],
     },
     {
@@ -31,14 +29,13 @@ async function main() {
       description: "For the dedicated scholar.",
       price: 99,
       interval: "month",
-      stripePriceId: "price_unlimited_monthly", // Replace with real ID
       features: ["Unlimited Live Sessions", "All Courses & Content", "24/7 VIP Support", "1-on-1 Mentorship Session"],
     }
   ];
 
   for (const plan of plans) {
     await prisma.subscriptionPlan.upsert({
-      where: { stripePriceId: plan.stripePriceId },
+      where: { name: plan.name },
       update: plan,
       create: plan,
     });

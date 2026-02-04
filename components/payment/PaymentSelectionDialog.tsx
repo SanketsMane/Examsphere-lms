@@ -15,12 +15,12 @@ interface PaymentSelectionDialogProps {
     amount: number;
     itemType: "course" | "session" | "group";
     itemTitle: string;
-    onStripeCheckout: () => Promise<void>;
+    onPaymentCheckout: () => Promise<void>;
     onWalletPayment: () => Promise<void>;
 }
 
 /**
- * Payment selection dialog - Choose between Stripe or Wallet
+ * Payment selection dialog - Choose between Razorpay or Wallet
  * @author Sanket
  */
 export function PaymentSelectionDialog({
@@ -29,10 +29,10 @@ export function PaymentSelectionDialog({
     amount,
     itemType,
     itemTitle,
-    onStripeCheckout,
+    onPaymentCheckout,
     onWalletPayment
 }: PaymentSelectionDialogProps) {
-    const [paymentMethod, setPaymentMethod] = useState<"stripe" | "wallet">("stripe");
+    const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "wallet">("razorpay");
     const [walletBalance, setWalletBalance] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
     const [loadingBalance, setLoadingBalance] = useState(true);
@@ -61,8 +61,8 @@ export function PaymentSelectionDialog({
     const handleProceed = async () => {
         setLoading(true);
         try {
-            if (paymentMethod === "stripe") {
-                await onStripeCheckout();
+            if (paymentMethod === "razorpay") {
+                await onPaymentCheckout();
             } else {
                 await onWalletPayment();
             }
@@ -74,7 +74,7 @@ export function PaymentSelectionDialog({
     };
 
     const insufficientBalance = walletBalance !== null && walletBalance < amount;
-    const canProceed = paymentMethod === "stripe" || (paymentMethod === "wallet" && !insufficientBalance);
+    const canProceed = paymentMethod === "razorpay" || (paymentMethod === "wallet" && !insufficientBalance);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -96,18 +96,18 @@ export function PaymentSelectionDialog({
                     </div>
 
                     {/* Payment Method Selection */}
-                    <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "stripe" | "wallet")}>
-                        {/* Stripe Option */}
+                    <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "razorpay" | "wallet")}>
+                        {/* Razorpay Option */}
                         <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                            <RadioGroupItem value="stripe" id="stripe" />
-                            <Label htmlFor="stripe" className="flex-1 cursor-pointer">
+                            <RadioGroupItem value="razorpay" id="razorpay" />
+                            <Label htmlFor="razorpay" className="flex-1 cursor-pointer">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-100 rounded-lg">
                                         <CreditCard className="h-5 w-5 text-blue-600" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold">Credit/Debit Card</p>
-                                        <p className="text-sm text-muted-foreground">Pay securely via Stripe</p>
+                                        <p className="font-semibold">Razorpay (Cards/UPI/Netbanking)</p>
+                                        <p className="text-sm text-muted-foreground">Pay securely via Razorpay</p>
                                     </div>
                                 </div>
                             </Label>
@@ -167,7 +167,7 @@ export function PaymentSelectionDialog({
                             </>
                         ) : (
                             <>
-                                {paymentMethod === "stripe" ? "Proceed to Checkout" : `Pay ₹${amount.toLocaleString()} from Wallet`}
+                                {paymentMethod === "razorpay" ? "Proceed to Checkout" : `Pay ₹${amount.toLocaleString()} from Wallet`}
                             </>
                         )}
                     </Button>

@@ -12,24 +12,25 @@ export async function POST(req: NextRequest) {
         const user = await requireUser();
         const { amount } = await req.json();
 
-        // Enforce INR for simplicity as per current plan
-        const currencyCode = "INR";
-        const localAmount = amount;
+        // Fetch dynamic settings (Author: Sanket)
+        const settings = await prisma.siteSettings.findFirst();
+        const minRecharge = settings?.minWalletRecharge || 100;
+        const currencyCode = settings?.currencyCode || "INR";
+        const currencySymbol = settings?.currencySymbol || "₹";
 
-        // Min/Max in INR
-        const minRecharge = 100;    // ₹100
+        const localAmount = amount;
         const maxRecharge = 100000; // ₹1 Lakh
 
         if (localAmount < minRecharge) {
             return NextResponse.json(
-                { error: `Minimum recharge is ₹${minRecharge}` },
+                { error: `Minimum recharge is ${currencySymbol}${minRecharge}` },
                 { status: 400 }
             );
         }
 
         if (localAmount > maxRecharge) {
             return NextResponse.json(
-                { error: `Maximum recharge is ₹${maxRecharge}` },
+                { error: `Maximum recharge is ${currencySymbol}${maxRecharge.toLocaleString()}` },
                 { status: 400 }
             );
         }

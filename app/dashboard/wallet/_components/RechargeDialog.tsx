@@ -11,13 +11,21 @@ import { useRazorpay } from "@/components/payment/use-razorpay";
 
 interface RechargeDialogProps {
     children: React.ReactNode;
+    minRecharge?: number;
+    currencyCode?: string;
+    currencySymbol?: string;
 }
 
 /**
  * Dialog component for wallet recharge
  * @author Sanket
  */
-export function RechargeDialog({ children }: RechargeDialogProps) {
+export function RechargeDialog({ 
+    children,
+    minRecharge = 100,
+    currencyCode = "INR",
+    currencySymbol = "₹"
+}: RechargeDialogProps) {
     const [open, setOpen] = useState(false);
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
@@ -28,13 +36,13 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
     const handleRecharge = async () => {
         const amountNum = parseInt(amount);
 
-        if (!amountNum || amountNum < 100) {
-            toast.error("Minimum recharge amount is ₹100");
+        if (!amountNum || amountNum < minRecharge) {
+            toast.error(`Minimum recharge amount is ${currencySymbol}${minRecharge}`);
             return;
         }
 
         if (amountNum > 100000) {
-            toast.error("Maximum recharge amount is ₹100,000");
+            toast.error(`Maximum recharge amount is ${currencySymbol}100,000`);
             return;
         }
 
@@ -66,7 +74,7 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
                 amount: data.amount,
                 currency: data.currency,
                 name: "Wallet Recharge",
-                description: `Add ₹${amountNum} to wallet`,
+                description: `Add ${currencySymbol}${amountNum} to wallet`,
                 user: data.user,
                 onSuccess: (paymentId: any) => {
                     toast.success("Recharge successful! Updating wallet...");
@@ -96,7 +104,7 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
                 <DialogHeader>
                     <DialogTitle>Add Money to Wallet</DialogTitle>
                     <DialogDescription>
-                        Choose an amount or enter a custom value. 1 Point = ₹1
+                        Choose an amount or enter a custom value. 1 Point = {currencySymbol}1
                     </DialogDescription>
                 </DialogHeader>
 
@@ -112,7 +120,7 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
                                     onClick={() => setAmount(amt.toString())}
                                     type="button"
                                 >
-                                    ₹{amt}
+                                    {currencySymbol}{amt}
                                 </Button>
                             ))}
                         </div>
@@ -124,7 +132,7 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
                             Custom Amount
                         </Label>
                         <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{currencySymbol}</span>
                             <Input
                                 id="amount"
                                 type="number"
@@ -132,21 +140,21 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 className="pl-7"
-                                min={100}
+                                min={minRecharge}
                                 max={100000}
                             />
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Min: ₹100 | Max: ₹100,000
+                            Min: {currencySymbol}{minRecharge} | Max: {currencySymbol}100,000
                         </p>
                     </div>
 
                     {/* Summary */}
-                    {amount && parseInt(amount) >= 100 && (
+                    {amount && parseInt(amount) >= minRecharge && (
                         <div className="bg-muted p-4 rounded-lg">
                             <div className="flex justify-between text-sm mb-1">
                                 <span>Amount</span>
-                                <span className="font-semibold">₹{parseInt(amount).toLocaleString()}</span>
+                                <span className="font-semibold">{currencySymbol}{parseInt(amount).toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span>Points to be added</span>
@@ -158,7 +166,7 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
                     {/* Recharge Button */}
                     <Button
                         onClick={handleRecharge}
-                        disabled={!amount || parseInt(amount) < 100 || loading}
+                        disabled={!amount || parseInt(amount) < minRecharge || loading}
                         className="w-full"
                         size="lg"
                     >
@@ -168,7 +176,7 @@ export function RechargeDialog({ children }: RechargeDialogProps) {
                                 Processing...
                             </>
                         ) : (
-                            `Add ₹${amount || '0'} to Wallet`
+                            `Add ${currencySymbol}${amount || '0'} to Wallet`
                         )}
                     </Button>
                 </div>

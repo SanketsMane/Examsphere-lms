@@ -203,6 +203,17 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                 />
                             </div>
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="razorpayWebhookSecret">Razorpay Webhook Secret</Label>
+                            <Input 
+                                id="razorpayWebhookSecret" 
+                                name="razorpayWebhookSecret" 
+                                type="password"
+                                defaultValue={(settings as any)?.razorpayWebhookSecret || ""} 
+                                placeholder="••••••••••••••••" 
+                            />
+                            <p className="text-[10px] text-muted-foreground">This secret is used to verify that webhook calls are legitimate and come from Razorpay.</p>
+                        </div>
                         <p className="text-xs text-muted-foreground">
                             These credentials are used to process all payments (Course Purchases, Wallet Recharges). 
                             Get them from your <a href="https://dashboard.razorpay.com/app/website-app-settings/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Razorpay Dashboard</a>.

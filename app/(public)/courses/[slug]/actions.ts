@@ -3,18 +3,13 @@
 import { requireUser } from "@/app/data/user/require-user";
 import { protectEnrollmentAction } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
-import { env } from "@/lib/env";
-import { stripe } from "@/lib/stripe";
-import { ApiResponse } from "@/lib/types";
-import { redirect } from "next/navigation";
-import Stripe from "stripe";
+import { getRazorpayInstance, getRazorpayKeyId } from "@/lib/razorpay";
 
 export async function enrollInCourseAction(
   courseId: string
-): Promise<ApiResponse | never> {
+): Promise<any> {
   const user = await requireUser();
 
-  let checkoutUrl: string;
   try {
     // Apply security protection for enrollment actions
     const securityCheck = await protectEnrollmentAction(user.id);
@@ -33,7 +28,6 @@ export async function enrollInCourseAction(
         title: true,
         price: true,
         slug: true,
-        stripePriceId: true,
       },
     });
 
@@ -42,39 +36,6 @@ export async function enrollInCourseAction(
         status: "error",
         message: "Course not found",
       };
-    }
-
-    let stripeCustomerId: string;
-    const userWithStripeCustomerId = await prisma.user.findUnique({
-      where: {
-        id: user.id,
-      },
-      select: {
-        stripeCustomerId: true,
-      },
-    });
-
-    if (userWithStripeCustomerId?.stripeCustomerId) {
-      stripeCustomerId = userWithStripeCustomerId.stripeCustomerId;
-    } else {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.name,
-        metadata: {
-          userId: user.id,
-        },
-      });
-
-      stripeCustomerId = customer.id;
-
-      await prisma.user.update({
-        where: {
-          id: user.id,
-        },
-        data: {
-          stripeCustomerId: stripeCustomerId,
-        },
-      });
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -93,8 +54,8 @@ export async function enrollInCourseAction(
 
       if (existingEnrollment?.status === "Active") {
         return {
-          status: "success",
-          message: "You are alredy enrolled in this Course",
+          status: "already_enrolled",
+          message: "You are already enrolled in this Course",
         };
       }
 
@@ -122,46 +83,51 @@ export async function enrollInCourseAction(
         });
       }
 
-      const finalCustomerId = stripeCustomerId || undefined;
+      // Razorpay Initialization
+      const razorpay = await getRazorpayInstance();
+      if (!razorpay) throw new Error("Razorpay failed to initialize");
 
-      const checkoutSession = await stripe.checkout.sessions.create({
-        customer: finalCustomerId,
-        line_items: [
-          {
-            price: course.stripePriceId || undefined,
-            quantity: 1,
-          },
-        ],
-        mode: "payment",
-        success_url: `${env.BETTER_AUTH_URL}/payment/success`,
-        cancel_url: `${env.BETTER_AUTH_URL}/payment/cancel`,
-        metadata: {
-          userId: user.id || "",
-          courseId: course.id || "",
-          enrollmentId: enrollment.id || "",
-        },
+      const amountInPaisa = Math.round(course.price); // Price is already in paisa/cents in DB
+      const options = {
+        amount: amountInPaisa.toString(),
+        currency: "INR",
+        receipt: enrollment.id,
+        notes: {
+          type: "COURSE_ENROLLMENT",
+          courseId: course.id,
+          enrollmentId: enrollment.id,
+          userId: user.id,
+        }
+      };
+
+      const order = await razorpay.orders.create(options);
+
+      // Store Razorpay Order ID
+      await tx.enrollment.update({
+        where: { id: enrollment.id },
+        data: { razorpayOrderId: order.id }
       });
 
       return {
-        enrollment: enrollment,
-        checkoutUrl: checkoutSession.url,
+        status: "success",
+        orderId: order.id,
+        amount: amountInPaisa,
+        currency: "INR",
+        keyId: await getRazorpayKeyId(),
+        courseName: course.title,
+        user: {
+          name: user.name,
+          email: user.email,
+        }
       };
     });
 
-    checkoutUrl = result.checkoutUrl as string;
+    return result;
   } catch (error) {
-    if (error instanceof Stripe.errors.StripeError) {
-      return {
-        status: "error",
-        message: "Payment system error. Please try again later.",
-      };
-    }
-
+    console.error("Enrollment error:", error);
     return {
       status: "error",
       message: "Failed to enroll in course",
     };
   }
-
-  redirect(checkoutUrl);
 }

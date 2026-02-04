@@ -39,8 +39,8 @@ export function SubscriptionPlans({ plans, currentPlanId }: SubscriptionPlansPro
                 return;
             }
 
-            if (result.url) {
-                window.location.href = result.url;
+            if (result && 'url' in result && (result as any).url) {
+                window.location.href = (result as any).url;
             }
         } catch (error) {
             toast.error("An unexpected error occurred");

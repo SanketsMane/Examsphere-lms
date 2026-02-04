@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
-import { stripe } from "@/lib/stripe";
 
 /**
  * Bundle Management Server Actions
@@ -55,33 +54,36 @@ export async function purchaseBundle(bundleId: string) {
 
         if (!bundle) return { error: "Bundle not found" };
 
-        const checkoutSession = await stripe.checkout.sessions.create({
-            mode: "payment",
-            payment_method_types: ["card"], // or whatever methods you support
-            line_items: [
-                {
-                    price_data: {
-                        currency: "usd",
-                        product_data: {
-                            name: bundle.title,
-                            description: `${bundle.sessionCount} Sessions with ${bundle.teacher.user.name}`,
-                        },
-                        unit_amount: Math.round(bundle.price * 100),
-                    },
-                    quantity: 1,
-                },
-            ],
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/bundles?success=true`,
-            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/bundles?canceled=true`,
-            customer_email: session.user.email!,
-            metadata: {
-                userId: session.user.id,
-                bundleId: bundle.id,
-                type: "bundle_purchase"
-            }
-        });
+        // Razorpay Flow (Author: Sanket)
+        const { getRazorpayInstance, getRazorpayKeyId } = await import("@/lib/razorpay");
+        const razorpay = await getRazorpayInstance();
+        
+        const amountInPaisa = Math.round(bundle.price * 100);
 
-        return { url: checkoutSession.url };
+        const options = {
+            amount: amountInPaisa.toString(),
+            currency: "INR",
+            receipt: `bundle_${bundle.id}`,
+            notes: {
+                type: "BUNDLE_PURCHASE",
+                userId: session.user.id,
+                bundleId: bundle.id
+            }
+        };
+
+        const order = await razorpay.orders.create(options);
+
+        return { 
+            orderId: order.id,
+            amount: amountInPaisa,
+            currency: "INR",
+            keyId: await getRazorpayKeyId(),
+            bundleTitle: bundle.title,
+            user: {
+                name: session.user.name,
+                email: session.user.email,
+            }
+        };
     } catch (error) {
         logger.error("Purchase Bundle Error", { error });
         return { error: "Failed to initiate purchase" };

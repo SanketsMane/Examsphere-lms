@@ -56,7 +56,8 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     footerLinks: JSON.parse(formData.get("footerLinks") as string || "{}"),
                     maxGroupClassSize,
                     razorpayKeyId,
-                    razorpayKeySecret
+                    razorpayKeySecret,
+                    razorpayWebhookSecret: formData.get("razorpayWebhookSecret") as string
                 } as any,
             });
         } else {
@@ -77,7 +78,8 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     footerLinks: JSON.parse(formData.get("footerLinks") as string || "{}"),
                     maxGroupClassSize,
                     razorpayKeyId, 
-                    razorpayKeySecret
+                    razorpayKeySecret,
+                    razorpayWebhookSecret: formData.get("razorpayWebhookSecret") as string
                 } as any,
             });
         }

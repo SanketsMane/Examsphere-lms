@@ -16,7 +16,6 @@ model User {
   image                       String?
   createdAt                   DateTime                  @default(now())
   updatedAt                   DateTime                  @updatedAt
-  stripeCustomerId            String?                   @unique
   role                        String?
   banned                      Boolean?
   banReason                   String?
@@ -251,7 +250,6 @@ model Course {
   price            Int
   duration         Int
   level            CourseLevel            @default(Beginner)
-  stripePriceId    String?                @unique
   category         String
   smallDescription String
   slug             String                 @unique
@@ -340,6 +338,7 @@ model Enrollment {
   Course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   User            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   razorpayOrderId String?
+  razorpayPaymentId String? // Added for refund tracking - Author: Sanket
 
   @@unique([userId, courseId])
   @@index([courseId])
@@ -417,8 +416,6 @@ model LiveSession {
   meetingProvider     String?
   recordingUrl        String?
   notes               String?
-  stripePriceId       String?
-  stripeSessionId     String?
   timezone            String          @default("UTC")
   isRecurring         Boolean         @default(false)
   recurringPattern    String?
@@ -615,9 +612,8 @@ model SessionBooking {
   studentId             String
   status                BookingStatus @default(pending)
   amount                Int
-  stripeSessionId       String?       @unique
   razorpayOrderId       String?       @unique
-  stripePaymentIntentId String?
+  razorpayPaymentId     String?       @unique // Added for refund tracking - Author: Sanket
   paymentCompletedAt    DateTime?
   cancelledAt           DateTime?
   cancellationReason    String?
@@ -671,6 +667,8 @@ model GroupEnrollment {
   studentId  String
   status     EnrollmentStatus @default(Pending)
   enrolledAt DateTime         @default(now())
+  razorpayOrderId   String?    @unique // Added for Razorpay tracking - Author: Sanket
+  razorpayPaymentId String?    @unique // Added for refunds - Author: Sanket
   class      GroupClass       @relation(fields: [classId], references: [id], onDelete: Cascade)
   student    User             @relation("GroupEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
 
@@ -903,8 +901,14 @@ model SiteSettings {
   maxGroupClassSize Int      @default(12)
   razorpayKeyId     String?
   razorpayKeySecret String?
-  logoSize          Int      @default(100)
-  updatedAt         DateTime @updatedAt
+  razorpayWebhookSecret String?
+  logoSize              Int      @default(100)
+  commissionPercentage  Float    @default(20.0)
+  gstPercentage         Float    @default(0.0)
+  minWalletRecharge     Float    @default(100.0)
+  currencyCode          String   @default("INR")
+  currencySymbol        String   @default("₹")
+  updatedAt             DateTime @updatedAt
 }
 
 model Page {
@@ -1461,11 +1465,10 @@ enum SessionStatus {
 
 model SubscriptionPlan {
   id            String             @id @default(cuid())
-  name          String
+  name          String             @unique
   description   String?
   price         Float
   interval      String             @default("month") // month, year
-  stripePriceId String             @unique
   features      String[] // List of feature descriptions
   isDefault     Boolean            @default(false)
   createdAt     DateTime           @default(now())
@@ -1481,7 +1484,6 @@ model UserSubscription {
   user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   planId               String
   plan                 SubscriptionPlan @relation(fields: [planId], references: [id])
-  stripeSubscriptionId String?          @unique
   status               String // active, trialing, past_due, canceled, unpaid
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean          @default(false)
@@ -1489,7 +1491,6 @@ model UserSubscription {
   updatedAt            DateTime         @updatedAt
 
   @@index([userId])
-  @@index([stripeSubscriptionId])
   @@map("user_subscription")
 }
 
@@ -1759,7 +1760,6 @@ model WalletTransaction {
   balanceAfter    Int
   description     String
   metadata        Json? // Store course/session/group details
-  stripeSessionId String? // For recharge transactions
   razorpayOrderId String?
   createdAt       DateTime              @default(now())
 
@@ -2002,7 +2002,6 @@ model BundleBooking {
   student         User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   sessionsLeft    Int
   status          String        @default("active") // active, exhausted
-  stripeSessionId String?       @unique
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

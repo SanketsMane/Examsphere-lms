@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { stripe } from "@/lib/stripe";
+// Removed Stripe import - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
@@ -84,22 +84,22 @@ export async function POST(
     for (const booking of liveSession.bookings) {
       let refundAmount = Math.round(booking.amount * refundPercentage);
 
-      if (refundAmount > 0 && booking.stripePaymentIntentId) {
-        try {
-          await stripe.refunds.create({
-            payment_intent: booking.stripePaymentIntentId,
-            amount: refundAmount,
-            reason: 'requested_by_customer', // Technically 'duplicate' or 'fraudulent' or 'requested_by_customer' are options. 'requested_by_customer' is safest.
-            metadata: {
-              sessionId: liveSession.id,
-              cancelledBy: 'teacher',
-              reason: reason || 'Teacher cancelled'
-            }
-          });
-        } catch (stripeError) {
-          console.error(`Stripe refund failed for booking ${booking.id}:`, stripeError);
-          // We proceed to mark as cancelled even if refund fails, but ideally we'd flag this.
-          // Assuming success for accounting purposes for now.
+      if (refundAmount > 0) {
+        if (booking.razorpayPaymentId) {
+          try {
+            const { getRazorpayInstance } = await import("@/lib/razorpay");
+            const razorpay = await getRazorpayInstance();
+            await razorpay.payments.refund(booking.razorpayPaymentId, {
+              amount: refundAmount,
+              notes: {
+                sessionId: liveSession.id,
+                cancelledBy: 'teacher',
+                reason: reason || 'Teacher cancelled'
+              }
+            });
+          } catch (rzpError) {
+            console.error(`Razorpay refund failed for booking ${booking.id}:`, rzpError);
+          }
         }
       }
 

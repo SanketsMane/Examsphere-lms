@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma as db } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
 import { headers } from "next/headers";
 import { differenceInHours } from "date-fns";
 
@@ -81,23 +80,26 @@ export async function POST(
 
     const refundAmount = Math.round(booking.amount * refundPercentage);
 
-    // Process refund via Stripe if applicable
-    let stripeRefundId = null;
-    if (refundAmount > 0 && booking.stripePaymentIntentId) {
+    // Process refund via Razorpay if applicable (Author: Sanket)
+    let razorpayRefundId = null;
+    if (refundAmount > 0 && booking.razorpayPaymentId) {
       try {
-        const refund = await stripe.refunds.create({
-          payment_intent: booking.stripePaymentIntentId,
+        const { getRazorpayInstance } = await import("@/lib/razorpay");
+        const razorpay = await getRazorpayInstance();
+        const refund = await razorpay.payments.refund(booking.razorpayPaymentId, {
           amount: refundAmount,
-          reason: 'requested_by_customer'
+          notes: {
+            reason: reason || 'requested_by_customer',
+            bookingId: booking.id
+          }
         });
-        stripeRefundId = refund.id;
-      } catch (stripeError: any) {
-        console.error('Stripe refund error:', stripeError);
-        // CRITICAL FIX: Stop execution if refund fails to prevent database inconsistency
+        razorpayRefundId = refund.id;
+      } catch (rzpError: any) {
+        console.error('Razorpay refund error:', rzpError);
         return NextResponse.json(
           { 
-            error: "Refund processing failed. Please contact support or try again later.",
-            details: stripeError.message 
+            error: "Refund processing failed via Razorpay. Please contact support.",
+            details: rzpError.message 
           },
           { status: 500 }
         );
