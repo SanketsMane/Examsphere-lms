@@ -1,42 +1,18 @@
 import { FadeIn } from "@/components/ui/fade-in";
-import { SessionCard } from "@/components/ui/session-card";
 import { Video, Users, Globe, Star } from "lucide-react";
-import Link from "next/link";
 import { getAllSessions } from "@/app/data/live-session/get-all-sessions";
 import { LiveSessionFeatures } from "@/components/marketing/live-session-features";
-import { LiveNowTray } from "@/components/marketing/LiveNowTray";
-import { SessionCalendarView } from "@/components/marketing/SessionCalendarView";
+import { LiveSessionsClient } from "./_components/LiveSessionsClient";
 
 export const dynamic = "force-dynamic";
 
-// Moved to dynamic fetch
-/* const stats = [
-  { icon: Video, label: "Sessions Completed", value: "12k+" },
-  { icon: Users, label: "Active Instructors", value: "200+" },
-  { icon: Globe, label: "Global Learners", value: "25k+" },
-  { icon: Star, label: "Average Rating", value: "4.9" }
-]; */
-
 export default async function LiveSessionsPage() {
-  const rawSessions = await getAllSessions();
-
-  // Transform sessions to plain objects to avoid Decimal serialization issues
-  const sessions = rawSessions.map(session => ({
-    ...session,
-    price: Number(session.price),
-    scheduledAt: session.scheduledAt.toISOString(), // Serialize for client component
-    teacher: {
-      ...session.teacher,
-      hourlyRate: Number(session.teacher.hourlyRate),
-      totalEarnings: Number(session.teacher.totalEarnings)
-    }
-  }));
+  // We still fetch initial sessions for the hero stats if needed, or we can hardcode/fetch separately.
+  // For now, keeping getAllSessions for the stats, but the grid will use the client component.
+  const sessions = await getAllSessions();
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
-      {/* Live Now Tray - Using latest sessions as "Live" for demo */}
-      {/* LiveNowTray removed as per request */}
-
       {/* Clean Hero Section */}
       <section className="relative overflow-hidden bg-white dark:bg-black py-20 lg:py-28 border-b border-gray-100 dark:border-gray-800">
         <div className="container mx-auto px-4 relative z-10 text-center">
@@ -78,44 +54,14 @@ export default async function LiveSessionsPage() {
       {/* Features Grid */}
       <LiveSessionFeatures />
 
-      {/* Upcoming Sessions Grid */}
+      {/* Upcoming Sessions Grid - Powered by Client Component */}
       <section id="upcoming" className="py-24 container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight mb-2 text-[#011E21] dark:text-white">Upcoming Sessions</h2>
-            <p className="text-muted-foreground text-lg">Book your spot before they fill up</p>
-          </div>
-          <Link href="#upcoming" className="text-primary font-bold hover:underline flex items-center gap-1">
-            View Calendar
-          </Link>
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold tracking-tight mb-2 text-[#011E21] dark:text-white">Upcoming Sessions</h2>
+          <p className="text-muted-foreground text-lg">Book your spot before they fill up</p>
         </div>
 
-        <SessionCalendarView sessions={sessions}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {sessions.map((session, index) => (
-              <SessionCard
-                key={session.id}
-                id={session.id}
-                title={session.title}
-                instructor={session.teacher.user.name}
-                date={new Date(session.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                time={new Date(session.scheduledAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
-                duration={`${session.duration} min`}
-                participants={session.studentId ? 1 : 0} // Temporary logic
-                maxParticipants={20} // Temporary logic
-                level="Intermediate" // Missing in schema for Session, using default
-                price={`₹${(session.price / 100).toFixed(0)}`}
-                rating={session.teacher.rating || 4.8}
-                index={index}
-              />
-            ))}
-            {sessions.length === 0 && (
-              <div className="col-span-full text-center py-12 text-muted-foreground">
-                No upcoming sessions scheduled at the moment.
-              </div>
-            )}
-          </div>
-        </SessionCalendarView>
+        <LiveSessionsClient />
       </section>
     </div>
   );

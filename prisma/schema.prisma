@@ -9,14 +9,14 @@ datasource db {
 }
 
 model User {
-  id                          String                   @id @default(uuid())
+  id                          String                    @id @default(uuid())
   name                        String
-  email                       String                   @unique
+  email                       String                    @unique
   emailVerified               Boolean
   image                       String?
-  createdAt                   DateTime                 @default(now())
-  updatedAt                   DateTime                 @updatedAt
-  stripeCustomerId            String?                  @unique
+  createdAt                   DateTime                  @default(now())
+  updatedAt                   DateTime                  @updatedAt
+  stripeCustomerId            String?                   @unique
   role                        String?
   banned                      Boolean?
   banReason                   String?
@@ -25,20 +25,20 @@ model User {
   gender                      String?
   country                     String?
   education                   String?
-  blogPosts                   BlogPost[]               @relation("BlogPosts")
-  certificates                Certificate[]            @relation("UserCertificates")
-  conversationsAsParticipant1 Conversation[]           @relation("ConversationParticipant1")
-  conversationsAsParticipant2 Conversation[]           @relation("ConversationParticipant2")
+  blogPosts                   BlogPost[]                @relation("BlogPosts")
+  certificates                Certificate[]             @relation("UserCertificates")
+  conversationsAsParticipant1 Conversation[]            @relation("ConversationParticipant1")
+  conversationsAsParticipant2 Conversation[]            @relation("ConversationParticipant2")
   courses                     Course[]
   enrollment                  Enrollment[]
-  groupEnrollments            GroupEnrollment[]        @relation("GroupEnrollments")
+  groupEnrollments            GroupEnrollment[]         @relation("GroupEnrollments")
   lessonProgress              LessonProgress[]
-  studentSessions             LiveSession[]            @relation("StudentSessions")
-  receivedMessages            Message[]                @relation("ReceivedMessages")
-  sentMessages                Message[]                @relation("SentMessages")
-  notifications               Notification[]           @relation("UserNotifications")
-  reviewsGiven                Review[]                 @relation("UserReviews")
-  sessionBookings             SessionBooking[]         @relation("StudentBookings")
+  studentSessions             LiveSession[]             @relation("StudentSessions")
+  receivedMessages            Message[]                 @relation("ReceivedMessages")
+  sentMessages                Message[]                 @relation("SentMessages")
+  notifications               Notification[]            @relation("UserNotifications")
+  reviewsGiven                Review[]                  @relation("UserReviews")
+  sessionBookings             SessionBooking[]          @relation("StudentBookings")
   teacherProfile              TeacherProfile?
   accounts                    Account[]
   recommendations             CourseRecommendation[]
@@ -49,40 +49,40 @@ model User {
   sessions                    Session[]
   interactions                UserInteraction[]
   preferences                 UserPreferences?
-  videoChatMessages           VideoChatMessage[]       @relation("VideoChatUsers")
-  videoParticipation          VideoParticipant[]       @relation("VideoParticipants")
-  hostedRooms                 VideoRoom[]              @relation("VideoRoomHost")
+  videoChatMessages           VideoChatMessage[]        @relation("VideoChatUsers")
+  videoParticipation          VideoParticipant[]        @relation("VideoParticipants")
+  hostedRooms                 VideoRoom[]               @relation("VideoRoomHost")
   whiteboardElements          WhiteboardElement[]
-  whiteboardParticipation     WhiteboardParticipant[]  @relation("WhiteboardParticipants")
-  createdWhiteboards          Whiteboard[]             @relation("WhiteboardCreator")
+  whiteboardParticipation     WhiteboardParticipant[]   @relation("WhiteboardParticipants")
+  createdWhiteboards          Whiteboard[]              @relation("WhiteboardCreator")
   refundRequests              RefundRequest[]
   issues                      Issue[]
   wallet                      Wallet?
-  savedTutors                 StudentSavedTutor[]      @relation("StudentSavedTutors")
-  savedByStudents             StudentSavedTutor[]      @relation("TutorSavedBy")
+  savedTutors                 StudentSavedTutor[]       @relation("StudentSavedTutors")
+  savedByStudents             StudentSavedTutor[]       @relation("TutorSavedBy")
   freeClassUsage              FreeClassUsage?
   couponUsage                 CouponUsage[]
   joinedConversations         ConversationParticipant[] @relation("JoinedConversations")
   transactions                SystemTransaction[]
-  freeTrialsUsed              FreeTrialUsage[]         @relation("StudentFreeTrials")  // Free trials claimed by this student
-  notificationPreferences     NotificationPreferences?  // User notification settings - Author: Sanket
-  sentNotifications           SentNotification[]        // Notification history - Author: Sanket
-  studentProgress             StudentProgress?          // Progress tracking - Author: Sanket
-  learningGoals               LearningGoal[]            // Learning goals - Author: Sanket
-  achievements                UserAchievement[]         // Badges/Certificates - Author: Sanket
+  freeTrialsUsed              FreeTrialUsage[]          @relation("StudentFreeTrials") // Free trials claimed by this student
+  notificationPreferences     NotificationPreferences? // User notification settings - Author: Sanket
+  sentNotifications           SentNotification[] // Notification history - Author: Sanket
+  studentProgress             StudentProgress? // Progress tracking - Author: Sanket
+  learningGoals               LearningGoal[] // Learning goals - Author: Sanket
+  achievements                UserAchievement[] // Badges/Certificates - Author: Sanket
   sessionRatings              SessionRating[]           @relation("StudentRatings") // Session feedback - Author: Sanket
-  subscription                UserSubscription?         // Active subscription - Author: Sanket
-  bundleBookings              BundleBooking[]           // Bundles purchased by student - Author: Sanket
+  subscription                UserSubscription? // Active subscription - Author: Sanket
+  bundleBookings              BundleBooking[] // Bundles purchased by student - Author: Sanket
   referralsMade               Referral[]                @relation("Referrer") // Referrals by this user - Author: Sanket
-  referral                    Referral?                 @relation("Referee")  // Who referred this user - Author: Sanket
+  referral                    Referral?                 @relation("Referee") // Who referred this user - Author: Sanket
   sentGiftCards               GiftCard[]                @relation("SentGiftCards") // Gift cards sent by this user - Author: Sanket
   redeemedGiftCards           GiftCard[]                @relation("RedeemedGiftCards") // Gift cards redeemed by this user - Author: Sanket
-  
-  // Storage Limits (in bytes)
-  storageUsed                 BigInt                   @default(0)
-  storageLimit                BigInt                   @default(524288000) // Default 500 MB
 
-  aiConversations             AiConversation[]         // AI Chat History - Author: Sanket
+  // Storage Limits (in bytes)
+  storageUsed  BigInt @default(0)
+  storageLimit BigInt @default(524288000) // Default 500 MB
+
+  aiConversations AiConversation[] // AI Chat History - Author: Sanket
 
   @@map("user")
 }
@@ -96,7 +96,7 @@ model AiConversation {
   updatedAt DateTime    @updatedAt
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages  AiMessage[]
-  
+
   @@index([userId])
   @@map("ai_conversations")
 }
@@ -104,58 +104,58 @@ model AiConversation {
 model AiMessage {
   id             String         @id @default(uuid())
   conversationId String
-  role           String         // "user" or "assistant"
+  role           String // "user" or "assistant"
   content        String
-  attachments    String[]       // URLs to uploaded files
+  attachments    String[] // URLs to uploaded files
   createdAt      DateTime       @default(now())
   conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
+
   @@index([conversationId])
   @@map("ai_messages")
 }
 
 // Notification Preferences Model - Author: Sanket
 model NotificationPreferences {
-  id                    String  @id @default(cuid())
-  userId                String  @unique
-  user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Email preferences
-  emailReminders        Boolean @default(true)
-  email24hBefore        Boolean @default(true)
-  email1hBefore         Boolean @default(true)
-  
+  emailReminders Boolean @default(true)
+  email24hBefore Boolean @default(true)
+  email1hBefore  Boolean @default(true)
+
   // SMS preferences
-  smsReminders          Boolean @default(false)
-  sms24hBefore          Boolean @default(false)
-  sms1hBefore           Boolean @default(false)
-  phoneNumber           String?
-  
+  smsReminders Boolean @default(false)
+  sms24hBefore Boolean @default(false)
+  sms1hBefore  Boolean @default(false)
+  phoneNumber  String?
+
   // Other notifications
-  emailSessionUpdates   Boolean @default(true)
-  emailNewMessages      Boolean @default(true)
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  emailSessionUpdates Boolean @default(true)
+  emailNewMessages    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("notification_preferences")
 }
 
 // Sent Notification Tracking - Author: Sanket
 model SentNotification {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  sessionId   String
-  session     LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  
-  type        String   // "email_24h", "email_1h", "sms_24h", "sms_1h"
-  status      String   // "sent", "failed", "pending"
-  sentAt      DateTime @default(now())
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sessionId String
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  type   String // "email_24h", "email_1h", "sms_24h", "sms_1h"
+  status String // "sent", "failed", "pending"
+  sentAt DateTime @default(now())
+
   errorMessage String?
-  
+
   @@index([userId, sessionId])
   @@index([sentAt])
   @@map("sent_notifications")
@@ -172,14 +172,14 @@ model Issue {
   priority    Priority    @default(Medium)
   category    String
   metadata    Json?
-  
-  isEscalated Boolean     @default(false)
-  
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  reporter    User        @relation(fields: [reporterId], references: [id], onDelete: Cascade)
-  
+
+  isEscalated Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
   @@map("issues")
 }
 
@@ -330,15 +330,15 @@ model Lesson {
 }
 
 model Enrollment {
-  id        String           @id @default(uuid())
-  amount    Int
-  status    EnrollmentStatus @default(Pending)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  courseId  String
-  userId    String
-  Course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String           @id @default(uuid())
+  amount          Int
+  status          EnrollmentStatus @default(Pending)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  courseId        String
+  userId          String
+  Course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  User            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   razorpayOrderId String?
 
   @@unique([userId, courseId])
@@ -392,14 +392,14 @@ model TeacherProfile {
   pricing             TeacherPricing[]
   allowFreeDemo       Boolean               @default(true)
   allowFreeGroup      Boolean               @default(true)
-  freeTrialsOffered   FreeTrialUsage[]      @relation("TeacherFreeTrials")  // Free trials offered by this teacher
-  sessionRatings      SessionRating[]       @relation("TeacherRatings")     // Feedback from sessions - Author: Sanket
-  templates           SessionTemplate[]     @relation("TeacherTemplates")   // Scheduling templates - Author: Sanket
-  bundles             SessionBundle[]       @relation("TeacherBundles")     // Session bundles - Author: Sanket
+  freeTrialsOffered   FreeTrialUsage[]      @relation("TeacherFreeTrials") // Free trials offered by this teacher
+  sessionRatings      SessionRating[]       @relation("TeacherRatings") // Feedback from sessions - Author: Sanket
+  templates           SessionTemplate[]     @relation("TeacherTemplates") // Scheduling templates - Author: Sanket
+  bundles             SessionBundle[]       @relation("TeacherBundles") // Session bundles - Author: Sanket
 }
 
 model LiveSession {
-  id                  String           @id @default(uuid())
+  id                  String          @id @default(uuid())
   teacherId           String
   studentId           String?
   title               String
@@ -409,7 +409,7 @@ model LiveSession {
   duration            Int
   price               Int
   maxParticipants     Int?
-  status              SessionStatus    @default(scheduled)
+  status              SessionStatus   @default(scheduled)
   actualStartTime     DateTime?
   actualEndTime       DateTime?
   meetingUrl          String?
@@ -419,57 +419,60 @@ model LiveSession {
   notes               String?
   stripePriceId       String?
   stripeSessionId     String?
-  timezone            String           @default("UTC")
-  isRecurring         Boolean          @default(false)
+  timezone            String          @default("UTC")
+  isRecurring         Boolean         @default(false)
   recurringPattern    String?
-  maxReschedules      Int              @default(2)
-  rescheduleCount     Int              @default(0)
+  maxReschedules      Int             @default(2)
+  rescheduleCount     Int             @default(0)
   originalScheduledAt DateTime?
   cancelledBy         String?
   cancellationReason  String?
   refundAmount        Int?
-  reminderSent        Boolean          @default(false)
-  confirmationSent    Boolean          @default(false)
+  reminderSent        Boolean         @default(false)
+  confirmationSent    Boolean         @default(false)
   sessionNotes        String?
   studentRating       Int?
   teacherRating       Int?
   recordingStatus     RecordingStatus @default(pending)
-  
+
   // Free Trial System - Author: Sanket
-  isFreeTrialEligible Boolean          @default(false)  // Teacher sets this when creating session
-  isFreeTrialUsed     Boolean          @default(false)  // System sets this after a free trial booking
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  student             User?            @relation("StudentSessions", fields: [studentId], references: [id], onDelete: Cascade)
-  teacher             TeacherProfile   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  isFreeTrialEligible Boolean            @default(false) // Teacher sets this when creating session
+  isFreeTrialUsed     Boolean            @default(false) // System sets this after a free trial booking
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  student             User?              @relation("StudentSessions", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher             TeacherProfile     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   sentNotifications   SentNotification[] // Reminder notifications tracked here - Author: Sanket
-  bookings            SessionBooking[] @relation("SessionBookings")
-  ratings             SessionRating[]  // Feedback for this session - Author: Sanket
+  bookings            SessionBooking[]   @relation("SessionBookings")
+  ratings             SessionRating[] // Feedback for this session - Author: Sanket
 
   @@index([teacherId, scheduledAt])
   @@index([studentId, scheduledAt])
   @@index([status, scheduledAt])
+  @@index([subject]) // For subject filtering - Author: Sanket
+  @@index([price]) // For price filtering - Author: Sanket
+  @@index([scheduledAt]) // For date range queries - Author: Sanket
 }
 
 // Session Template for recurrence - Author: Sanket
 model SessionTemplate {
-  id               String         @id @default(uuid())
-  teacherId        String
-  teacher          TeacherProfile @relation("TeacherTemplates", fields: [teacherId], references: [id], onDelete: Cascade)
-  
-  title            String
-  description      String?
-  subject          String
-  duration         Int            // Duration in minutes
-  price            Int            // Price in cents
-  
+  id        String         @id @default(uuid())
+  teacherId String
+  teacher   TeacherProfile @relation("TeacherTemplates", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  subject     String
+  duration    Int // Duration in minutes
+  price       Int // Price in cents
+
   // Recurrence Rules
-  recurrenceType   String         @default("NONE") // NONE, DAILY, WEEKLY, MONTHLY
-  dayOfWeek        Int?           // 0-6 (Sunday to Saturday)
-  startTime        String         // "HH:mm" format
-  
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  recurrenceType String @default("NONE") // NONE, DAILY, WEEKLY, MONTHLY
+  dayOfWeek      Int? // 0-6 (Sunday to Saturday)
+  startTime      String // "HH:mm" format
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([teacherId])
   @@map("session_templates")
@@ -477,23 +480,23 @@ model SessionTemplate {
 
 // Session Rating & Feedback Model - Author: Sanket
 model SessionRating {
-  id          String   @id @default(cuid())
-  sessionId   String
-  session     LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  
-  studentId   String
-  student     User     @relation("StudentRatings", fields: [studentId], references: [id], onDelete: Cascade)
-  
-  teacherId   String
-  teacher     TeacherProfile @relation("TeacherRatings", fields: [teacherId], references: [id], onDelete: Cascade)
-  
-  rating      Int      // 1 to 5
-  comment     String?  @db.Text
-  
-  type        String   @default("student_to_teacher") // "student_to_teacher" or "teacher_to_student"
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String      @id @default(cuid())
+  sessionId String
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentRatings", fields: [studentId], references: [id], onDelete: Cascade)
+
+  teacherId String
+  teacher   TeacherProfile @relation("TeacherRatings", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  rating  Int // 1 to 5
+  comment String? @db.Text
+
+  type String @default("student_to_teacher") // "student_to_teacher" or "teacher_to_student"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([sessionId])
   @@index([studentId])
@@ -503,86 +506,86 @@ model SessionRating {
 
 // Student Progress Tracking - Author: Sanket
 model StudentProgress {
-  id                String   @id @default(cuid())
-  studentId         String   @unique
-  student           User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  
-  totalSessions     Int      @default(0)
-  attendedSessions  Int      @default(0)
-  totalHours        Float    @default(0)
-  coursesCompleted  Int      @default(0)
-  
-  currentLevel      String   @default("Beginner")
-  points            Int      @default(0)
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id        String @id @default(cuid())
+  studentId String @unique
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  totalSessions    Int   @default(0)
+  attendedSessions Int   @default(0)
+  totalHours       Float @default(0)
+  coursesCompleted Int   @default(0)
+
+  currentLevel String @default("Beginner")
+  points       Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("student_progress")
 }
 
 // Learning Goals - Author: Sanket
 model LearningGoal {
-  id          String   @id @default(cuid())
-  studentId   String
-  student     User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  
+  id        String @id @default(cuid())
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
   title       String
   description String?
-  status      String   @default("in_progress") // "in_progress", "completed", "archived"
+  status      String    @default("in_progress") // "in_progress", "completed", "archived"
   targetDate  DateTime?
-  
-  milestones  Milestone[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  milestones Milestone[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("learning_goals")
 }
 
 // Milestones for Goals - Author: Sanket
 model Milestone {
-  id          String   @id @default(cuid())
-  goalId      String
-  goal        LearningGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  
+  id     String       @id @default(cuid())
+  goalId String
+  goal   LearningGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
   title       String
-  isCompleted Boolean  @default(false)
+  isCompleted Boolean   @default(false)
   completedAt DateTime?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("goal_milestones")
 }
 
 // Achievement System - Author: Sanket
 model Achievement {
-  id          String   @id @default(cuid())
-  title       String   @unique
+  id          String  @id @default(cuid())
+  title       String  @unique
   description String
   badgeUrl    String?
-  type        String   // "session_count", "hours_spent", "special_event"
-  threshold   Int      // Value to unlock (e.g., 5 sessions)
-  
-  users       UserAchievement[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  type        String // "session_count", "hours_spent", "special_event"
+  threshold   Int // Value to unlock (e.g., 5 sessions)
+
+  users UserAchievement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("achievements")
 }
 
 model UserAchievement {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   achievementId String
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-  
-  unlockedAt    DateTime @default(now())
-  
+
+  unlockedAt DateTime @default(now())
+
   @@unique([userId, achievementId])
   @@map("user_achievements")
 }
@@ -650,25 +653,25 @@ model GroupClass {
   enrollments GroupEnrollment[]
 
   // Package / Ads fields
-  isAdvertised    Boolean          @default(false)
-  bannerUrl       String?
-  
+  isAdvertised Boolean @default(false)
+  bannerUrl    String?
+
   // Free Trial System - Author: Sanket
-  isFreeTrialEligible Boolean          @default(false)  // Teacher can offer first session free
-  
+  isFreeTrialEligible Boolean @default(false) // Teacher can offer first session free
+
   // Chat
-  chatGroupId     String?          
-  conversation    Conversation?    @relation("GroupClassChat", fields: [chatGroupId], references: [id])
+  chatGroupId  String?
+  conversation Conversation? @relation("GroupClassChat", fields: [chatGroupId], references: [id])
 }
 
 model GroupEnrollment {
-  id         String     @id @default(uuid())
+  id         String           @id @default(uuid())
   classId    String
   studentId  String
   status     EnrollmentStatus @default(Pending)
-  enrolledAt DateTime   @default(now())
-  class      GroupClass @relation(fields: [classId], references: [id], onDelete: Cascade)
-  student    User       @relation("GroupEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime         @default(now())
+  class      GroupClass       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student    User             @relation("GroupEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([classId, studentId])
 }
@@ -727,9 +730,9 @@ model Commission {
   courseId          String?
   sessionId         String?
   type              CommissionType
-  amount            Int                // Net amount for teacher
-  commission        Int                // Platform fee (deprecated, use commissionAmount)
-  commissionAmount  Int?               // Platform fee amount (new field)
+  amount            Int // Net amount for teacher
+  commission        Int // Platform fee (deprecated, use commissionAmount)
+  commissionAmount  Int? // Platform fee amount (new field)
   netAmount         Int
   status            CommissionStatus   @default(Pending)
   description       String?
@@ -739,7 +742,7 @@ model Commission {
   updatedAt         DateTime           @updatedAt
   teacher           TeacherProfile     @relation("TeacherCommissions", fields: [teacherId], references: [id], onDelete: Cascade)
   payoutCommissions PayoutCommission[] @relation("PayoutCommissions")
-  
+
   @@index([teacherId])
   @@index([status])
   @@map("commissions")
@@ -763,20 +766,20 @@ model Notification {
 }
 
 model Conversation {
-  id             String    @id @default(uuid())
+  id             String                    @id @default(uuid())
   participant1Id String?
   participant2Id String?
   title          String?
-  isGroup        Boolean   @default(false)
-  lastMessageId  String?   @unique
-  lastActivity   DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  lastMessage    Message?  @relation("ConversationLastMessage", fields: [lastMessageId], references: [id])
-  participant1   User?     @relation("ConversationParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
-  participant2   User?     @relation("ConversationParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
-  messages       Message[] @relation("ConversationMessages")
-  groupClasses   GroupClass[] @relation("GroupClassChat")
+  isGroup        Boolean                   @default(false)
+  lastMessageId  String?                   @unique
+  lastActivity   DateTime                  @default(now())
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  lastMessage    Message?                  @relation("ConversationLastMessage", fields: [lastMessageId], references: [id])
+  participant1   User?                     @relation("ConversationParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2   User?                     @relation("ConversationParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  messages       Message[]                 @relation("ConversationMessages")
+  groupClasses   GroupClass[]              @relation("GroupClassChat")
   participants   ConversationParticipant[] @relation("ChatParticipants")
 
   @@unique([participant1Id, participant2Id])
@@ -882,21 +885,21 @@ model BlogTag {
 }
 
 model SiteSettings {
-  id             String   @id @default(uuid())
-  siteName       String
-  siteUrl        String
-  logo           String?
-  favicon        String?
-  contactEmail   String?
-  contactPhone   String?
-  contactAddress String?
-  facebook       String?
-  twitter        String?
-  instagram      String?
-  linkedin       String?
-  youtube        String?
-  footerLinks    Json?
-  maxGroupClassSize Int @default(12)
+  id                String   @id @default(uuid())
+  siteName          String
+  siteUrl           String
+  logo              String?
+  favicon           String?
+  contactEmail      String?
+  contactPhone      String?
+  contactAddress    String?
+  facebook          String?
+  twitter           String?
+  instagram         String?
+  linkedin          String?
+  youtube           String?
+  footerLinks       Json?
+  maxGroupClassSize Int      @default(12)
   razorpayKeyId     String?
   razorpayKeySecret String?
   logoSize          Int      @default(100)
@@ -1456,33 +1459,33 @@ enum SessionStatus {
 }
 
 model SubscriptionPlan {
-  id              String             @id @default(cuid())
-  name            String
-  description     String?
-  price           Float
-  interval        String             @default("month") // month, year
-  stripePriceId   String             @unique
-  features        String[]           // List of feature descriptions
-  isDefault       Boolean            @default(false)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  subscriptions   UserSubscription[]
+  id            String             @id @default(cuid())
+  name          String
+  description   String?
+  price         Float
+  interval      String             @default("month") // month, year
+  stripePriceId String             @unique
+  features      String[] // List of feature descriptions
+  isDefault     Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  subscriptions UserSubscription[]
 
   @@map("subscription_plan")
 }
 
 model UserSubscription {
-  id                     String           @id @default(cuid())
-  userId                 String           @unique
-  user                   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planId                 String
-  plan                   SubscriptionPlan @relation(fields: [planId], references: [id])
-  stripeSubscriptionId   String?          @unique
-  status                 String           // active, trialing, past_due, canceled, unpaid
-  currentPeriodEnd       DateTime?
-  cancelAtPeriodEnd      Boolean          @default(false)
-  createdAt              DateTime         @default(now())
-  updatedAt              DateTime         @updatedAt
+  id                   String           @id @default(cuid())
+  userId               String           @unique
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 SubscriptionPlan @relation(fields: [planId], references: [id])
+  stripeSubscriptionId String?          @unique
+  status               String // active, trialing, past_due, canceled, unpaid
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean          @default(false)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   @@index([userId])
   @@index([stripeSubscriptionId])
@@ -1687,41 +1690,41 @@ enum ReportType {
 }
 
 model Resource {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   title       String
   description String?
   fileUrl     String
-  fileType    String?  // e.g. "pdf", "image"
-  size        Int?     // in bytes
-  
-  teacherId   String
-  courseId    String?  // Optional: link to specific course
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  teacher     TeacherProfile @relation("TeacherResources", fields: [teacherId], references: [id], onDelete: Cascade)
-  course      Course?        @relation(fields: [courseId], references: [id])
-  
+  fileType    String? // e.g. "pdf", "image"
+  size        Int? // in bytes
+
+  teacherId String
+  courseId  String? // Optional: link to specific course
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacher TeacherProfile @relation("TeacherResources", fields: [teacherId], references: [id], onDelete: Cascade)
+  course  Course?        @relation(fields: [courseId], references: [id])
+
   @@index([teacherId])
   @@index([courseId])
   @@map("resources")
 }
 
 model RefundRequest {
-  id              String       @id @default(cuid())
-  userId          String
-  amount          Int
-  reason          String
-  status          RefundStatus @default(Pending)
-  adminNotes      String?
-  processedAt     DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId        String?
-  course          Course?      @relation(fields: [courseId], references: [id])
-  
+  id          String       @id @default(cuid())
+  userId      String
+  amount      Int
+  reason      String
+  status      RefundStatus @default(Pending)
+  adminNotes  String?
+  processedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String?
+  course      Course?      @relation(fields: [courseId], references: [id])
+
   @@map("refund_requests")
 }
 
@@ -1734,15 +1737,15 @@ enum RefundStatus {
 
 // Wallet System Models
 model Wallet {
-  id            String              @id @default(uuid())
-  userId        String              @unique
-  balance       Int                 @default(0) // Balance in points (1 point = ₹1)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  
-  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions  WalletTransaction[]
-  
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  balance   Int      @default(0) // Balance in points (1 point = ₹1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
   @@map("wallets")
 }
 
@@ -1750,30 +1753,30 @@ model WalletTransaction {
   id              String                @id @default(uuid())
   walletId        String
   type            WalletTransactionType
-  amount          Int                   // Amount in points (positive for credit, negative for debit)
+  amount          Int // Amount in points (positive for credit, negative for debit)
   balanceBefore   Int
   balanceAfter    Int
   description     String
-  metadata        Json?                 // Store course/session/group details
-  stripeSessionId String?               // For recharge transactions
+  metadata        Json? // Store course/session/group details
+  stripeSessionId String? // For recharge transactions
   razorpayOrderId String?
   createdAt       DateTime              @default(now())
-  
-  wallet          Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
   @@index([walletId])
   @@index([createdAt])
   @@map("wallet_transactions")
 }
 
 enum WalletTransactionType {
-  RECHARGE          // Adding money to wallet
-  COURSE_PURCHASE   // Buying a course
-  SESSION_BOOKING   // Booking live session
-  GROUP_ENROLLMENT  // Joining group class
-  REFUND            // Money returned
-  ADMIN_CREDIT      // Admin added balance
-  ADMIN_DEBIT       // Admin removed balance
+  RECHARGE // Adding money to wallet
+  COURSE_PURCHASE // Buying a course
+  SESSION_BOOKING // Booking live session
+  GROUP_ENROLLMENT // Joining group class
+  REFUND // Money returned
+  ADMIN_CREDIT // Admin added balance
+  ADMIN_DEBIT // Admin removed balance
 }
 
 model Expertise {
@@ -1797,20 +1800,20 @@ model Language {
 }
 
 model Coupon {
-  id              String       @id @default(cuid())
-  code            String       @unique
-  type            CouponType
-  value           Int          // Amount or percentage
-  applicableOn    String[]     // ["DEMO", "30MIN", "60MIN", "GROUP", "CRASH", "FULL"]
-  teacherId       String?      // Null means global
-  expiryDate      DateTime
-  usageLimit      Int          @default(100)
-  usedCount       Int          @default(0)
-  perUserLimit    Int          @default(1)
-  isActive        Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  usage           CouponUsage[]
+  id           String        @id @default(cuid())
+  code         String        @unique
+  type         CouponType
+  value        Int // Amount or percentage
+  applicableOn String[] // ["DEMO", "30MIN", "60MIN", "GROUP", "CRASH", "FULL"]
+  teacherId    String? // Null means global
+  expiryDate   DateTime
+  usageLimit   Int           @default(100)
+  usedCount    Int           @default(0)
+  perUserLimit Int           @default(1)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  usage        CouponUsage[]
 
   @@map("coupons")
 }
@@ -1821,15 +1824,15 @@ enum CouponType {
 }
 
 model FreeClassUsage {
-  id              String   @id @default(cuid())
-  studentId       String   @unique
-  demoUsed        Boolean  @default(false)
-  groupUsed       Boolean  @default(false)
-  demoSessionId   String?  // Reference to the session used
-  groupSessionId  String?  // Reference to the group class used
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  student         User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  studentId      String   @unique
+  demoUsed       Boolean  @default(false)
+  groupUsed      Boolean  @default(false)
+  demoSessionId  String? // Reference to the session used
+  groupSessionId String? // Reference to the group class used
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  student        User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("free_class_usage")
 }
@@ -1838,25 +1841,25 @@ model FreeClassUsage {
 // Author: Sanket
 // Tracks which students have used their free trial with each teacher
 model FreeTrialUsage {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Student info (email-based to prevent multi-account abuse)
-  studentId   String
-  studentEmail String  // Primary tracking field
-  student     User     @relation("StudentFreeTrials", fields: [studentId], references: [id], onDelete: Cascade)
-  
+  studentId    String
+  studentEmail String // Primary tracking field
+  student      User   @relation("StudentFreeTrials", fields: [studentId], references: [id], onDelete: Cascade)
+
   // Teacher info
-  teacherId   String
-  teacher     TeacherProfile @relation("TeacherFreeTrials", fields: [teacherId], references: [id], onDelete: Cascade)
-  
+  teacherId String
+  teacher   TeacherProfile @relation("TeacherFreeTrials", fields: [teacherId], references: [id], onDelete: Cascade)
+
   // Session info
-  sessionType String   // "live_session" or "group_class"
-  sessionId   String   // ID of the LiveSession or GroupClass
-  
+  sessionType String // "live_session" or "group_class"
+  sessionId   String // ID of the LiveSession or GroupClass
+
   // Timestamps
-  usedAt      DateTime @default(now())
-  createdAt   DateTime @default(now())
-  
+  usedAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
   // Ensure one free trial per email per teacher
   @@unique([studentEmail, teacherId])
   @@index([studentId, teacherId])
@@ -1869,25 +1872,25 @@ model StudentSavedTutor {
   studentId String
   tutorId   String
   createdAt DateTime @default(now())
-  
-  student   User     @relation("StudentSavedTutors", fields: [studentId], references: [id], onDelete: Cascade)
-  tutor     User     @relation("TutorSavedBy", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  student User @relation("StudentSavedTutors", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor   User @relation("TutorSavedBy", fields: [tutorId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, tutorId])
   @@map("student_saved_tutors")
 }
 
 model TeacherPricing {
-  id          String      @id @default(cuid())
-  teacherId   String
-  type        SessionType
-  price       Int
-  duration    Int         // Duration in minutes
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  teacher     TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  id        String      @id @default(cuid())
+  teacherId String
+  type      SessionType
+  price     Int
+  duration  Int // Duration in minutes
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@unique([teacherId, type])
   @@map("teacher_pricing")
@@ -1903,30 +1906,30 @@ enum SessionType {
 }
 
 model CouponUsage {
-  id        String   @id @default(cuid())
-  couponId  String
-  userId    String
-  orderId   String?
-  usedAt    DateTime @default(now())
-  
-  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id       String   @id @default(cuid())
+  couponId String
+  userId   String
+  orderId  String?
+  usedAt   DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("coupon_usage")
 }
 
 model Broadcast {
-  id          String        @id @default(cuid())
-  text        String
-  type        BroadcastType @default(Info)
-  isActive    Boolean       @default(true)
-  priority    Int           @default(0)
-  link        String?
-  buttonText  String?
-  couponCode  String?
-  expiresAt   DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id         String        @id @default(cuid())
+  text       String
+  type       BroadcastType @default(Info)
+  isActive   Boolean       @default(true)
+  priority   Int           @default(0)
+  link       String?
+  buttonText String?
+  couponCode String?
+  expiresAt  DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   @@index([isActive])
 }
@@ -1939,21 +1942,21 @@ enum BroadcastType {
 }
 
 model SystemTransaction {
-  id              String            @id @default(cuid())
-  amount          Int
-  currency        String
-  status          TransactionStatus @default(PENDING)
-  method          String?
-  providerOrderId String
+  id                String            @id @default(cuid())
+  amount            Int
+  currency          String
+  status            TransactionStatus @default(PENDING)
+  method            String?
+  providerOrderId   String
   providerPaymentId String?
-  type            TransactionType
-  description     String
-  metadata        Json?
-  userId          String
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  type              TransactionType
+  description       String
+  metadata          Json?
+  userId            String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([providerOrderId])
   @@index([userId])
@@ -1975,17 +1978,17 @@ enum TransactionType {
 }
 
 model SessionBundle {
-  id              String          @id @default(cuid())
-  teacherId       String
-  teacher         TeacherProfile  @relation("TeacherBundles", fields: [teacherId], references: [id], onDelete: Cascade)
-  title           String
-  description     String?
-  price           Float
-  sessionCount    Int
-  isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  bookings        BundleBooking[]
+  id           String          @id @default(cuid())
+  teacherId    String
+  teacher      TeacherProfile  @relation("TeacherBundles", fields: [teacherId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  price        Float
+  sessionCount Int
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  bookings     BundleBooking[]
 
   @@map("session_bundles")
 }
@@ -2006,43 +2009,43 @@ model BundleBooking {
 }
 
 model Referral {
-  id              String   @id @default(cuid())
-  referrerId      String
-  referrer        User     @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
-  refereeId       String   @unique
-  referee         User     @relation("Referee", fields: [refereeId], references: [id], onDelete: Cascade)
-  code            String
-  status          String   @default("pending") // pending, completed
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id         String   @id @default(cuid())
+  referrerId String
+  referrer   User     @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId  String   @unique
+  referee    User     @relation("Referee", fields: [refereeId], references: [id], onDelete: Cascade)
+  code       String
+  status     String   @default("pending") // pending, completed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("referrals")
 }
 
 model ReferralReward {
-  id              String   @id @default(cuid())
-  userId          String
-  amount          Float
-  type            String   // DISCOUNT, CREDITS
-  isUsed          Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Float
+  type      String // DISCOUNT, CREDITS
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   @@map("referral_rewards")
 }
 
 model GiftCard {
-  id              String    @id @default(cuid())
-  code            String    @unique
-  amount          Float
-  senderId        String
-  sender          User      @relation("SentGiftCards", fields: [senderId], references: [id], onDelete: Cascade)
-  recipientEmail  String
-  message         String?
-  isRedeemed      Boolean   @default(false)
-  redeemedById    String?
-  redeemedBy      User?     @relation("RedeemedGiftCards", fields: [redeemedById], references: [id])
-  redeemedAt      DateTime?
-  createdAt       DateTime  @default(now())
+  id             String    @id @default(cuid())
+  code           String    @unique
+  amount         Float
+  senderId       String
+  sender         User      @relation("SentGiftCards", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientEmail String
+  message        String?
+  isRedeemed     Boolean   @default(false)
+  redeemedById   String?
+  redeemedBy     User?     @relation("RedeemedGiftCards", fields: [redeemedById], references: [id])
+  redeemedAt     DateTime?
+  createdAt      DateTime  @default(now())
 
   @@map("gift_cards")
 }

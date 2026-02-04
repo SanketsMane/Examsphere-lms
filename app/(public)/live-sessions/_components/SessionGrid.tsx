@@ -1,0 +1,159 @@
+"use client";
+
+import { useState } from "react";
+import { SessionCard } from "@/components/ui/session-card";
+import { Button } from "@/components/ui/button";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+
+interface Session {
+  id: string;
+  title: string;
+  description: string | null;
+  teacher: {
+    id: string;
+    name: string;
+    avatar: string;
+    rating: number;
+    totalReviews: number;
+    isVerified: boolean;
+  };
+  scheduledAt: string | Date;
+  duration: number;
+  price: number;
+  subject: string | null;
+  type: string;
+  availableSlots: number;
+  maxParticipants?: number;
+  confirmedBookings?: number;
+}
+
+interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+interface SessionGridProps {
+  sessions: Session[];
+  pagination: PaginationMeta;
+  loading: boolean;
+  onPageChange: (page: number) => void;
+}
+
+export function SessionGrid({
+  sessions,
+  pagination,
+  loading,
+  onPageChange,
+}: SessionGridProps) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-lg text-muted-foreground">No sessions found</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Try adjusting your filters or search criteria
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Results count (Author: Sanket) */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing {((pagination.page - 1) * pagination.limit) + 1} -{" "}
+          {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
+          {pagination.total} sessions
+        </p>
+      </div>
+
+      {/* Session Grid (Author: Sanket) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {sessions.map((session) => (
+          <SessionCard
+            key={session.id}
+            id={session.id}
+            title={session.title}
+            date={new Date(session.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            time={new Date(session.scheduledAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
+            duration={`${session.duration} min`}
+            price={session.price === 0 ? "Free" : `₹${(session.price / 100).toFixed(0)}`}
+            instructor={session.teacher.name}
+            level={session.description?.includes("Beginner") ? "Beginner" : "Intermediate"}
+            rating={session.teacher.rating}
+            index={0}
+            subject={session.subject || "General"}
+            type={session.type}
+            participants={session.confirmedBookings || 0}
+            maxParticipants={session.maxParticipants || 1}
+            availableSlots={session.availableSlots}
+          />
+        ))}
+      </div>
+
+      {/* Pagination Controls (Author: Sanket) */}
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(pagination.page - 1)}
+            disabled={pagination.page === 1 || loading}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Previous
+          </Button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+              let pageNum;
+              if (pagination.totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (pagination.page <= 3) {
+                pageNum = i + 1;
+              } else if (pagination.page >= pagination.totalPages - 2) {
+                pageNum = pagination.totalPages - 4 + i;
+              } else {
+                pageNum = pagination.page - 2 + i;
+              }
+
+              return (
+                <Button
+                  key={pageNum}
+                  variant={pagination.page === pageNum ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => onPageChange(pageNum)}
+                  disabled={loading}
+                  className="w-10"
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(pagination.page + 1)}
+            disabled={!pagination.hasMore || loading}
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
