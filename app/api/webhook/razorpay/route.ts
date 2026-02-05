@@ -132,6 +132,21 @@ export async function POST(req: NextRequest) {
                         }
                     });
 
+                     // Send Receipt Email (Author: Sanket)
+                     if (payment.email) {
+                        try {
+                             await sendReceiptEmail(
+                                 payment.email,
+                                 payload.payment.entity.notes.userName || "Student",
+                                 `Course Purchase: ${course?.title}`,
+                                 (payment.amount / 100).toFixed(2) + " " + payment.currency,
+                                 payment.id
+                             );
+                        } catch (e) {
+                            console.error("Failed to send course receipt email", e);
+                        }
+                     }
+
                     console.log(`Enrollment ${enrollment.id} completed via Razorpay`);
                 }
                 return NextResponse.json({ status: "ok" });
@@ -383,7 +398,8 @@ export async function POST(req: NextRequest) {
             const subscriptionEntity = payload.subscription.entity;
             const razorpaySubscriptionId = subscriptionEntity.id;
 
-            const userSubscriptionRaw = await prisma.userSubscription.findUnique({
+            // Use findFirst to avoid potential unique constraint TS issues if client is stale
+            const userSubscriptionRaw = await prisma.userSubscription.findFirst({
                 where: { razorpaySubscriptionId },
                 include: { user: true, plan: true } 
             });
@@ -398,8 +414,24 @@ export async function POST(req: NextRequest) {
                             status: "active",
                             currentPeriodStart: subscriptionEntity.current_start ? new Date(subscriptionEntity.current_start * 1000) : undefined,
                             currentPeriodEnd: subscriptionEntity.current_end ? new Date(subscriptionEntity.current_end * 1000) : undefined,
-                        }
+                        } as any
                     });
+                    
+                    // Send Activation Email (Author: Sanket)
+                    if (userSubscription.user?.email) {
+                         try {
+                             await sendNotificationEmail(
+                                 userSubscription.user.email,
+                                 userSubscription.user.name || "Subscriber",
+                                 "Subscription Activated! 🚀",
+                                 "Welcome to Premium",
+                                 `Your subscription to ${userSubscription.plan.name} is now active. Enjoy your benefits!`
+                             );
+                         } catch (e) {
+                             console.error("Failed to send subscription activation email", e);
+                         }
+                    }
+
                     console.log(`Subscription ${razorpaySubscriptionId} activated`);
                 }
 
@@ -413,7 +445,7 @@ export async function POST(req: NextRequest) {
                             status: "active",
                             currentPeriodStart: subscriptionEntity.current_start ? new Date(subscriptionEntity.current_start * 1000) : undefined,
                             currentPeriodEnd: subscriptionEntity.current_end ? new Date(subscriptionEntity.current_end * 1000) : undefined,
-                        }
+                        } as any
                     });
 
                     // Log Notification
@@ -422,7 +454,7 @@ export async function POST(req: NextRequest) {
                             userId: userSubscription.userId,
                             title: "Subscription Renewed",
                             message: "Your subscription has been successfully renewed.",
-                            type: "Billing",
+                            type: "Billing" as any,
                         }
                     });
                     

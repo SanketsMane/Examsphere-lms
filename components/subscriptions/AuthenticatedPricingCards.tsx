@@ -53,8 +53,8 @@ export function AuthenticatedPricingCards({ plans, currentSubscriptionId, showCa
                     description: `Subscription to ${plan.name}`,
                     handler: async function (response: any) {
                         toast.success("Subscription activated successfully!");
-                        // Optional: Server verification action call
-                        window.location.reload();
+                        // Redirect to subscription page to see status
+                        window.location.href = "/subscription";
                     },
                     modal: {
                         ondismiss: function () {

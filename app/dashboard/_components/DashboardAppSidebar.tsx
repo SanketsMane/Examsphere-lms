@@ -78,6 +78,11 @@ const data = {
       icon: IconTicket, // Using IconTicket as wallet icon placeholder
     },
     {
+      title: "My Subscription",
+      url: "/subscription",
+      icon: IconSparkles,
+    },
+    {
       title: "Messages",
       url: "/dashboard/messages",
       icon: IconMessage,

@@ -109,6 +109,11 @@ const data = {
       icon: IconTicket,
     },
     {
+      title: "Subscription Plans",
+      url: "/admin/subscriptions",
+      icon: IconSparkles,
+    },
+    {
       title: "Broadcasts",
       url: "/admin/broadcasts",
       icon: IconSpeakerphone,
