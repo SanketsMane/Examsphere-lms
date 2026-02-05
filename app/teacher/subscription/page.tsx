@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function TeacherSubscriptionPage() {
     await requireTeacher();
 
-    const { plans } = await getSubscriptionPlans();
+    const { plans } = await getSubscriptionPlans("TEACHER");
     const { subscription } = await getUserSubscription();
     // New Data Fetching
     const { usage } = await getSubscriptionUsage();

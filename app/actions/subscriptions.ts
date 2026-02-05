@@ -188,10 +188,13 @@ export async function getBillingHistory() {
     }
 }
 
-export async function getSubscriptionPlans() {
+import { UserRole } from "@prisma/client";
+
+export async function getSubscriptionPlans(role?: UserRole) {
     try {
+        const where: any = role ? { role } : {};
         const plans = await prisma.subscriptionPlan.findMany({
-            where: {}, // Default to all plans
+            where,
             orderBy: { price: "asc" }
         });
         return { plans };

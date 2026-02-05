@@ -11,9 +11,9 @@ export default async function StudentSubscriptionPage() {
     const user = await requireUser();
     // Verify student? Or just any user. The folder is (student) so implicitly student.
 
-    const { plans } = await getSubscriptionPlans();
+    const { plans } = await getSubscriptionPlans("STUDENT");
     // Filter for Student plans
-    const studentPlans = plans?.filter((p: any) => p.role === "STUDENT") || [];
+    const studentPlans = plans || [];
 
     const { subscription } = await getUserSubscription();
     
