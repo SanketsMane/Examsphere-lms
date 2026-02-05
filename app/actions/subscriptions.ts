@@ -188,9 +188,9 @@ export async function getBillingHistory() {
     }
 }
 
-import { UserRole } from "@prisma/client";
+// import { UserRole } from "@prisma/client"; // Removed to avoid export issues
 
-export async function getSubscriptionPlans(role?: UserRole) {
+export async function getSubscriptionPlans(role?: "TEACHER" | "STUDENT") {
     try {
         const where: any = role ? { role } : {};
         const plans = await prisma.subscriptionPlan.findMany({
