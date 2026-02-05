@@ -8,9 +8,12 @@ import Link from "next/link";
 
 interface PublicPricingCardsProps {
     plans: SubscriptionPlan[];
+    role?: "TEACHER" | "STUDENT";
 }
 
-export function PublicPricingCards({ plans }: PublicPricingCardsProps) {
+export function PublicPricingCards({ plans, role = "TEACHER" }: PublicPricingCardsProps) {
+    const isTeacher = role === "TEACHER";
+
     return (
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {plans.map((plan) => (
@@ -48,8 +51,11 @@ export function PublicPricingCards({ plans }: PublicPricingCardsProps) {
                             variant={plan.price === 0 ? "outline" : "default"}
                             asChild
                         >
-                            <Link href="/register?role=teacher">
-                                {plan.price === 0 ? "Get Started for Free" : "Start Teaching Premium"}
+                            <Link href={`/register?role=${role.toLowerCase()}`}>
+                                {plan.price === 0 
+                                    ? "Get Started for Free" 
+                                    : isTeacher ? "Start Teaching Premium" : "Start Learning Premium"
+                                }
                             </Link>
                         </Button>
                     </CardFooter>
