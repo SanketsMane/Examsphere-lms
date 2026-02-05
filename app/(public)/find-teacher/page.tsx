@@ -29,7 +29,15 @@ export default async function FindTeacherPage() {
             isApproved: true
         },
         include: {
-            user: true
+            user: {
+                include: {
+                    teacherProfile: true, // Redundant but harmless, explicit
+                    subscription: {
+                         where: { status: "active" },
+                         include: { plan: true }
+                    }
+                }
+            }
         }
     });
 
@@ -63,8 +71,19 @@ export default async function FindTeacherPage() {
         gender: t.user.gender || "Not Specified",
         experience: t.experience || 0,
         isVerified: t.isVerified,
-        availability: t.availability || {}
+        availability: t.availability || {},
+        // Internal sorting flags (not sent to client usually, but helpful if we used client side sort)
+        // We will sort the array here.
+        searchBoost: (t.user as any).subscription?.plan?.metadata?.searchBoost === true
     }));
+
+    // Sort: Boosted first, then by rating, then by review count
+    formattedTeachers.sort((a, b) => {
+        if (a.searchBoost && !b.searchBoost) return -1;
+        if (!a.searchBoost && b.searchBoost) return 1;
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        return b.reviewCount - a.reviewCount;
+    });
 
     const categories = await prisma.category.findMany({
         where: { isActive: true, parentId: null },

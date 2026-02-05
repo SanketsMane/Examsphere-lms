@@ -2,62 +2,193 @@
 
 import { prisma } from "@/lib/db";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
-import { revalidatePath } from "next/cache";
+import { createRazorpaySubscription, getRazorpayKeyId } from "@/lib/razorpay";
 import { logger } from "@/lib/logger";
 
 /**
  * Subscription Management Actions
- * Author: Sanket
- * NOTE: Stripe logic disabled for Razorpay migration. 
- * Razorpay Subscription integration required if this feature is needed.
  */
 
+// Helper interfaces to handle potential stale Prisma client types
+interface ExtendedSubscriptionPlan {
+    id: string;
+    razorpayPlanId?: string | null;
+    metadata?: any;
+    name: string;
+    price: number;
+    interval: string;
+}
+
+interface ExtendedUserSubscription {
+    id: string;
+    userId: string;
+    status: string;
+    planId: string;
+    razorpaySubscriptionId?: string | null;
+    metadata?: any;
+    plan?: ExtendedSubscriptionPlan;
+    user?: any;
+}
+
 export async function createSubscriptionSession(planId: string) {
-    return { error: "Subscriptions are temporarily disabled. Please contact support." };
-    /*
     try {
         const session = await getSessionWithRole();
         if (!session) return { error: "Unauthorized" };
 
-        const plan = await prisma.subscriptionPlan.findUnique({
+        const planRaw = await prisma.subscriptionPlan.findUnique({
             where: { id: planId }
         });
+        const plan = planRaw as unknown as ExtendedSubscriptionPlan;
 
         if (!plan) return { error: "Plan not found" };
 
-        // Stripe logic removed - Author: Sanket
-    } catch (error) {
+        if (!plan.razorpayPlanId) {
+             return { error: "This plan is not configured for online subscription yet." };
+        }
+
+        // Create Razorpay Subscription
+        const subscription = await createRazorpaySubscription(plan.razorpayPlanId);
+        
+        // We create a pending record in UserSubscription? 
+        // Or wait for webhook?
+        // Usually, we just return the subscription_id to frontend.
+        // The webhook 'subscription.authenticated' will handle activation.
+        
+        // However, we might want to store the subscription_id to map it later if needed.
+        // For now, we rely on webhook finding the user via email? 
+        // No, Razorpay subscription doesn't necessarily carry user ID unless in notes.
+        // We SHOULD update the subscription notes.
+        
+        // But the `createRazorpaySubscription` helper I wrote didn't accept notes.
+        // I might need to update it or pass notes.
+        // For now, let's assume the user email matches or I'll add a pending record.
+        
+        await prisma.userSubscription.upsert({
+            where: { userId: session.user.id },
+            update: {
+                razorpaySubscriptionId: subscription.id,
+                status: "created",
+                planId: plan.id
+            } as any,
+            create: {
+                userId: session.user.id,
+                planId: plan.id,
+                status: "created",
+                razorpaySubscriptionId: subscription.id
+            } as any
+        });
+
+        const key = await getRazorpayKeyId();
+
+        return { 
+            subscriptionId: subscription.id, 
+            key: key 
+        };
+
+    } catch (error: any) {
         logger.error("Create Subscription Session Error", { error });
-        return { error: "Failed to create subscription session" };
+        return { error: error.message || "Failed to create subscription session" };
     }
-    */
 }
 
 export async function cancelSubscription() {
-    return { error: "Subscriptions management is temporarily disabled. Please contact support." };
-    /*
     try {
         const session = await getSessionWithRole();
         if (!session) return { error: "Unauthorized" };
 
-        const userSubscription = await prisma.userSubscription.findUnique({
+        const subscriptionRaw = await prisma.userSubscription.findUnique({
             where: { userId: session.user.id }
         });
 
-        if (!userSubscription) {
-            return { error: "No active subscription found" };
+        const subscription = subscriptionRaw as unknown as ExtendedUserSubscription;
+
+        if (!subscription || !subscription.razorpaySubscriptionId) {
+            return { error: "No active online subscription found" };
         }
-        // Stripe logic removed - Author: Sanket
-    } catch (error) {
+
+        const { cancelRazorpaySubscription } = await import("@/lib/razorpay");
+        // Cancel at closest possible time (usually end of cycle or immediate depending on implementation)
+        // Razorpay API defaults to cancel_at_cycle_end=false (immediate) unless specified.
+        await cancelRazorpaySubscription(subscription.razorpaySubscriptionId);
+
+        // Update local DB
+        await prisma.userSubscription.update({
+            where: { id: subscription.id },
+            data: {
+                status: "canceled",
+                cancelAtPeriodEnd: false 
+                // In a real-world scenario we might want 'cancel_at_cycle_end' = true
+                // But for simplicity/MVP let's assume immediate cancellation or Razorpay handles the 'pending' state
+            }
+        });
+
+        return { success: true };
+    } catch (error: any) {
         logger.error("Cancel Subscription Error", { error });
-        return { error: "Failed to cancel subscription" };
+        return { error: error.message || "Failed to cancel subscription" };
     }
-    */
+}
+
+export async function getSubscriptionUsage() {
+    try {
+        const session = await getSessionWithRole();
+        if (!session) return { usage: null };
+
+        const userId = session.user.id;
+        const [courseCount, groupCount, subscription] = await Promise.all([
+            prisma.course.count({ where: { userId } }),
+            prisma.groupClass.count({ where: { teacherId: userId, status: { in: ["Scheduled"] } } }), // Align with valid status from groups.ts
+            prisma.userSubscription.findUnique({ 
+                where: { userId },
+                include: { plan: true }
+            }) as Promise<ExtendedUserSubscription | null>
+        ]);
+
+        let limits = { maxCourses: 3, maxGroups: 2 }; // Defaults
+        if (subscription && subscription.status === 'active' && subscription.plan?.metadata) {
+            const meta = subscription.plan.metadata;
+             if (typeof meta.maxCourses === 'number') limits.maxCourses = meta.maxCourses;
+             if (typeof meta.maxGroups === 'number') limits.maxGroups = meta.maxGroups;
+        }
+
+        return {
+            usage: {
+                courses: { used: courseCount, limit: limits.maxCourses },
+                groups: { used: groupCount, limit: limits.maxGroups }
+            }
+        };
+
+    } catch (error) {
+        console.error("Get Usage Error:", error);
+        return { usage: null };
+    }
+}
+
+export async function getBillingHistory() {
+    try {
+        const session = await getSessionWithRole();
+        if (!session) return { transactions: [] };
+
+        const transactions = await prisma.systemTransaction.findMany({
+            where: { 
+                userId: session.user.id,
+                type: { in: ["SUBSCRIPTION_PURCHASE", "SUBSCRIPTION_RENEWAL"] as any }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20
+        });
+
+        return { transactions };
+    } catch (error) {
+        console.error("Get Billing History Error:", error);
+        return { transactions: [] };
+    }
 }
 
 export async function getSubscriptionPlans() {
     try {
         const plans = await prisma.subscriptionPlan.findMany({
+            where: {}, // Default to all plans
             orderBy: { price: "asc" }
         });
         return { plans };

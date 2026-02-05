@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sendReceiptEmail, sendNotificationEmail } from "@/lib/email-notifications";
 import crypto from "crypto";
-import { getRazorpayKeyId } from "@/lib/razorpay";
 import { calculatePlatformCommission } from "@/lib/finance";
+
+// Handle stale Prisma types
+interface ExtendedUserSubscription {
+    id: string;
+    userId: string;
+    planId: string;
+    status: string;
+    razorpaySubscriptionId?: string | null;
+    user?: any;
+    plan?: any;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -63,15 +74,18 @@ export async function POST(req: NextRequest) {
                             razorpayPaymentId: payment.id // Store Payment ID for refunds - Author: Sanket
                         }
                     });
-
-                    // 1a. Handle Commission (Author: Sanket)
-                    const { platformFee, teacherNet } = await calculatePlatformCommission(payment.amount);
                     
                     // Get course with teacher info
                     const courseWithTeacher = await prisma.course.findUnique({
                         where: { id: enrollment.courseId },
                         include: { user: { include: { teacherProfile: true } } }
                     });
+
+                    // 1a. Handle Commission (Author: Sanket)
+                    const { platformFee, teacherNet } = await calculatePlatformCommission(
+                        payment.amount, 
+                        courseWithTeacher?.user.teacherProfile?.id
+                    );
 
                     if (courseWithTeacher?.user.teacherProfile) {
                         await prisma.commission.create({
@@ -220,7 +234,10 @@ export async function POST(req: NextRequest) {
                            });
 
                            // 3a. Handle Commission (Author: Sanket)
-                           const { platformFee, teacherNet } = await calculatePlatformCommission(payment.amount);
+                           const { platformFee, teacherNet } = await calculatePlatformCommission(
+                               payment.amount,
+                               booking.session.teacherId
+                           );
                            
                            await prisma.commission.create({
                                data: {
@@ -312,10 +329,18 @@ export async function POST(req: NextRequest) {
                     });
 
                     // 4a. Handle Commission
-                    const { platformFee, teacherNet } = await calculatePlatformCommission(payment.amount);
                     const groupClass = await prisma.groupClass.findUnique({
                         where: { id: groupEnrollment.classId }
                     });
+
+                    let platformFee = 0;
+                    let teacherNet = payment.amount;
+
+                    if (groupClass) {
+                         const comm = await calculatePlatformCommission(payment.amount, groupClass.teacherId);
+                         platformFee = comm.platformFee;
+                         teacherNet = comm.teacherNet;
+                    }
 
                     if (groupClass) {
                         await prisma.commission.create({
@@ -351,6 +376,108 @@ export async function POST(req: NextRequest) {
             }
 
             console.log(`Razorpay order ${orderId} match not found in local DB`);
+        }
+
+        // Handle Subscription Events
+        if (event.event.startsWith("subscription.")) {
+            const subscriptionEntity = payload.subscription.entity;
+            const razorpaySubscriptionId = subscriptionEntity.id;
+
+            const userSubscriptionRaw = await prisma.userSubscription.findUnique({
+                where: { razorpaySubscriptionId },
+                include: { user: true, plan: true } 
+            });
+            
+            const userSubscription = userSubscriptionRaw as unknown as ExtendedUserSubscription;
+
+            if (userSubscription) {
+                if (event.event === "subscription.authenticated" || event.event === "subscription.activated") {
+                    await prisma.userSubscription.update({
+                        where: { id: userSubscription.id },
+                        data: {
+                            status: "active",
+                            currentPeriodStart: subscriptionEntity.current_start ? new Date(subscriptionEntity.current_start * 1000) : undefined,
+                            currentPeriodEnd: subscriptionEntity.current_end ? new Date(subscriptionEntity.current_end * 1000) : undefined,
+                        }
+                    });
+                    console.log(`Subscription ${razorpaySubscriptionId} activated`);
+                }
+
+                if (event.event === "subscription.charged") {
+                     // Payment successful for renewal
+                     const payment = payload.payment.entity;
+                     
+                     await prisma.userSubscription.update({
+                        where: { id: userSubscription.id },
+                        data: {
+                            status: "active",
+                            currentPeriodStart: subscriptionEntity.current_start ? new Date(subscriptionEntity.current_start * 1000) : undefined,
+                            currentPeriodEnd: subscriptionEntity.current_end ? new Date(subscriptionEntity.current_end * 1000) : undefined,
+                        }
+                    });
+
+                    // Log Notification
+                    await prisma.notification.create({
+                        data: {
+                            userId: userSubscription.userId,
+                            title: "Subscription Renewed",
+                            message: "Your subscription has been successfully renewed.",
+                            type: "Billing",
+                        }
+                    });
+                    
+                    // Log Transaction
+                    await prisma.systemTransaction.create({
+                        data: {
+                            amount: payment.amount,
+                            currency: payment.currency,
+                            status: "SUCCESS",
+                            method: payment.method,
+                            providerOrderId: payment.order_id, // Razorpay subscription payment has order_id too
+                            providerPaymentId: payment.id,
+                            type: "SUBSCRIPTION_RENEWAL" as any,
+                            description: `Subscription Renewal: ${userSubscription.planId}`,
+                            userId: userSubscription.userId,
+                        }
+                    });
+                     console.log(`Subscription ${razorpaySubscriptionId} charged/renewed`);
+
+                     // Send Renewal Receipt Email
+                     if (userSubscription.user?.email) {
+                         await sendReceiptEmail(
+                             userSubscription.user.email,
+                             userSubscription.user.name || "Subscriber",
+                             `Subscription Renewal: ${userSubscription.plan.name}`,
+                             (payment.amount / 100).toFixed(2) + " " + payment.currency,
+                             payment.id
+                         );
+                     }
+                }
+
+                if (event.event === "subscription.cancelled") {
+                     await prisma.userSubscription.update({
+                        where: { id: userSubscription.id },
+                        data: {
+                            status: "canceled",
+                            cancelAtPeriodEnd: false
+                        }
+                    });
+                    console.log(`Subscription ${razorpaySubscriptionId} cancelled`);
+
+                    // Send Cancellation Email
+                    if (userSubscription.user?.email) {
+                        await sendNotificationEmail(
+                            userSubscription.user.email,
+                            userSubscription.user.name || "Subscriber",
+                            "Subscription Cancelled",
+                            "We're sorry to see you go",
+                            `Your subscription to ${userSubscription.plan.name} has been cancelled. You will retain access until the end of your current billing period.`
+                        );
+                    }
+                }
+            } else {
+                console.log(`Subscription ${razorpaySubscriptionId} not found in local DB`);
+            }
         }
 
         return NextResponse.json({ status: "ok" });

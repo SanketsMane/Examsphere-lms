@@ -30,6 +30,34 @@ export async function createGroupClass(data: {
 
     if (!teacher) return { error: "Teacher profile not found" };
 
+    // --- Feature Gating: Group Class Limit ---
+    const [existingGroupCount, subscription] = await Promise.all([
+        prisma.groupClass.count({
+            where: { 
+                teacherId: teacher.id,
+                status: { in: ["Scheduled"] } // Only count active/upcoming
+            }
+        }),
+        prisma.userSubscription.findUnique({
+            where: { userId: (session.user as any).id },
+            include: { plan: true }
+        })
+    ]);
+
+    let maxGroups = 2; // Default limit for free users (stricter for groups as they use server resources)
+
+    if (subscription && subscription.status === 'active' && (subscription.plan as any).metadata) {
+            const meta = (subscription.plan as any).metadata;
+            if (typeof meta.maxGroups === 'number') {
+                maxGroups = meta.maxGroups;
+            }
+    }
+
+    if (existingGroupCount >= maxGroups) {
+        return { error: `You have reached the limit of ${maxGroups} active group classes. Upgrade to create more.` };
+    }
+    // -----------------------------------------
+
     try {
         const groupClass = await prisma.groupClass.create({
             data: {

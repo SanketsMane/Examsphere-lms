@@ -13,15 +13,35 @@ export async function CreateCourse(
 
     try {
         // Rate limiting logic can be re-integrated here if protectAdminAction is restored
-        /*
-        const securityCheck = await protectAdminAction(session.user.id);
-        if (!securityCheck.success) {
+        // Previous security check removed
+
+        // --- Feature Gating: Course Creation Limit ---
+        const [existingCount, subscription] = await Promise.all([
+            prisma.course.count({
+                where: { userId: (session.user as any).id }
+            }),
+            prisma.userSubscription.findUnique({
+                where: { userId: (session.user as any).id },
+                include: { plan: true }
+            })
+        ]);
+
+        let maxCourses = 3; // Default limit for free/non-subscribed users
+        
+        if (subscription && subscription.status === 'active' && (subscription.plan as any).metadata) {
+             const meta = (subscription.plan as any).metadata;
+             if (typeof meta.maxCourses === 'number') {
+                 maxCourses = meta.maxCourses;
+             }
+        }
+
+        if (existingCount >= maxCourses) {
             return {
                 status: "error",
-                message: securityCheck.error || "Security check failed",
+                message: `You have reached the limit of ${maxCourses} courses for your current plan. Please upgrade to create more.`
             };
         }
-        */
+        // ---------------------------------------------
 
         const validation = courseSchema.safeParse(values);
 

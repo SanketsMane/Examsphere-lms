@@ -71,6 +71,11 @@ const teacherData = {
       icon: IconVideo,
     },
     {
+      title: "My Subscription",
+      url: "/teacher/subscription",
+      icon: IconSparkles, 
+    },
+    {
       title: "Pricing & Offerings",
       url: "/teacher/pricing",
       icon: IconSettings, // Or IconCurrency/IconCoin if available, defaulting to Settings for now or reusing icon
