@@ -1,5 +1,5 @@
 
-import { requireTeacher } from "@/app/data/auth/require-roles";
+import { requireUser } from "@/app/data/user/require-user";
 import { getSubscriptionPlans, getUserSubscription, getSubscriptionUsage, getBillingHistory } from "@/app/actions/subscriptions";
 import { AuthenticatedPricingCards } from "@/components/subscriptions/AuthenticatedPricingCards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,12 +7,17 @@ import { IconCreditCard, IconCrown } from "@tabler/icons-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeacherSubscriptionPage() {
-    await requireTeacher();
+export default async function StudentSubscriptionPage() {
+    const user = await requireUser();
+    // Verify student? Or just any user. The folder is (student) so implicitly student.
 
     const { plans } = await getSubscriptionPlans();
+    // Filter for Student plans
+    const studentPlans = plans?.filter((p: any) => p.role === "STUDENT") || [];
+
     const { subscription } = await getUserSubscription();
-    // New Data Fetching
+    
+    // New Data Fetching (updated to include enrollments)
     const { usage } = await getSubscriptionUsage();
     const { transactions } = await getBillingHistory();
 
@@ -23,7 +28,7 @@ export default async function TeacherSubscriptionPage() {
                     <IconCrown className="h-8 w-8 text-yellow-500" />
                     My Subscription
                 </h1>
-                <p className="text-muted-foreground">Manage your plan and unlock premium features.</p>
+                <p className="text-muted-foreground">Manage your learning plan.</p>
             </div>
 
             {/* Current Plan Status */}
@@ -38,10 +43,10 @@ export default async function TeacherSubscriptionPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-2xl font-bold">
-                                {subscription?.plan?.name || "Basic Teacher Plan (Free)"}
+                                {subscription?.plan?.name || "Basic Student Plan (Free)"}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                                {subscription ? `Renews on ${subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}` : "Standard features active"}
+                                {subscription ? `Renews on ${subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}` : "Free access active"}
                             </p>
                         </div>
                         <div className="text-right">
@@ -60,40 +65,25 @@ export default async function TeacherSubscriptionPage() {
             </Card>
 
             <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Available Plans</h2>
-                <AuthenticatedPricingCards plans={plans} currentSubscriptionId={subscription?.id} />
+                <h2 className="text-xl font-semibold">Available Student Plans</h2>
+                <AuthenticatedPricingCards plans={studentPlans} currentSubscriptionId={subscription?.id} />
              </div>
 
              {/* Usage Statistics Section */}
-            {usage && (
+            {usage && usage.enrollments && (
                 <div className="space-y-4">
                      <h2 className="text-xl font-semibold">Plan Usage</h2>
                      <div className="grid gap-4 md:grid-cols-2">
                         <Card>
                              <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium">Courses Created</CardTitle>
+                                <CardTitle className="text-sm font-medium">Active Course Enrollments</CardTitle>
                              </CardHeader>
                              <CardContent>
-                                <div className="text-2xl font-bold">{usage.courses.used} / {usage.courses.limit}</div>
+                                <div className="text-2xl font-bold">{usage.enrollments.used} / {usage.enrollments.limit}</div>
                                 <div className="h-2 w-full bg-secondary mt-2 rounded-full overflow-hidden">
                                     <div 
                                         className="h-full bg-primary transition-all duration-500" 
-                                        style={{ width: `${Math.min((usage.courses.used / usage.courses.limit) * 100, 100)}%` }}
-                                    />
-                                </div>
-                             </CardContent>
-                        </Card>
-                        
-                        <Card>
-                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium">Active Group Classes</CardTitle>
-                             </CardHeader>
-                             <CardContent>
-                                <div className="text-2xl font-bold">{usage.groups.used} / {usage.groups.limit}</div>
-                                <div className="h-2 w-full bg-secondary mt-2 rounded-full overflow-hidden">
-                                     <div 
-                                        className="h-full bg-blue-500 transition-all duration-500" 
-                                        style={{ width: `${Math.min((usage.groups.used / usage.groups.limit) * 100, 100)}%` }}
+                                        style={{ width: `${Math.min((usage.enrollments.used / usage.enrollments.limit) * 100, 100)}%` }}
                                     />
                                 </div>
                              </CardContent>
@@ -151,7 +141,7 @@ export default async function TeacherSubscriptionPage() {
                  <div className="pt-6 border-t">
                      <h3 className="text-lg font-semibold text-destructive mb-2">Danger Zone</h3>
                      <p className="text-sm text-muted-foreground mb-4">
-                        Cancelling your subscription will downgrade you to the Basic plan at the end of your current billing period.
+                        Cancelling your subscription will downgrade you to the Basic plan.
                      </p>
                     <AuthenticatedPricingCards 
                         plans={[]} 

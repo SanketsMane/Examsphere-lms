@@ -26,7 +26,7 @@ interface PricingCardsProps {
 }
 
 
-export function PricingCards({ plans, currentSubscriptionId, showCancelButton }: PricingCardsProps) {
+export function AuthenticatedPricingCards({ plans, currentSubscriptionId, showCancelButton }: PricingCardsProps) {
     const [loading, setLoading] = useState<string | null>(null);
 
     useEffect(() => {

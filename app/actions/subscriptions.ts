@@ -135,26 +135,29 @@ export async function getSubscriptionUsage() {
         if (!session) return { usage: null };
 
         const userId = session.user.id;
-        const [courseCount, groupCount, subscription] = await Promise.all([
+        const [courseCount, groupCount, enrollmentCount, subscription] = await Promise.all([
             prisma.course.count({ where: { userId } }),
-            prisma.groupClass.count({ where: { teacherId: userId, status: { in: ["Scheduled"] } } }), // Align with valid status from groups.ts
+            prisma.groupClass.count({ where: { teacherId: userId, status: { in: ["Scheduled"] } } }),
+            prisma.enrollment.count({ where: { userId, status: "Active" } }),
             prisma.userSubscription.findUnique({ 
                 where: { userId },
                 include: { plan: true }
             }) as Promise<ExtendedUserSubscription | null>
         ]);
 
-        let limits = { maxCourses: 3, maxGroups: 2 }; // Defaults
+        let limits = { maxCourses: 3, maxGroups: 2, maxEnrollments: 5 }; // Defaults
         if (subscription && subscription.status === 'active' && subscription.plan?.metadata) {
             const meta = subscription.plan.metadata;
              if (typeof meta.maxCourses === 'number') limits.maxCourses = meta.maxCourses;
              if (typeof meta.maxGroups === 'number') limits.maxGroups = meta.maxGroups;
+             if (typeof meta.maxEnrollments === 'number') limits.maxEnrollments = meta.maxEnrollments;
         }
 
         return {
             usage: {
                 courses: { used: courseCount, limit: limits.maxCourses },
-                groups: { used: groupCount, limit: limits.maxGroups }
+                groups: { used: groupCount, limit: limits.maxGroups },
+                enrollments: { used: enrollmentCount, limit: limits.maxEnrollments }
             }
         };
 
