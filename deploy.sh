@@ -91,26 +91,24 @@ npx prisma db push
 
 # 4. Build Application
 echo "🏗️ Building application..."
+rm -rf .next
 npm run build
 
-# 5. Preparing standalone assets (Author: Sanket)
-echo "📦 Preparing standalone assets..."
-mkdir -p .next/standalone/.next/static
-cp -r public .next/standalone/
-cp -r .next/static/* .next/standalone/.next/static/
+# 5. Preparing standalone assets (Skipped - using standard start)
+# echo "📦 Preparing standalone assets..."
+# mkdir -p .next/standalone/.next/static
+# cp -r public .next/standalone/
+# cp -r .next/static/* .next/standalone/.next/static/
 
 # 6. Start/Restart with PM2
 echo "♻️ Restarting server..."
-if pm2 list | grep -q "kidokool-lms"; then
-    echo "Reloading existing process..."
-    # If using standalone mode, we should point PM2 to server.js
+    # Using standard start to avoid standalone issues - Always restart
+    echo "Stopping existing process..."
     pm2 stop kidokool-lms || true
     pm2 delete kidokool-lms || true
-    PORT=3000 pm2 start .next/standalone/server.js --name "kidokool-lms"
-else
-    echo "Starting new process..."
-    PORT=3000 pm2 start .next/standalone/server.js --name "kidokool-lms"
-fi
+    
+    echo "Starting new process with npm start..."
+    pm2 start npm --name "kidokool-lms" -- start
 
 # Save PM2 list so it restarts on reboot
 pm2 save

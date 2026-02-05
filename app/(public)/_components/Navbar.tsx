@@ -31,6 +31,11 @@ const navigationItems: IMenu[] = [
     title: "Teachers",
     url: "/find-teacher",
   },
+  {
+    id: 5,
+    title: "Pricing",
+    url: "/pricing",
+  },
 ];
 
 export function Navbar({ settings }: { settings?: any }) {
