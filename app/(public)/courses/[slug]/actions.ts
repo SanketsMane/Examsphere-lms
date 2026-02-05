@@ -4,6 +4,7 @@ import { requireUser } from "@/app/data/user/require-user";
 import { protectEnrollmentAction } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
 import { getRazorpayInstance, getRazorpayKeyId } from "@/lib/razorpay";
+import { checkEnrollmentLimit } from "@/lib/subscription-limits";
 
 export async function enrollInCourseAction(
   courseId: string
@@ -19,6 +20,16 @@ export async function enrollInCourseAction(
         message: securityCheck.error || "Security check failed",
       };
     }
+
+    // [STRICT ENFORCEMENT] Check Subscription Limits
+    const limitCheck = await checkEnrollmentLimit(user.id);
+    if (!limitCheck.allowed) {
+        return {
+            status: "error",
+            message: `You have reached your limit of ${limitCheck.limit} active course enrollments. Please upgrade your plan.`
+        };
+    }
+
     const course = await prisma.course.findUnique({
       where: {
         id: courseId,

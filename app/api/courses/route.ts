@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { checkCourseLimit } from "@/lib/subscription-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,15 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json();
         const validatedData = createCourseSchema.parse(body);
+
+        // [STRICT ENFORCEMENT] Check Subscription Limits
+        const limitCheck = await checkCourseLimit(session.user.id);
+        if (!limitCheck.allowed) {
+            return new NextResponse(
+                `You have reached your limit of ${limitCheck.limit} courses. Please upgrade your plan.`, 
+                { status: 403 }
+            );
+        }
 
         const course = await prisma.course.create({
             data: {

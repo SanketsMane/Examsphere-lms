@@ -122,7 +122,12 @@ export default async function TeacherSubscriptionPage() {
                                         {transactions.map((tx: any) => (
                                             <tr key={tx.id} className="border-b transition-colors hover:bg-muted/50">
                                                  <td className="p-4 align-middle">{new Date(tx.createdAt).toLocaleDateString()}</td>
-                                                 <td className="p-4 align-middle">{tx.description}</td>
+                                                 <td className="p-4 align-middle">
+                                                    <div>{tx.description}</div>
+                                                    <a href={`/invoice/${tx.id}`} target="_blank" className="text-xs text-primary hover:underline block mt-1">
+                                                        Download Invoice
+                                                    </a>
+                                                 </td>
                                                  <td className="p-4 align-middle">{(tx.amount / 100).toFixed(2)} {tx.currency}</td>
                                                  <td className="p-4 align-middle">
                                                      <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500/10 text-green-500">
