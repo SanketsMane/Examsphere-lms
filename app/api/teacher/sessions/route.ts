@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
       where: {
         teacherId: teacherProfile.id,
         sessionId: { not: null }, // Only session earnings
-        status: { in: ['Pending', 'Paid'] } // Count pending and paid
+        status: { in: ['Pending', 'Approved', 'PaidOut'] } // Count pending, approved, and paid out commissions
       },
       _sum: {
         amount: true
