@@ -32,6 +32,3 @@ export default async function CreateSessionPage() {
     </div>
   );
 }
-    </div>
-  );
-}
