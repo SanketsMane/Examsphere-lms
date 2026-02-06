@@ -71,10 +71,32 @@ export async function GET(req: NextRequest) {
     ]);
 
     // Calculate stats
+    // 1. Total Earnings: Sum of commissions from sessions (Net Earnings)
+    const earningsData = await prisma.commission.aggregate({
+      where: {
+        teacherId: teacherProfile.id,
+        sessionId: { not: null }, // Only session earnings
+        status: { in: ['Pending', 'Paid'] } // Count pending and paid
+      },
+      _sum: {
+        amount: true
+      }
+    });
+
+    // 2. Average Rating: Avg of SessionRating
+    const ratingData = await prisma.sessionRating.aggregate({
+      where: {
+        teacherId: teacherProfile.id
+      },
+      _avg: {
+        rating: true
+      }
+    });
+
+    // 3. Total Sessions & Counts
     const statsData = await prisma.liveSession.aggregate({
       where: { teacherId: teacherProfile.id },
-      _count: { _all: true },
-      _sum: { price: true }
+      _count: { _all: true }
     });
 
     const [upcomingCount, completedCount] = await Promise.all([
@@ -105,7 +127,8 @@ export async function GET(req: NextRequest) {
         total: statsData._count._all || 0,
         upcoming: upcomingCount || 0,
         completed: completedCount || 0,
-        totalEarnings: Number(statsData._sum.price) || 0
+        totalEarnings: Number(earningsData._sum?.amount) || 0,
+        averageRating: ratingData._avg.rating || 0
       }
     });
   } catch (error) {
