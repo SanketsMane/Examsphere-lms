@@ -142,6 +142,19 @@ async function main() {
     }
   ];
 
+  console.log('Cleaning up old plans...');
+  const newPlanNames = plans.map(p => p.name);
+  try {
+    const deleted = await prisma.subscriptionPlan.deleteMany({
+      where: {
+        name: { notIn: newPlanNames }
+      }
+    });
+    console.log(`Deleted ${deleted.count} old plans.`);
+  } catch (e) {
+    console.warn("Warning: Could not delete some old plans, likely due to active subscriptions.", e);
+  }
+
   for (const plan of plans) {
     // Check if plan exists by name
     const existing = await prisma.subscriptionPlan.findUnique({
