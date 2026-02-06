@@ -1,0 +1,103 @@
+Below is a clear, ready-to-use structure for pricing, rules, and controls.
+
+( Can be changed from Admin)
+
+Student Subscription Plans
+Free
+	•	Price: Free
+	•	Demo classes: 3 total
+	•	Demo length: 20 minutes each
+	•	Discounts: None
+	•	Chat access: Limited, class-only
+	•	Recordings: Not available
+Pro
+	•	Price: Monthly or yearly, with yearly savings ( 699 monthly – 6999 yearly)- can change from Admin
+	•	Demo classes: 6 total
+	•	Demo length: 30 minutes each
+	•	Discounts: 10% on all paid classes
+	•	Chat access: Full in-platform chat
+	•	Recordings: Last 10 classes stored or 5 Gb How much is it costing us?
+	•	Extras: Study notes and basic progress reports
+Premium
+	•	Price: Higher tier, best value yearly ( 999 monthly – 9999 yearly ) – Can change from Admin
+	•	Demo classes: 10 total
+	•	Demo length: 30 minutes each
+	•	Subjects: Unlimited
+	•	Discounts: 20% on all paid classes
+	•	Priority booking: Enabled
+	•	Recordings: Storage – 10 GB How much is it costing us?
+	•	Extras: Tests, reports, certificates, tutor recommendations
+
+
+
+
+Tutor Subscription or Commission Model
+Option One: Commission Based
+	•	Platform charges of 25% per paid class.
+	•	No upfront cost for tutors.
+	•	No group class
+	•	Support: Standard ticket support
+
+Option Two: Tutor Pro Plan
+	•	Monthly fixed fee ( 1299)
+	•	Lower commission, around 15%.
+	•	Higher search ranking and visibility.
+	•	Group Class for 6 Students maximum
+	•	Class recording storage – 10 GB ( Can buy more)How much is it costing us?
+	•	Should be able to assign some time slots to Only Pro and premium students
+	•	Payout cycle: Bi-Weekly
+	•	Support- Priority
+
+
+Option Three: Tutor Premium Plan
+	•	Monthly fixed fee ( 1899)
+	•	Lower commission, around 10%.
+	•	Higher search ranking and visibility.
+	•	Group class for 12 Students maximum
+	•	Should be able to assign some time slots to Only Pro and premium students
+	•	Will be able to create and sell courses
+	•	Advanced whiteboard and screen tools.
+	•	Payout cycle- Bi-Weekly
+	•	Class recording storage – 25 GB ( Can buy more) How much is it costing us?
+	•	Loyalty Bonus
+	•	Support - Priority
+
+
+
+
+
+
+
+Platform Usage Rules
+During demos
+	•	No personal contact sharing allowed.
+	•	Platform chat and video only.
+	•	Classes auto-recorded for safety.
+After demos
+	•	Direct contact unlocked only after paid course purchase.
+	•	Payments must stay inside the platform wallet.
+
+Strong Anti-Bypass Controls
+	•	Auto-block phone numbers, emails, and social app keywords.
+	•	AI chat scan to flag risky messages.
+	•	Warnings on first violation.
+	•	Account freeze on second violation.
+	•	Permanent ban on repeated abuse.
+
+Payment and Trust System
+	•	Escrow wallet holds student payment.
+	•	Tutor payout released after class completion.
+	•	Three-day dispute window for students.
+
+Retention and Growth Features
+	•	Monthly learning streak rewards.
+	•	Wallet credits for renewals.
+	•	Referral rewards locked to platform use only.
+	•	Subscription-only flash discounts.
+
+Legal and Onboarding Protection
+	•	Mandatory agreement acceptance at signup.
+	•	Clear penalties shown before first demo booking.
+	•	Logged consent for compliance and disputes.
+
+
