@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser, requireAdmin } from "@/lib/action-security";
 import { getCurrencyData, convertPrice } from "@/lib/currency";
 import { logger } from "@/lib/logger";
+import { Prisma } from "@prisma/client";
 
 /**
  * Get wallet balance for the current user
@@ -35,17 +36,25 @@ export async function getWalletBalance() {
  * Get wallet with full details
  * @author Sanket
  */
-export async function getWallet(userId?: string) {
-    const session = userId ? { user: { id: userId } } : await requireUser();
+export async function getWallet(userId?: string, tx?: Prisma.TransactionClient) {
+    const session = await requireUser(); // Always require session first
+    
+    // QA-004: Fix IDOR - If userId is requested, ensure requester is admin or owner
+    if (userId && userId !== session.user.id && (session.user as any).role !== "admin") {
+        throw new Error("Unauthorized access to wallet");
+    }
 
-    let wallet = await prisma.wallet.findUnique({
-        where: { userId: session.user.id }
+    const targetUserId = userId || session.user.id;
+    const db = tx || prisma;
+
+    let wallet = await db.wallet.findUnique({
+        where: { userId: targetUserId }
     });
 
     // Create wallet if it doesn't exist (for existing users)
     if (!wallet) {
-        wallet = await prisma.wallet.create({
-            data: { userId: session.user.id, balance: 0 }
+        wallet = await db.wallet.create({
+            data: { userId: targetUserId, balance: 0 }
         });
     }
 
@@ -81,39 +90,52 @@ export async function deductFromWallet(
     amount: number,
     type: 'COURSE_PURCHASE' | 'SESSION_BOOKING' | 'GROUP_ENROLLMENT',
     description: string,
-    metadata?: any
+    metadata?: any,
+    tx?: Prisma.TransactionClient
 ) {
     // Validate amount
     if (amount <= 0) {
         throw new Error("Amount must be positive");
     }
 
-    const user = await prisma.user.findUnique({
+    const db = tx || prisma;
+    const user = await db.user.findUnique({
         where: { id: userId },
         select: { country: true }
     });
 
-    const wallet = await getWallet(userId);
-    const currency = getCurrencyData(user?.country);
+    // Use the potentially transactional getWallet
+    // Note: getWallet now checks session, so we might need to rely on the caller ensuring auth if this is a background task.
+    // But deductFromWallet is usually user-initiated. 
+    // However, if we are in a transaction, we might not want getWallet to re-check auth if it's already checked?
+    // The previous getWallet allowed bypassing requireUser if userId was passed.
+    // My fix enforces requireUser. This is good.
+    
+    // But wait, if I call this from `joinGroupClass`, `userId` is passed.
+    // `joinGroupClass` has a session.
+    // `deductFromWallet` calls `getWallet(userId)`.
+    
+    // Logic extraction for transaction support
+    const execute = async (transactionTx: Prisma.TransactionClient) => {
+        const wallet = await getWallet(userId, transactionTx);
+        const currency = getCurrencyData(user?.country);
 
-    // Check sufficient balance (internal balance is USD)
-    if (wallet.balance < amount) {
-        throw new Error(`Insufficient balance. You have ${currency.symbol}${Math.round(wallet.balance * currency.factor)} but need ${currency.symbol}${Math.round(amount * currency.factor)}`);
-    }
+        // Check sufficient balance (internal balance is USD)
+        if (wallet.balance < amount) {
+            throw new Error(`Insufficient balance. You have ${currency.symbol}${Math.round((wallet.balance || 0) * currency.factor)} but need ${currency.symbol}${Math.round(amount * currency.factor)}`);
+        }
 
-    // Atomic transaction to deduct balance and create transaction record
-    const result = await prisma.$transaction(async (tx) => {
         const balanceBefore = wallet.balance;
         const balanceAfter = balanceBefore - amount;
 
         // Update wallet balance
-        const updatedWallet = await tx.wallet.update({
+        const updatedWallet = await transactionTx.wallet.update({
             where: { id: wallet.id },
             data: { balance: balanceAfter }
         });
 
         // Create transaction record
-        const transaction = await tx.walletTransaction.create({
+        const transaction = await transactionTx.walletTransaction.create({
             data: {
                 walletId: wallet.id,
                 type,
@@ -126,7 +148,14 @@ export async function deductFromWallet(
         });
 
         return { wallet: updatedWallet, transaction };
-    });
+    };
+
+    let result;
+    if (tx) {
+        result = await execute(tx);
+    } else {
+        result = await prisma.$transaction(execute);
+    }
 
     logger.info("Wallet deduction", { userId, amount, type, description });
     revalidatePath('/dashboard/wallet');

@@ -30,6 +30,9 @@ export function SubscriptionPlanDialog({ plan, trigger }: SubscriptionPlanDialog
         razorpayPlanId: plan?.razorpayPlanId || "",
         searchBoost: plan?.metadata ? (plan.metadata as any).searchBoost : 1,
         commissionRate: plan?.metadata ? (plan.metadata as any).commissionRate : 20,
+        maxCourses: plan?.metadata ? (plan.metadata as any).maxCourses : 3,
+        maxGroups: plan?.metadata ? (plan.metadata as any).maxGroups : 2,
+        maxCourseEnrollments: plan?.metadata ? (plan.metadata as any).maxCourseEnrollments : 5,
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +44,9 @@ export function SubscriptionPlanDialog({ plan, trigger }: SubscriptionPlanDialog
         const metadata = {
             searchBoost: Number(formData.searchBoost),
             commissionRate: Number(formData.commissionRate),
+            maxCourses: Number(formData.maxCourses),
+            maxGroups: Number(formData.maxGroups),
+            maxCourseEnrollments: Number(formData.maxCourseEnrollments),
         };
 
         const payload = {
@@ -67,7 +73,8 @@ export function SubscriptionPlanDialog({ plan, trigger }: SubscriptionPlanDialog
             if (!plan) {
                 // Reset form only on create
                 setFormData({
-                    name: "", description: "", price: 0, role: "TEACHER", features: "", razorpayPlanId: "", searchBoost: 1, commissionRate: 20
+                    name: "", description: "", price: 0, role: "TEACHER", features: "", razorpayPlanId: "", 
+                    searchBoost: 1, commissionRate: 20, maxCourses: 3, maxGroups: 2, maxCourseEnrollments: 5
                 });
             }
         } catch (error: any) {
@@ -142,6 +149,33 @@ export function SubscriptionPlanDialog({ plan, trigger }: SubscriptionPlanDialog
                             onChange={e => setFormData({...formData, features: e.target.value})}
                             placeholder="Valid for 1 month&#10;10% Commission&#10;Priority Support"
                         />
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                             <Label>Max Courses</Label>
+                             <Input 
+                                type="number"
+                                value={formData.maxCourses}
+                                onChange={e => setFormData({...formData, maxCourses: Number(e.target.value)})}
+                             />
+                        </div>
+                        <div className="space-y-2">
+                             <Label>Max Groups</Label>
+                             <Input 
+                                type="number"
+                                value={formData.maxGroups}
+                                onChange={e => setFormData({...formData, maxGroups: Number(e.target.value)})}
+                             />
+                        </div>
+                        <div className="space-y-2">
+                             <Label>Max Enrollments</Label>
+                             <Input 
+                                type="number"
+                                value={formData.maxCourseEnrollments}
+                                onChange={e => setFormData({...formData, maxCourseEnrollments: Number(e.target.value)})}
+                             />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

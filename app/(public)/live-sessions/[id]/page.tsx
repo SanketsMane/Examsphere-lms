@@ -100,7 +100,7 @@ export default async function SessionDetailPage(props: {
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 <Badge variant="secondary" className="font-medium">
-                  {session.subject || "Group Class"}
+                  {(session as any).subject?.name || (session as any).subjectName || "Group Class"}
                 </Badge>
                 <Badge variant={session.status === 'Scheduled' ? 'default' : 'secondary'}>
                   {session.status.charAt(0).toUpperCase() + session.status.slice(1)}

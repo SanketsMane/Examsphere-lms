@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { getSessionWithRole } from "@/app/data/auth/require-roles";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 import { UserRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
@@ -16,7 +16,7 @@ export async function createSubscriptionPlan(data: {
     metadata?: any;
     isDefault?: boolean;
 }) {
-    const session = await getSessionWithRole("ADMIN");
+    const session = await requireAdmin();
     if (!session) return { error: "Unauthorized" };
 
     try {
@@ -44,7 +44,7 @@ export async function updateSubscriptionPlan(id: string, data: Partial<{
     metadata: any;
     isDefault: boolean;
 }>) {
-    const session = await getSessionWithRole("ADMIN");
+    const session = await requireAdmin();
     if (!session) return { error: "Unauthorized" };
 
     try {
@@ -64,7 +64,7 @@ export async function updateSubscriptionPlan(id: string, data: Partial<{
 }
 
 export async function deleteSubscriptionPlan(id: string) {
-    const session = await getSessionWithRole("ADMIN");
+    const session = await requireAdmin();
     if (!session) return { error: "Unauthorized" };
 
     try {

@@ -634,7 +634,8 @@ model GroupClass {
   teacherId   String
   title       String
   description String
-  subject     String?
+  subjectId   String?
+  subjectName String?
   level       String?
   language    String?
   scheduledAt DateTime
@@ -647,6 +648,7 @@ model GroupClass {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   teacher     TeacherProfile    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject     Subject?          @relation(fields: [subjectId], references: [id])
   enrollments GroupEnrollment[]
 
   // Package / Ads fields
@@ -711,6 +713,16 @@ model Category {
   parent       Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children     Category[] @relation("CategoryHierarchy")
   courses      Course[]
+}
+
+model Subject {
+  id           String       @id @default(uuid())
+  name         String       @unique
+  slug         String       @unique
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  groupClasses GroupClass[]
 }
 
 model Tag {

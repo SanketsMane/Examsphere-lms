@@ -39,7 +39,7 @@ export interface SessionFilters {
 interface SessionFiltersProps {
   filters: SessionFilters;
   onFiltersChange: (filters: SessionFilters) => void;
-  subjects: string[];
+  subjects: { id: string; name: string }[];
   teachers: { id: string; name: string }[];
 }
 
@@ -146,8 +146,8 @@ export function SessionFiltersComponent({
               <SelectContent>
                 <SelectItem value="ALL">All subjects</SelectItem>
                 {subjects.map((subject) => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject}
+                  <SelectItem key={subject.id} value={subject.id}>
+                    {subject.name}
                   </SelectItem>
                 ))}
               </SelectContent>

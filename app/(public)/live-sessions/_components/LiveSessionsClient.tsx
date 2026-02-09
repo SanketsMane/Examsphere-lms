@@ -61,7 +61,7 @@ export function LiveSessionsClient() {
     endDate: undefined,
     timeOfDay: "",
   });
-  const [subjects, setSubjects] = useState<string[]>([]);
+  const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([]);
   const [view, setView] = useState<"grid" | "calendar">("grid");
 
@@ -97,6 +97,12 @@ export function LiveSessionsClient() {
       const data = await response.json();
       setSessions(data.sessions);
       setPagination(data.pagination);
+
+      // Optionally update filter options from every request
+      if (data.options) {
+        if (data.options.subjects) setSubjects(data.options.subjects);
+        if (data.options.teachers) setTeachers(data.options.teachers);
+      }
     } catch (error) {
       console.error("Error fetching sessions:", error);
       setSessions([]);
@@ -113,21 +119,11 @@ export function LiveSessionsClient() {
         if (!response.ok) return;
 
         const data = await response.json();
-        const sessions = data.sessions || [];
-
-        // Extract unique subjects
-        const uniqueSubjects = Array.from(
-          new Set(sessions.map((s: Session) => s.subject).filter(Boolean))
-        ) as string[];
-        setSubjects(uniqueSubjects.sort());
-
-        // Extract unique teachers
-        const uniqueTeachers = Array.from(
-          new Map(
-            sessions.map((s: Session) => [s.teacher.id, { id: s.teacher.id, name: s.teacher.name }])
-          ).values()
-        ) as { id: string; name: string }[];
-        setTeachers(uniqueTeachers);
+        
+        if (data.options) {
+          if (data.options.subjects) setSubjects(data.options.subjects);
+          if (data.options.teachers) setTeachers(data.options.teachers);
+        }
       } catch (error) {
         console.error("Error fetching filter options:", error);
       }

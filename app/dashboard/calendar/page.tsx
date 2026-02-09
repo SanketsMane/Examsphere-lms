@@ -65,6 +65,11 @@ async function getGroupClasses(userId: string) {
               }
             }
           },
+          subject: {
+            select: {
+              name: true
+            }
+          },
           _count: {
             select: {
               enrollments: true
@@ -257,10 +262,10 @@ export default async function DashboardCalendarPage() {
                       </div>
 
                       <div className="mt-3 flex items-center gap-4">
-                        {classItem.subject && (
+                        {((classItem as any).subject?.name || (classItem as any).subjectName) && (
                           <div className="flex items-center gap-2">
                             <BookOpen className="h-4 w-4 text-muted-foreground" />
-                            <Badge variant="outline">{classItem.subject}</Badge>
+                            <Badge variant="outline">{(classItem as any).subject?.name || (classItem as any).subjectName}</Badge>
                           </div>
                         )}
                         

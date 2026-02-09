@@ -10,10 +10,22 @@ import { createGroupClass } from "@/app/actions/groups";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox"; // Verify existence
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
-export function CreateGroupForm() {
+interface CreateGroupFormProps {
+    subjects: { id: string, name: string }[];
+}
+
+export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [subjectId, setSubjectId] = useState<string>("");
 
     async function onSubmit(formData: FormData) {
         setLoading(true);
@@ -44,6 +56,7 @@ export function CreateGroupForm() {
                 maxStudents,
                 isAdvertised,
                 isFreeTrialEligible,  // Include free trial flag - Author: Sanket
+                subjectId, // Save selected subject ID - Author: Sanket
                 bannerUrl
             });
 
@@ -71,6 +84,22 @@ export function CreateGroupForm() {
             <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea id="description" name="description" required placeholder="What will students learn?" />
+            </div>
+
+            <div className="space-y-2">
+                <Label>Subject</Label>
+                <Select onValueChange={setSubjectId} required>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {subjects.map((subject) => (
+                            <SelectItem key={subject.id} value={subject.id}>
+                                {subject.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

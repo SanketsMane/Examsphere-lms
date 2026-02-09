@@ -34,7 +34,13 @@ export async function GET(req: NextRequest) {
     
     // Subject filter
     if (subject) {
-      where.subject = subject;
+      if (!where.AND) where.AND = [];
+      where.AND.push({
+        OR: [
+            { subjectId: subject },
+            { subjectName: { contains: subject, mode: 'insensitive' } }
+        ]
+      });
     }
     
     // Price filters
@@ -42,8 +48,8 @@ export async function GET(req: NextRequest) {
       where.price = 0;
     } else if (minPrice || maxPrice) {
       where.price = {};
-      if (minPrice) where.price.gte = parseInt(minPrice) * 100; // Convert to cents
-      if (maxPrice) where.price.lte = parseInt(maxPrice) * 100;
+      if (minPrice) where.price.gte = Math.round(Number(minPrice) * 100); // QA-008: Fix precision
+      if (maxPrice) where.price.lte = Math.round(Number(maxPrice) * 100);
     }
     
     // Teacher filter
@@ -94,15 +100,18 @@ export async function GET(req: NextRequest) {
         };
       }
     }
-    
-    // Search filter (Author: Sanket)
+    // Search filter (Author: Sanket) - QA-006: Fix overwrite
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { subject: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { teacher: { user: { name: { contains: search, mode: 'insensitive' } } } }
-      ];
+      if (!where.AND) where.AND = [];
+      where.AND.push({
+        OR: [
+            { title: { contains: search, mode: 'insensitive' } },
+            { subjectName: { contains: search, mode: 'insensitive' } },
+            { subject: { name: { contains: search, mode: 'insensitive' } } },
+            { description: { contains: search, mode: 'insensitive' } },
+            { teacher: { user: { name: { contains: search, mode: 'insensitive' } } } }
+        ]
+      });
     }
     
     // Get total count for pagination (Author: Sanket)
@@ -132,6 +141,12 @@ export async function GET(req: NextRequest) {
               },
             },
           },
+        },
+        subject: {
+          select: {
+            id: true,
+            name: true
+          }
         },
         enrollments: {
           where: {
@@ -168,7 +183,7 @@ export async function GET(req: NextRequest) {
     
     // Transform the data (Author: Sanket)
     const transformedSessions = filteredSessions.map(session => {
-      const confirmedBookings = session._count.enrollments;
+      const confirmedBookings = (session as any)._count.enrollments;
       const maxParticipants = session.maxStudents || 12;
       const availableSlots = Math.max(0, maxParticipants - confirmedBookings);
       
@@ -177,17 +192,18 @@ export async function GET(req: NextRequest) {
         title: session.title,
         description: session.description,
         teacher: {
-          id: session.teacher.user.id,
-          name: session.teacher.user.name || "Anonymous Teacher",
-          avatar: session.teacher.user.image || "/placeholder-avatar.svg",
-          rating: session.teacher.rating || 0,
-          totalReviews: session.teacher.totalReviews || 0,
-          isVerified: session.teacher.isVerified,
+          id: (session as any).teacher.user.id,
+          name: (session as any).teacher.user.name || "Anonymous Teacher",
+          avatar: (session as any).teacher.user.image || "/placeholder-avatar.svg",
+          rating: (session as any).teacher.rating || 0,
+          totalReviews: (session as any).teacher.totalReviews || 0,
+          isVerified: (session as any).teacher.isVerified,
         },
         scheduledAt: session.scheduledAt,
         duration: session.duration,
         price: session.price,
-        subject: session.subject,
+        subject: (session as any).subject?.name || (session as any).subjectName,
+        subjectId: (session as any).subjectId,
         type: "group",
         availableSlots,
         maxParticipants,
@@ -205,6 +221,19 @@ export async function GET(req: NextRequest) {
         total: timeOfDay ? filteredSessions.length : total,
         totalPages: Math.ceil((timeOfDay ? filteredSessions.length : total) / limit),
         hasMore: skip + limit < (timeOfDay ? filteredSessions.length : total)
+      },
+      // Added filter options - Author: Sanket
+      options: {
+        subjects: await (prisma as any).subject.findMany({ 
+          where: { isActive: true }, 
+          orderBy: { name: 'asc' },
+          select: { id: true, name: true }
+        }),
+        teachers: Array.from(
+          new Map(
+            groupClasses.map(s => [s.teacher.user.id, { id: s.teacher.user.id, name: s.teacher.user.name }])
+          ).values()
+        )
       }
     });
   } catch (error) {

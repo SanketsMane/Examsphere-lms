@@ -2,11 +2,13 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/action-security";
 
 // --- Expertise Actions ---
 
 export async function createExpertise(name: string) {
     try {
+        await requireAdmin();
         const existing = await prisma.expertise.findUnique({
             where: { name },
         });
@@ -40,6 +42,7 @@ export async function createExpertise(name: string) {
 
 export async function deleteExpertise(id: string) {
     try {
+        await requireAdmin();
         // Soft delete usually better, but for now hard delete or deactivate
         // Let's hard delete for simplicity as per requirements, or verify usage.
         // If we delete, we might break profiles. Let's just delete for now as requested "manage list".
@@ -62,6 +65,7 @@ export async function deleteExpertise(id: string) {
 
 export async function createLanguage(name: string) {
     try {
+        await requireAdmin();
         const existing = await prisma.language.findUnique({
             where: { name },
         });
@@ -94,6 +98,7 @@ export async function createLanguage(name: string) {
 
 export async function deleteLanguage(id: string) {
     try {
+        await requireAdmin();
         await prisma.language.delete({
             where: { id },
         });
