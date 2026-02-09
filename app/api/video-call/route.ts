@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMeetingRoom, generateAgoraToken, updateSessionStatus, generateAgoraRtmToken } from "@/app/actions/video-call";
+import { getMeetingRoom, generateAgoraToken, updateSessionStatus, generateAgoraRtmToken, generateSfuJoinUrl } from "@/app/actions/video-call";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,18 @@ export async function POST(request: NextRequest) {
   try {
     const { action, sessionId, channelName, uid } = await request.json();
     
+    if (action === "generateSfuUrl") {
+      if (!channelName) {
+        return NextResponse.json({ error: "Channel name is required" }, { status: 400 });
+      }
+      const sfuData = await generateSfuJoinUrl({ 
+        room: channelName, 
+        name: uid || "User",
+        isPresenter: uid === "teacher" 
+      });
+      return NextResponse.json(sfuData);
+    }
+
     if (action === "generateToken") {
       if (!channelName) {
         return NextResponse.json({ error: "Channel name is required" }, { status: 400 });

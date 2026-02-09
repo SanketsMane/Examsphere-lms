@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -71,20 +72,21 @@ export function SessionCalendarView({ sessions }: SessionCalendarViewProps) {
                                 </div>
 
                                 {daySessions.map(session => (
-                                    <motion.div
-                                        key={session.id}
-                                        initial={{ scale: 0.9, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm text-xs border border-slate-200 dark:border-gray-700 cursor-pointer hover:border-primary transition-colors group"
-                                    >
-                                        <div className="font-bold truncate text-[#011E21] dark:text-gray-200 group-hover:text-primary">
-                                            {session.title}
-                                        </div>
-                                        <div className="text-gray-500 mt-1 flex items-center justify-between">
-                                            <span>{format(new Date(session.scheduledAt), "h:mm a")}</span>
-                                            <Badge variant="secondary" className="px-1 py-0 text-[10px] h-4">₹{session.price / 100}</Badge>
-                                        </div>
-                                    </motion.div>
+                                    <Link key={session.id} href={`/live-sessions/${session.id}`}>
+                                        <motion.div
+                                            initial={{ scale: 0.9, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm text-xs border border-slate-200 dark:border-gray-700 cursor-pointer hover:border-primary transition-colors group mb-2 last:mb-0"
+                                        >
+                                            <div className="font-bold truncate text-[#011E21] dark:text-gray-200 group-hover:text-primary">
+                                                {session.title}
+                                            </div>
+                                            <div className="text-gray-500 mt-1 flex items-center justify-between">
+                                                <span>{format(new Date(session.scheduledAt), "h:mm a")}</span>
+                                                <Badge variant="secondary" className="px-1 py-0 text-[10px] h-4">₹{session.price / 100}</Badge>
+                                            </div>
+                                        </motion.div>
+                                    </Link>
                                 ))}
 
                                 {daySessions.length === 0 && (

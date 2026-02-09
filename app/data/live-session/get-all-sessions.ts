@@ -2,9 +2,9 @@ import { prisma } from "@/lib/db";
 
 
 export async function getAllSessions() {
-    const sessions = await prisma.liveSession.findMany({
+    const sessions = await prisma.groupClass.findMany({
         where: {
-            status: "scheduled", // or any status logic
+            status: "Scheduled",
         },
         include: {
             teacher: {
@@ -12,8 +12,11 @@ export async function getAllSessions() {
                     user: true,
                 },
             },
-            // If we had participants count
-            // _count: { select: { students: true } } // if relation exists
+            _count: {
+                select: {
+                    enrollments: true
+                }
+            }
         },
         orderBy: {
             scheduledAt: 'asc',

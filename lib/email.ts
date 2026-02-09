@@ -748,6 +748,62 @@ const emailTemplates = {
       </div>
     </body>
     </html>
+  `,
+  sessionCancelled: (data: TemplateData) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Session Cancelled</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #f5f5f5; margin: 0; padding: 40px 20px; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; }
+        .header { background: #ffffff; padding: 32px 40px; border-bottom: 1px solid #e5e5e5; }
+        .logo { font-size: 20px; font-weight: 700; color: #000000; margin-bottom: 8px; }
+        .content { padding: 40px; }
+        .title { font-size: 18px; font-weight: 600; color: #000000; margin-bottom: 16px; }
+        .info-box { background: #fef2f2; border: 1px solid #fecaca; padding: 24px; margin: 24px 0; border-radius: 8px; }
+        .info-box h3 { font-size: 16px; font-weight: 600; color: #991b1b; margin: 0 0 12px 0; }
+        .details p { margin: 8px 0; color: #374151; font-size: 14px; }
+        .footer { border-top: 1px solid #e5e5e5; padding: 32px 40px; background: #fafafa; text-align: center; }
+        .footer-text { font-size: 13px; color: #666666; margin: 4px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">KIDOKOOL</div>
+        </div>
+        
+        <div class="content">
+          <h1 class="title">Session Cancelled</h1>
+          <p>Hi ${data.userName},</p>
+          <p>${data.introMessage}</p>
+          
+          <div class="info-box">
+            <h3>Cancellation Details</h3>
+            <div class="details">
+              <p><strong>Session:</strong> ${data.sessionTitle}</p>
+              <p><strong>Date:</strong> ${data.sessionDate}</p>
+              <p><strong>Reason:</strong> ${data.reason || 'Not provided'}</p>
+              ${data.refundAmount ? `<p><strong>Refund Amount:</strong> $${data.refundAmount}</p>` : ''}
+            </div>
+          </div>
+          
+          <p style="font-size: 14px; color: #666;">
+            If you have any questions, please contact our support team.
+          </p>
+        </div>
+        
+        <div class="footer">
+          <div class="footer-text"><strong>KIDOKOOL</strong></div>
+          <div class="footer-text">Learning Management System</div>
+          <div class="footer-text">© 2026 KIDOKOOL. All rights reserved.</div>
+        </div>
+      </div>
+    </body>
+    </html>
   `
 };
 

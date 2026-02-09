@@ -149,19 +149,28 @@ export async function POST(
       });
     }
 
-    // 5. Send Emails (Non-blocking)
+    // 5. Send Notifications & Emails (Non-blocking)
+    const { createSessionNotification } = await import("@/app/actions/notifications");
     const { sendTemplatedEmail } = await import("@/lib/email");
     const sessionDateStr = new Date(liveSession.scheduledAt).toLocaleString();
 
     // Notify Students
     await Promise.all(processedBookings.map(async ({ booking, refundAmount }) => {
-      if (booking.student && booking.student.email) {
-        await sendTemplatedEmail("notification", booking.student.email, "Session Cancelled by Teacher", {
-          userName: booking.student.name || 'Student',
-          title: "Session Cancelled",
-          messageTitle: liveSession.title,
-          message: `The session "${liveSession.title}" scheduled for ${sessionDateStr} has been cancelled by the teacher. Refund processed: $${(refundAmount / 100).toFixed(2)}.`
-        });
+      if (booking.student && booking.student.id) {
+        // In-app notification
+        await createSessionNotification(booking.student.id, liveSession.id, "cancelled");
+        
+        // Professional Email
+        if (booking.student.email) {
+          await sendTemplatedEmail("sessionCancelled", booking.student.email, "Session Cancelled by Teacher", {
+            userName: booking.student.name || 'Student',
+            sessionTitle: liveSession.title,
+            sessionDate: sessionDateStr,
+            reason: reason || 'Teacher cancelled the session',
+            introMessage: "We're sorry to inform you that your upcoming session has been cancelled by the teacher.",
+            refundAmount: (refundAmount / 100).toFixed(2)
+          });
+        }
       }
     }));
 

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     
     // Build where clause (Author: Sanket)
     const where: any = {
-      status: 'scheduled',
+      status: 'Scheduled',
       scheduledAt: {
         gte: new Date() // Only future sessions
       }
@@ -106,18 +106,18 @@ export async function GET(req: NextRequest) {
     }
     
     // Get total count for pagination (Author: Sanket)
-    const total = await prisma.liveSession.count({ where });
+    const total = await prisma.groupClass.count({ where });
     
     // Build orderBy clause (Author: Sanket)
     let orderBy: any = { scheduledAt: 'asc' };
     if (sort === 'price') {
       orderBy = { price: 'asc' };
     } else if (sort === 'popularity') {
-      orderBy = { bookings: { _count: 'desc' } };
+      orderBy = { enrollments: { _count: 'desc' } };
     }
     
     // Get paginated sessions (Author: Sanket)
-    const liveSessions = await prisma.liveSession.findMany({
+    const groupClasses = await prisma.groupClass.findMany({
       where,
       skip,
       take: limit,
@@ -133,15 +133,9 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        student: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        bookings: {
+        enrollments: {
           where: {
-            status: 'confirmed'
+            status: 'Active'
           },
           select: {
             id: true
@@ -149,9 +143,9 @@ export async function GET(req: NextRequest) {
         },
         _count: {
           select: {
-            bookings: {
+            enrollments: {
               where: {
-                status: 'confirmed'
+                status: 'Active'
               }
             }
           }
@@ -161,9 +155,9 @@ export async function GET(req: NextRequest) {
     });
     
     // Filter by time of day in application layer (Author: Sanket)
-    let filteredSessions = liveSessions;
+    let filteredSessions = groupClasses;
     if (timeOfDay) {
-      filteredSessions = liveSessions.filter(session => {
+      filteredSessions = groupClasses.filter(session => {
         const hour = new Date(session.scheduledAt).getHours();
         if (timeOfDay === 'morning') return hour >= 6 && hour < 12;
         if (timeOfDay === 'afternoon') return hour >= 12 && hour < 18;
@@ -174,8 +168,8 @@ export async function GET(req: NextRequest) {
     
     // Transform the data (Author: Sanket)
     const transformedSessions = filteredSessions.map(session => {
-      const confirmedBookings = session._count.bookings;
-      const maxParticipants = session.maxParticipants || 1;
+      const confirmedBookings = session._count.enrollments;
+      const maxParticipants = session.maxStudents || 12;
       const availableSlots = Math.max(0, maxParticipants - confirmedBookings);
       
       return {
@@ -194,7 +188,7 @@ export async function GET(req: NextRequest) {
         duration: session.duration,
         price: session.price,
         subject: session.subject,
-        type: maxParticipants > 1 ? "group" : "1-on-1",
+        type: "group",
         availableSlots,
         maxParticipants,
         confirmedBookings,

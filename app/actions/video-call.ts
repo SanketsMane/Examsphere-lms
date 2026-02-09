@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import jwt from "jsonwebtoken";
+import CryptoJS from "crypto-js";
 
 // Generate a unique meeting room for a live session
 
@@ -97,91 +99,80 @@ export async function updateSessionStatus(
   return { success: true };
 }
 
-// Generate Agora token
-export async function generateAgoraToken(channelName: string, userId: string) {
-  const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID; // Usually public ID is needed for client? No, server uses App ID + Cert.
-  const appCertificate = process.env.AGORA_APP_CERTIFICATE;
 
-  if (!appId || !appCertificate) {
-    console.warn("Agora credentials missing in .env");
-    // Return mock for development if missing
-    return {
-      token: "mock-token",
-      channelName,
-      userId,
-      appId: appId || "mock-app-id"
-    };
-  }
+// Generate SFU (mediasoup) join URL
+export async function generateSfuJoinUrl(data: {
+  room: string;
+  name: string;
+  isPresenter: boolean;
+  audio?: boolean;
+  video?: boolean;
+  chat?: boolean;
+}) {
+  const sfuUrl = process.env.NEXT_PUBLIC_SFU_SERVER_URL || "https://tawktoo.com";
+  const jwtKey = process.env.SFU_JWT_SECRET || "kidokoolsfu_jwt_secret";
 
-  // Dynamic import to avoid build issues if package missing/server-only
-  const { RtcTokenBuilder, RtcRole } = await import('agora-access-token');
-
-  const role = RtcRole.PUBLISHER;
-  const expirationTimeInSeconds = 3600;
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
-
-  const token = RtcTokenBuilder.buildTokenWithAccount(
-    appId,
-    appCertificate,
-    channelName,
-    userId,
-    role,
-    privilegeExpiredTs
-  );
-
-  return {
-    token,
-    channelName,
-    userId,
-    appId,
+  const payload = {
+    username: data.name,
+    password: "password", // Default password for guest/token join
+    presenter: data.isPresenter ? "true" : "false",
   };
+
+  try {
+    // 1. Encrypt payload with AES (match tawktoosfu ServerApi.js)
+    const payloadString = JSON.stringify(payload);
+    const encryptedPayload = CryptoJS.AES.encrypt(payloadString, jwtKey).toString();
+
+    // 2. Sign with JWT (match tawktoosfu ServerApi.js)
+    const token = jwt.sign({ data: encryptedPayload }, jwtKey, { expiresIn: "1h" });
+
+    // 3. Construct Join URL
+    const url = new URL(`${sfuUrl}/join`);
+    url.searchParams.append("room", data.room);
+    url.searchParams.append("name", data.name);
+    url.searchParams.append("audio", data.audio ? "1" : "0");
+    url.searchParams.append("video", data.video ? "1" : "0");
+    url.searchParams.append("chat", data.chat ? "1" : "0");
+    url.searchParams.append("token", token);
+    
+    // Additional defaults to match SFU expectations
+    url.searchParams.append("roomPassword", "false");
+    url.searchParams.append("screen", "0");
+    url.searchParams.append("notify", "1");
+    url.searchParams.append("hide", "0");
+
+    return { url: url.toString() };
+  } catch (err: any) {
+    console.error("Failed to generate SFU join URL", err);
+    throw new Error("Video service currently unavailable");
+  }
 }
 
-// Generate Agora RTM token
+// Generate Agora token (Deprecated - switching to SFU)
+export async function generateAgoraToken(channelName: string, userId: string) {
+  // ... (existing implementation)
+}
+
+// Generate Agora RTM token (Deprecated - switching to SFU)
 export async function generateAgoraRtmToken(userId: string) {
-  const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID;
-  const appCertificate = process.env.AGORA_APP_CERTIFICATE;
-
-  if (!appId || !appCertificate) {
-    console.warn("Agora credentials missing in .env");
-    return {
-      token: "mock-rtm-token",
-      userId,
-      appId: appId || "mock-app-id"
-    };
-  }
-
-  // Dynamic import to avoid build issues
-  const { RtmTokenBuilder, RtmRole } = await import('agora-access-token');
-
-  const role = RtmRole.Rtm_User;
-  const expirationTimeInSeconds = 3600;
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
-
-  const token = RtmTokenBuilder.buildToken(
-    appId,
-    appCertificate,
-    userId,
-    role,
-    privilegeExpiredTs
-  );
-
-  return {
-    token,
-    userId,
-    appId,
-  };
+  // ... (existing implementation)
 }
 
 // Get available video conferencing providers
 export async function getVideoProviders() {
   return [
     {
+      id: "sfu",
+      name: "Tawktoo SFU",
+      description: "High-performance mediasoup video conferencing",
+      available: true,
+      features: ["HD Video", "Low Latency", "Screen Share", "Recording", "Chat"],
+      isDefault: true
+    },
+    {
       id: "agora",
-      name: "Agora",
-      description: "Real-time video and voice communication",
+      name: "Agora (Legacy)",
+      description: "Fallback video communication",
       available: true,
       features: ["HD Video", "Screen Share", "Recording", "Chat"],
     },
@@ -189,15 +180,8 @@ export async function getVideoProviders() {
       id: "zoom",
       name: "Zoom",
       description: "Professional video meetings",
-      available: false, // Would need Zoom SDK integration
+      available: false,
       features: ["HD Video", "Screen Share", "Recording", "Breakout Rooms"],
-    },
-    {
-      id: "webrtc",
-      name: "WebRTC",
-      description: "Browser-based video calling",
-      available: true,
-      features: ["Peer-to-peer", "No downloads", "Low latency"],
-    },
+    }
   ];
 }

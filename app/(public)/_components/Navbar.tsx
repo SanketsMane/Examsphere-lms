@@ -23,7 +23,7 @@ const navigationItems: IMenu[] = [
   },
   {
     id: 3,
-    title: "Live Sessions",
+    title: "Group Classes",
     url: "/live-sessions",
   },
   {

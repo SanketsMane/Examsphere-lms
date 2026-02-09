@@ -38,6 +38,8 @@ interface StudentSessionCardProps {
       meetingUrl: string | null;
       recordingUrl: string | null;
       studentRating: number | null;
+      cancelledBy: string | null;
+      cancellationReason: string | null;
       teacher: {
         user: {
           id: string; // Added for messaging
@@ -187,11 +189,20 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
         )}
 
         {/* Cancellation Info */}
-        {isCancelled && booking.refundAmount !== null && (
-          <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded-lg p-3">
-            <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
-              Refunded: ${(booking.refundAmount / 100).toFixed(2)}
+        {isCancelled && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm">
+            <p className="font-semibold text-destructive flex items-center gap-2 mb-1">
+              <XCircle className="h-4 w-4" />
+              Booking Cancelled {session.cancelledBy ? `by ${session.cancelledBy}` : ''}
             </p>
+            {session.cancellationReason && (
+              <p className="text-muted-foreground">Reason: {session.cancellationReason}</p>
+            )}
+            {booking.refundAmount !== null && booking.refundAmount > 0 && (
+              <p className="text-muted-foreground mt-1">
+                Refunded: ${(booking.refundAmount / 100).toFixed(2)}
+              </p>
+            )}
           </div>
         )}
 

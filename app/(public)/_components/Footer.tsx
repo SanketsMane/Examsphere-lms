@@ -19,7 +19,6 @@ const defaultFooterLinks = {
   learn: [
     { name: "Find Tutors", href: "/find-teacher" },
     { name: "Online Courses", href: "/courses" },
-    { name: "Live Sessions", href: "/live-sessions" },
     { name: "Group Classes", href: "/live-sessions" },
   ],
   teach: [
@@ -163,7 +162,7 @@ export async function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-slate-800 bg-[#060a15]">
         <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} KidoKool. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} KidoKool. All rights reserved. <span className="ml-2 text-slate-600">v1.0.1</span></p>
           <div className="flex items-center gap-6">
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>

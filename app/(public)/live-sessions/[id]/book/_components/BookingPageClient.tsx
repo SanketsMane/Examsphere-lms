@@ -30,8 +30,8 @@ interface BookingPageClientProps {
     scheduledAt: Date | null;
     duration: number;
     price: number;
-    timezone: string;
     teacher: {
+      timezone: string | null;
       user: {
         name: string;
         image: string | null;
@@ -100,7 +100,7 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
       setLoading(true);
 
       // Create checkout session
-      const response = await fetch(`/api/sessions/${session.id}/checkout`, {
+      const response = await fetch(`/api/groups/${session.id}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -198,10 +198,10 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
                       <Calendar className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="font-medium">
-                          {format(new Date(session.scheduledAt), "EEEE, MMMM dd, yyyy")}
+                          {format(session.scheduledAt, "EEEE, MMMM dd, yyyy")}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(session.scheduledAt), "h:mm a")} ({session.timezone})
+                          {format(session.scheduledAt, "h:mm a")} ({session.teacher?.timezone || 'UTC'})
                         </p>
                       </div>
                     </div>

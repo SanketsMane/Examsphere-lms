@@ -214,7 +214,7 @@ export async function createSessionNotification(
     },
     cancelled: {
       title: "Session Cancelled",
-      message: `Your session with ${(session as any).teacher.name} has been cancelled. You'll be refunded shortly.`,
+      message: `The session "${session.title}" on ${new Date(session.scheduledAt).toLocaleDateString()} has been cancelled.`,
     },
   };
 
@@ -227,6 +227,10 @@ export async function createSessionNotification(
     "Session",
     { sessionId, action }
   );
+  
+  // Revalidate relevant paths
+  revalidatePath("/dashboard/sessions");
+  revalidatePath("/teacher/sessions");
 }
 
 // Create payment notification

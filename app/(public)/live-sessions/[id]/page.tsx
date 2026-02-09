@@ -25,7 +25,7 @@ import { headers } from "next/headers";
 export const dynamic = "force-dynamic";
 
 async function getSession(id: string) {
-  const session = await db.liveSession.findUnique({
+  const session = await db.groupClass.findUnique({
     where: { id },
     include: {
       teacher: {
@@ -39,9 +39,9 @@ async function getSession(id: string) {
           }
         }
       },
-      bookings: {
+      enrollments: {
         where: {
-          status: 'confirmed'
+          status: 'Active'
         }
       }
     }
@@ -61,23 +61,23 @@ export default async function SessionDetailPage(props: {
   const session = await getSession(params.id);
   const sessionAuth = await auth.api.getSession({ headers: await headers() });
 
-  const confirmedBookings = session.bookings.length;
-  const spotsLeft = session.maxParticipants
-    ? session.maxParticipants - confirmedBookings
+  const confirmedBookings = session.enrollments.length;
+  const spotsLeft = session.maxStudents
+    ? session.maxStudents - confirmedBookings
     : null;
 
   const isFull = spotsLeft !== null && spotsLeft <= 0;
   const hasExpired = session.scheduledAt ? isPast(session.scheduledAt) : false;
-  const canBook = !isFull && !hasExpired && session.status === 'scheduled';
+  const canBook = !isFull && !hasExpired && session.status === 'Scheduled';
 
   // Check if user already booked
   let existingBooking = null;
   if (sessionAuth?.user) {
-    existingBooking = await db.sessionBooking.findFirst({
+    existingBooking = await db.groupEnrollment.findFirst({
       where: {
-        sessionId: session.id,
+        classId: session.id,
         studentId: sessionAuth.user.id,
-        status: { in: ['confirmed', 'pending'] }
+        status: { in: ['Active', 'Pending'] }
       }
     });
   }
@@ -100,17 +100,11 @@ export default async function SessionDetailPage(props: {
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 <Badge variant="secondary" className="font-medium">
-                  {session.subject}
+                  {session.subject || "Group Class"}
                 </Badge>
-                <Badge variant={session.status === 'scheduled' ? 'default' : 'secondary'}>
+                <Badge variant={session.status === 'Scheduled' ? 'default' : 'secondary'}>
                   {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
                 </Badge>
-                {session.studentRating && (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-yellow-50 dark:bg-yellow-950 rounded">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold text-sm">{session.studentRating.toFixed(1)}</span>
-                  </div>
-                )}
               </div>
 
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{session.title}</h1>
@@ -139,7 +133,7 @@ export default async function SessionDetailPage(props: {
                         {format(session.scheduledAt, "EEEE, MMMM dd, yyyy")}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {format(session.scheduledAt, "h:mm a")} ({session.timezone})
+                        {format(session.scheduledAt, "h:mm a")} ({session.teacher?.timezone || 'UTC'})
                       </p>
                     </div>
                   </div>
@@ -153,13 +147,13 @@ export default async function SessionDetailPage(props: {
                   </div>
                 </div>
 
-                {session.maxParticipants && (
+                {session.maxStudents && (
                   <div className="flex items-start gap-3">
                     <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="font-semibold">Participants</p>
                       <p className="text-muted-foreground">
-                        {confirmedBookings} / {session.maxParticipants} enrolled
+                        {confirmedBookings} / {session.maxStudents} enrolled
                       </p>
                       {spotsLeft !== null && spotsLeft > 0 && (
                         <p className="text-sm text-green-600 font-medium">
@@ -189,7 +183,7 @@ export default async function SessionDetailPage(props: {
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-                    <span>Interactive 1-on-1 session with personalized guidance</span>
+                    <span>Interactive group session with community learning</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
@@ -304,7 +298,7 @@ export default async function SessionDetailPage(props: {
                   <div className="mt-6 space-y-3 text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Shield className="h-4 w-4" />
-                      <span>Secure payment via Stripe</span>
+                      <span>Secure payment via Razorpay</span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <CheckCircle className="h-4 w-4" />

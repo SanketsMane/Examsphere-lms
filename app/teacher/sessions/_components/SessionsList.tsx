@@ -62,6 +62,9 @@ interface Session {
   meetingUrl?: string;
   rescheduleCount: number;
   maxReschedules: number;
+  cancelledBy?: string;
+  cancellationReason?: string;
+  refundAmount?: number;
 }
 
 interface SessionsListProps {
@@ -366,6 +369,22 @@ export function SessionsList({ status, filter = 'all' }: SessionsListProps) {
                       </Link>
                     )}
                   </div>
+
+                  {/* Cancellation Reason */}
+                  {session.status.toLowerCase() === 'cancelled' && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm">
+                      <p className="font-semibold text-destructive flex items-center gap-2 mb-1">
+                        <XCircle className="h-4 w-4" />
+                        Session Cancelled {session.cancelledBy ? `by ${session.cancelledBy}` : ''}
+                      </p>
+                      {session.cancellationReason && (
+                        <p className="text-muted-foreground">Reason: {session.cancellationReason}</p>
+                      )}
+                      {session.refundAmount !== undefined && session.refundAmount !== null && session.refundAmount > 0 && (
+                        <p className="text-muted-foreground mt-1">Refund issued: {formatCurrency(session.refundAmount)}</p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Time Until Session */}
                   {session.status === 'scheduled' && new Date(session.scheduledAt) > new Date() && (

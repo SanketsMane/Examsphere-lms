@@ -7,7 +7,7 @@ import { BookingPageClient } from "./_components/BookingPageClient";
 export const dynamic = "force-dynamic";
 
 async function getSession(id: string) {
-  const session = await db.liveSession.findUnique({
+  const session = await db.groupClass.findUnique({
     where: { id },
     include: {
       teacher: {
@@ -22,8 +22,8 @@ async function getSession(id: string) {
       },
       _count: {
         select: {
-          bookings: {
-            where: { status: 'confirmed' }
+          enrollments: {
+            where: { status: 'Active' }
           }
         }
       }
@@ -52,27 +52,27 @@ export default async function BookSessionPage(props: {
   const session = await getSession(params.id);
 
   // Check if session is available
-  if (session.status !== 'scheduled') {
+  if (session.status !== 'Scheduled') {
     redirect(`/live-sessions/${params.id}`);
   }
 
   // Check if already booked
-  const existingBooking = await db.sessionBooking.findFirst({
+  const existingBooking = await db.groupEnrollment.findFirst({
     where: {
-      sessionId: session.id,
+      classId: session.id,
       studentId: sessionAuth.user.id,
-      status: { in: ['confirmed', 'pending'] }
+      status: { in: ['Active', 'Pending'] }
     }
   });
 
   if (existingBooking) {
-    redirect(`/dashboard/sessions`);
+    redirect(`/dashboard/groups`);
   }
 
   // Check if session is full
-  if (session.maxParticipants && session._count.bookings >= session.maxParticipants) {
+  if (session.maxStudents && session._count.enrollments >= session.maxStudents) {
     redirect(`/live-sessions/${params.id}`);
   }
 
-  return <BookingPageClient session={session} />;
+  return <BookingPageClient session={session as any} />;
 }

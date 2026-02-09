@@ -230,6 +230,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
+        <div className="px-4 py-2 text-center">
+          <span className="text-[10px] text-muted-foreground/50 font-medium tracking-widest uppercase">
+            v1.0.1
+          </span>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

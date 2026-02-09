@@ -111,8 +111,8 @@ export default async function Home() {
             variant: 'default' as const,
           },
           {
-            text: 'Browse Courses',
-            href: '/courses',
+            text: 'Browse Tutors',
+            href: '/find-teacher',
             variant: 'outline' as const,
           },
         ]}

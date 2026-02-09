@@ -190,25 +190,34 @@ export async function POST(
       });
     }
 
-    // Send Emails
+    // Send Notifications & Emails
+    const { createSessionNotification } = await import("@/app/actions/notifications");
     const { sendTemplatedEmail } = await import("@/lib/email");
-    const sessionDate = booking.session.scheduledAt ? new Date(booking.session.scheduledAt).toLocaleString() : 'Scheduled Date';
+    const sessionDateStr = booking.session.scheduledAt ? new Date(booking.session.scheduledAt).toLocaleString() : 'Scheduled Date';
 
     // To Student
-    await sendTemplatedEmail("notification", session.user.email, "Booking Cancelled", {
+    await sendTemplatedEmail("sessionCancelled", session.user.email, "Booking Cancellation Confirmed", {
       userName: session.user.name || 'Student',
-      title: "Cancellation Confirmed",
-      messageTitle: booking.session.title,
-      message: `Your booking for "${booking.session.title}" on ${sessionDate} has been cancelled. Refund: $${(refundAmount / 100).toFixed(2)}.`
+      sessionTitle: booking.session.title,
+      sessionDate: sessionDateStr,
+      reason: reason || 'Requested by customer',
+      introMessage: "Your booking cancellation has been processed successfully.",
+      refundAmount: (refundAmount / 100).toFixed(2)
     });
 
     // To Teacher
     if (booking.session.teacher.user.email) {
-      await sendTemplatedEmail("notification", booking.session.teacher.user.email, "Session Cancelled", {
+      // In-app notification for teacher
+      await createSessionNotification(booking.session.teacher.userId, booking.sessionId, "cancelled");
+
+      // Professional Email for teacher
+      await sendTemplatedEmail("sessionCancelled", booking.session.teacher.user.email, "A Student Cancelled a Session", {
         userName: booking.session.teacher.user.name || 'Teacher',
-        title: "Student Cancelled Session",
-        messageTitle: booking.session.title,
-        message: `${session.user.name} has cancelled the session scheduled for ${sessionDate}.`
+        sessionTitle: booking.session.title,
+        sessionDate: sessionDateStr,
+        reason: reason || 'Student cancelled the session',
+        introMessage: `Student ${session.user.name} has cancelled their booking for your session.`,
+        refundAmount: (refundAmount / 100).toFixed(2)
       });
     }
 

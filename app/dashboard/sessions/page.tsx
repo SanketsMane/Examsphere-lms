@@ -31,7 +31,19 @@ async function getUserSessions(userId: string) {
     where: { studentId: userId },
     include: {
       session: {
-        include: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          subject: true,
+          scheduledAt: true,
+          duration: true,
+          status: true,
+          meetingUrl: true,
+          recordingUrl: true,
+          studentRating: true,
+          cancelledBy: true,
+          cancellationReason: true,
           teacher: {
             include: {
               user: {
