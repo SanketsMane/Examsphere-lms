@@ -16,6 +16,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Search, X, Filter, Star } from "lucide-react";
+import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // To get user country if not passed
 
 
 
@@ -25,14 +27,7 @@ const levels = [
   "Advanced"
 ];
 
-const priceRanges = [
-  { label: "Free", value: "free" },
-  { label: "Under ₹1000", value: "under-1000" },
-  { label: "₹1000 - ₹5000", value: "1000-5000" },
-  { label: "₹5000 - ₹10000", value: "5000-10000" },
-  { label: "₹10000+", value: "over-10000" }
-];
-
+// Price ranges are now generated dynamically - Author: Sanket
 const ratings = [
   { label: "4.5 & up", value: "4.5" },
   { label: "4.0 & up", value: "4.0" },
@@ -40,6 +35,29 @@ const ratings = [
 ];
 
 export function CourseFilters({ categories }: { categories: { id: string; label: string; count: number; parentId?: string | null }[] }) {
+  const [userCountry, setUserCountry] = useState<string>("India");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: session } = await authClient.getSession();
+      if (session?.user) {
+        setUserCountry((session.user as any).country || "India");
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const config = getCurrencyConfig(userCountry);
+  const s = config.symbol;
+  const rate = config.exchangeRate;
+
+  const priceRanges = [
+    { label: "Free", value: "free" },
+    { label: `Under ${s}${Math.round(1000 * rate)}`, value: "under-1000" },
+    { label: `${s}${Math.round(1000 * rate)} - ${s}${Math.round(5000 * rate)}`, value: "1000-5000" },
+    { label: `${s}${Math.round(5000 * rate)} - ${s}${Math.round(10000 * rate)}`, value: "5000-10000" },
+    { label: `${s}${Math.round(10000 * rate)}+`, value: "over-10000" }
+  ];
   const router = useRouter();
   const searchParams = useSearchParams();
 

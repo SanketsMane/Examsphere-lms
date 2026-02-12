@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { getCurrencyConfig, formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 import {
   Select,
   SelectContent,
@@ -63,7 +65,7 @@ const sessionSchema = z.object({
   if (!data.isFreeTrialEligible && data.price < 50) { // Enforce minimum price if not free trial
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Minimum price is ₹50 for paid sessions",
+      message: `Minimum price is ${formatPriceSimple(50, "India")} for paid sessions`,
       path: ["price"],
     });
   }
@@ -98,6 +100,22 @@ const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
 
 export function CreateSessionForm() {
   const router = useRouter();
+  const [userCountry, setUserCountry] = useState<string>("India");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: session } = await authClient.getSession();
+      if (session?.user) {
+        setUserCountry((session.user as any).country || "India");
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const config = getCurrencyConfig(userCountry);
+  const s = config.symbol;
+  const rate = config.exchangeRate;
+
   const [loading, setLoading] = useState(false);
   const [sessionType, setSessionType] = useState<"specific" | "available">("specific");
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -411,7 +429,7 @@ export function CreateSessionForm() {
                        {isFreeTrial && <Sparkles className="h-4 w-4 text-amber-500 fill-amber-500" />}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                       Students can book this session for <strong>₹0</strong>. Limit: 1 per student.
+                       Students can book this session for <strong>{formatPriceSimple(0, userCountry)}</strong>. Limit: 1 per student.
                        <br/>
                        <span className="text-xs text-amber-700 dark:text-amber-500 font-medium">
                           Great for attracting new students and building your reputation!
@@ -422,10 +440,10 @@ export function CreateSessionForm() {
             </Card>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Price (INR)</Label>
+              <Label htmlFor="price">Price ({config.code})</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
-                  ₹
+                  {s}
                 </span>
                 <Input
                   id="price"
@@ -501,14 +519,14 @@ export function CreateSessionForm() {
                     <div className="flex justify-between items-baseline mb-1">
                        <span className="text-muted-foreground">Student Price</span>
                        <span className="text-xl font-bold">
-                          {isFreeTrial ? "FREE" : `₹${watchedPrice || 0}`}
+                           {isFreeTrial ? "FREE" : formatPriceSimple(watchedPrice || 0, userCountry)}
                        </span>
                     </div>
                     {!isFreeTrial && (
                        <div className="flex justify-between items-center text-xs text-muted-foreground bg-muted/50 p-2 rounded">
                           <span>Your Earnings (85%)</span>
                           <span className="font-semibold text-green-600">
-                             ₹{((watchedPrice || 0) * 0.85).toFixed(0)}
+                              {formatPriceSimple((watchedPrice || 0) * 0.85, userCountry)}
                           </span>
                        </div>
                     )}

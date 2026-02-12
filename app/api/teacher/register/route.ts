@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { sendEmail } from "@/lib/email";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ const teacherRegistrationSchema = z.object({
   bio: z.string().min(50, "Bio must be at least 50 characters"),
   expertiseAreas: z.array(z.string()).min(1, "At least one expertise area is required").max(5, "Maximum 5 expertise areas allowed"),
   languages: z.array(z.string()).optional().default([]),
-  hourlyRate: z.string().transform(val => parseInt(val)).refine(val => val >= 100 && val <= 50000, "Hourly rate must be between ₹100-50000"),
+  hourlyRate: z.string().transform(val => parseInt(val)).refine(val => val >= 100 && val <= 50000, `Hourly rate must be between ${formatPriceSimple(100, "India")}-${formatPriceSimple(50000, "India")}`),
   experience: z.string().transform(val => parseInt(val)).refine(val => val >= 0, "Experience must be 0 or more years"),
 });
 
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
               <p style="margin: 5px 0;"><strong>Name:</strong> ${validatedData.name}</p>
               <p style="margin: 5px 0;"><strong>Email:</strong> ${validatedData.email}</p>
               <p style="margin: 5px 0;"><strong>Expertise:</strong> ${validatedData.expertiseAreas.join(", ")}</p>
-              <p style="margin: 5px 0;"><strong>Hourly Rate:</strong> $${validatedData.hourlyRate}/hour</p>
+              <p style="margin: 5px 0;"><strong>Hourly Rate:</strong> ${formatPriceSimple(validatedData.hourlyRate, "India")}/hour</p>
               <p style="margin: 5px 0;"><strong>Experience:</strong> ${validatedData.experience} years</p>
             </div>
             
@@ -174,7 +175,7 @@ export async function POST(req: NextRequest) {
               <p><strong>Name:</strong> ${validatedData.name}</p>
               <p><strong>Email:</strong> ${validatedData.email}</p>
               <p><strong>Expertise:</strong> ${validatedData.expertiseAreas.join(", ")}</p>
-              <p><strong>Hourly Rate:</strong> $${validatedData.hourlyRate}/hour</p>
+              <p><strong>Hourly Rate:</strong> ${formatPriceSimple(validatedData.hourlyRate, "India")}/hour</p>
               <p><strong>Experience:</strong> ${validatedData.experience} years</p>
               <p><strong>Bio:</strong> ${validatedData.bio.substring(0, 200)}...</p>
             </div>

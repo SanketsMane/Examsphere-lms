@@ -3,27 +3,32 @@ import { AdminChartSection } from "@/components/admin/AdminChartSection";
 import { RevenueCard } from "@/components/dashboard/yo-coach/revenue-card";
 import { StatBox } from "@/components/dashboard/yo-coach/stat-box";
 import { LayoutDashboard, Wallet, MonitorPlay, CreditCard, Ticket } from "lucide-react";
+import { formatPrice } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { getSessionWithRole } from "@/app/data/auth/require-roles"; // To get admin session
 
 export default async function AdminDashboardPage() {
+  const session = await getSessionWithRole();
   const { stats, revenueOverTime } = await getPlatformAnalytics();
+
+  const userCountry = (session?.user as any)?.country || "India";
 
   // Mapped Data
   const revenueStats = [
     {
       title: "Total Revenue",
-      amount: `₹${(stats.totalRevenue / 100).toLocaleString()}`,
+      amount: formatPrice(stats.totalRevenue, userCountry),
       icon: <Wallet className="h-5 w-5" />,
       variant: "blue" as const
     },
     {
       title: "Course Sales",
-      amount: `₹${(stats.totalRevenue / 100).toLocaleString()}`,
+      amount: formatPrice(stats.totalRevenue, userCountry),
       icon: <MonitorPlay className="h-5 w-5" />,
       variant: "orange" as const
     },
     {
       title: "Pending Payouts",
-      amount: `₹${(Number(stats.pendingPayouts) / 100).toLocaleString()}`,
+      amount: formatPrice(Number(stats.pendingPayouts), userCountry),
       icon: <CreditCard className="h-5 w-5" />,
       variant: "purple" as const
     }

@@ -8,12 +8,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useRazorpay } from "@/components/payment/use-razorpay";
+import { getCurrencyConfig, formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 interface RechargeDialogProps {
     children: React.ReactNode;
     minRecharge?: number;
     currencyCode?: string;
-    currencySymbol?: string;
+    userCountry?: string | null; // Added for localization - Author: Sanket
 }
 
 /**
@@ -24,8 +25,10 @@ export function RechargeDialog({
     children,
     minRecharge = 100,
     currencyCode = "INR",
-    currencySymbol = "₹"
+    userCountry = "India"
 }: RechargeDialogProps) {
+    const config = getCurrencyConfig(userCountry);
+    const currencySymbol = config.symbol;
     const [open, setOpen] = useState(false);
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);

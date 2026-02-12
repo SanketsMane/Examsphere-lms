@@ -21,12 +21,27 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useState, useEffect } from "react";
 
 interface iAppProps {
     data: AdminCourseType;
 }
 
 export function TeacherCourseCard({ data }: iAppProps) {
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
+
     const thumbnailUrl = useConstructUrl(data.fileKey ?? "");
     return (
         <Card className="group relative py-0 gap-0">
@@ -91,7 +106,7 @@ export function TeacherCourseCard({ data }: iAppProps) {
                     </div>
                 </div>
                 <div className="mt-2 text-lg font-semibold text-primary">
-                    ₹{data.price}
+                    {formatPriceSimple(data.price || 0, userCountry)}
                 </div>
 
                 <Link

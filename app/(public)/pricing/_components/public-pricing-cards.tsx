@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { IconCheck } from "@tabler/icons-react";
 import Link from "next/link";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useState, useEffect } from "react";
 
 interface PublicPricingCardsProps {
     plans: SubscriptionPlan[];
@@ -13,6 +16,17 @@ interface PublicPricingCardsProps {
 
 export function PublicPricingCards({ plans, role = "TEACHER" }: PublicPricingCardsProps) {
     const isTeacher = role === "TEACHER";
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
 
     return (
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -28,7 +42,7 @@ export function PublicPricingCards({ plans, role = "TEACHER" }: PublicPricingCar
                         <CardDescription>{plan.description}</CardDescription>
                         <div className="mt-4">
                             <span className="text-4xl font-bold">
-                                {plan.price === 0 ? "Free" : `₹${plan.price}`}
+                                {formatPriceSimple(plan.price, userCountry)}
                             </span>
                             <span className="text-muted-foreground text-lg">/{plan.interval}</span>
                         </div>

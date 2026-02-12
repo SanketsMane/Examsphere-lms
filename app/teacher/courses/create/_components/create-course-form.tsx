@@ -44,6 +44,9 @@ import { CreateCourse } from "../actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useConfetti } from "@/hooks/use-confetti";
+import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useState, useEffect } from "react";
 
 interface CreateCourseFormProps {
     categories: {
@@ -56,6 +59,19 @@ export function CreateCourseForm({ categories }: CreateCourseFormProps) {
     const [pending, startTransition] = useTransition();
     const router = useRouter();
     const { triggerConfetti } = useConfetti();
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
+
+    const currencyConfig = getCurrencyConfig(userCountry);
 
     // 1. Define your form.
     const form = useForm<CourseSchemaType>({
@@ -308,9 +324,20 @@ export function CreateCourseForm({ categories }: CreateCourseFormProps) {
                                     name="price"
                                     render={({ field }) => (
                                         <FormItem className="w-full">
-                                            <FormLabel>Price ($)</FormLabel>
+                                            <FormLabel>Price ({currencyConfig.code})</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Duration" type="number" {...field} value={field.value as any} />
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
+                                                        {currencyConfig.symbol}
+                                                    </span>
+                                                    <Input 
+                                                        placeholder="Price" 
+                                                        type="number" 
+                                                        className="pl-8"
+                                                        {...field} 
+                                                        value={field.value as any} 
+                                                    />
+                                                </div>
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>

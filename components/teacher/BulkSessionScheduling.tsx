@@ -9,6 +9,9 @@ import { Upload, FileDown, AlertCircle, CheckCircle2, Loader2, X } from "lucide-
 import { validateSessionsBatch, createSessionsBatch } from "@/app/actions/bulk-sessions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { formatPriceSimple, getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 /**
  * Bulk Session Scheduling Component
@@ -34,6 +37,19 @@ export function BulkSessionScheduling() {
     const [validating, setValidating] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
+
+    const currencyConfig = getCurrencyConfig(userCountry);
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -253,7 +269,9 @@ export function BulkSessionScheduling() {
                                                     {session.date} {session.time}
                                                 </TableCell>
                                                 <TableCell className="text-sm">{session.duration}m</TableCell>
-                                                <TableCell className="text-sm font-mono">₹{session.price}</TableCell>
+                                                <TableCell className="text-sm font-mono">
+                                                    {formatPriceSimple(session.price, userCountry)}
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -288,7 +306,7 @@ export function BulkSessionScheduling() {
                             <li><strong>Subject</strong> (Mathematics, Physics, etc.)</li>
                             <li><strong>Date</strong> (Format: YYYY-MM-DD)</li>
                             <li><strong>Time</strong> (Format: HH:mm, e.g. 14:30)</li>
-                            <li><strong>Price</strong> (Minimum ₹100)</li>
+                            <li><strong>Price</strong> (Minimum {formatPriceSimple(100, userCountry)})</li>
                         </ul>
                     </CardContent>
                 </Card>

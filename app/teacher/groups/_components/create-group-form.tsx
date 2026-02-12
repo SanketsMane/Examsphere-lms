@@ -10,6 +10,9 @@ import { createGroupClass } from "@/app/actions/groups";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox"; // Verify existence
+import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useEffect } from "react";
 import {
     Select,
     SelectContent,
@@ -26,6 +29,19 @@ export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [subjectId, setSubjectId] = useState<string>("");
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
+
+    const currencyConfig = getCurrencyConfig(userCountry);
 
     async function onSubmit(formData: FormData) {
         setLoading(true);
@@ -119,8 +135,20 @@ export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
                     <Input id="maxStudents" name="maxStudents" type="number" defaultValue="10" max="12" required />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="price">Price ($)</Label>
-                    <Input id="price" name="price" type="number" min="0" required />
+                    <Label htmlFor="price">Price ({currencyConfig.code})</Label>
+                    <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
+                            {currencyConfig.symbol}
+                        </span>
+                        <Input 
+                            id="price" 
+                            name="price" 
+                            type="number" 
+                            min="0" 
+                            className="pl-8"
+                            required 
+                        />
+                    </div>
                 </div>
             </div>
 

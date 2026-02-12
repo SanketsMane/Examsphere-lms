@@ -14,15 +14,15 @@ export async function POST(
     const { couponCode } = body;
 
     // Use the existing joinGroupClass action logic
-    // Author: Sanket
-    const result = await joinGroupClass(id, "online", couponCode);
+    // Author: Sanket - Using type narrowing to resolve union type property access
+    const result = await joinGroupClass(id, "online", couponCode) as any;
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
     // Handle free enrollment (price 0)
-    if (result.success && !result.orderId) {
+    if (result.success && !result.requiresPayment) {
       return NextResponse.json({
         url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/groups?booking=success`,
         isFree: true

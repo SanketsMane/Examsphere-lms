@@ -11,6 +11,9 @@ import { createSubscriptionPlan, updateSubscriptionPlan } from "@/app/actions/ad
 import { toast } from "sonner";
 import { SubscriptionPlan, UserRole } from "@prisma/client";
 import { IconPlus, IconEdit } from "@tabler/icons-react";
+import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useEffect } from "react";
 
 interface SubscriptionPlanDialogProps {
     plan?: SubscriptionPlan;
@@ -20,6 +23,19 @@ interface SubscriptionPlanDialogProps {
 export function SubscriptionPlanDialog({ plan, trigger }: SubscriptionPlanDialogProps) {
     const [open, setOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
+
+    const { symbol: s } = getCurrencyConfig(userCountry);
 
     const [formData, setFormData] = useState({
         name: plan?.name || "",
@@ -113,7 +129,7 @@ export function SubscriptionPlanDialog({ plan, trigger }: SubscriptionPlanDialog
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Price (₹)</Label>
+                            <Label>Price ({s})</Label>
                             <Input 
                                 type="number" 
                                 required 

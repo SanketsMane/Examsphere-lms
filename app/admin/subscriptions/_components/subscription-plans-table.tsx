@@ -15,6 +15,9 @@ import { IconTrash, IconCheck, IconX } from "@tabler/icons-react";
 import { deleteSubscriptionPlan, updateSubscriptionPlan } from "@/app/actions/admin-subscriptions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useState, useEffect } from "react";
 import { SubscriptionPlanDialog } from "./subscription-plan-dialog";
 import {
     AlertDialog,
@@ -34,6 +37,17 @@ interface SubscriptionPlansTableProps {
 
 export function SubscriptionPlansTable({ plans }: SubscriptionPlansTableProps) {
     const router = useRouter();
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
 
     const handleDelete = async (id: string) => {
         const res = await deleteSubscriptionPlan(id);
@@ -84,7 +98,7 @@ export function SubscriptionPlansTable({ plans }: SubscriptionPlansTableProps) {
                                     <Badge variant="outline">{plan.role}</Badge>
                                 </TableCell>
                                 <TableCell>
-                                    {plan.price === 0 ? "Free" : `₹${plan.price}/${plan.interval}`}
+                                    {formatPriceSimple(plan.price, userCountry)}/{plan.interval}
                                 </TableCell>
                                 <TableCell>
                                     <ul className="list-disc list-inside text-xs text-muted-foreground">

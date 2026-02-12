@@ -10,7 +10,7 @@ import { getRazorpayInstance } from "@/lib/razorpay";
 export async function POST(req: NextRequest) {
     try {
         const user = await requireUser();
-        const { amount } = await req.json();
+        const { amount, currencySymbol: userCurrencySymbol } = await req.json(); // Accept user's currency symbol for better error messages
 
         // Fetch dynamic settings (Author: Sanket)
         const settings = await prisma.siteSettings.findFirst();
@@ -19,11 +19,11 @@ export async function POST(req: NextRequest) {
         const currencySymbol = settings?.currencySymbol || "₹";
 
         const localAmount = amount;
-        const maxRecharge = 100000; // ₹1 Lakh
+        const maxRecharge = 100000; // 1 Lakh
 
         if (localAmount < minRecharge) {
             return NextResponse.json(
-                { error: `Minimum recharge is ${currencySymbol}${minRecharge}` },
+                { error: `Minimum recharge is ${currencySymbol}${minRecharge.toLocaleString()}` },
                 { status: 400 }
             );
         }

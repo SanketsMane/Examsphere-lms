@@ -7,6 +7,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useEffect } from "react";
 
 interface Session {
     id: string;
@@ -26,6 +29,17 @@ interface SessionCalendarViewProps {
 
 export function SessionCalendarView({ sessions }: SessionCalendarViewProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [userCountry, setUserCountry] = useState<string | null>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
 
     const startDate = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday start
     const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startDate, i));
@@ -83,7 +97,9 @@ export function SessionCalendarView({ sessions }: SessionCalendarViewProps) {
                                             </div>
                                             <div className="text-gray-500 mt-1 flex items-center justify-between">
                                                 <span>{format(new Date(session.scheduledAt), "h:mm a")}</span>
-                                                <Badge variant="secondary" className="px-1 py-0 text-[10px] h-4">₹{session.price / 100}</Badge>
+                                                <Badge variant="secondary" className="px-1 py-0 text-[10px] h-4">
+                                                    {formatPriceSimple(session.price / 100, userCountry)}
+                                                </Badge>
                                             </div>
                                         </motion.div>
                                     </Link>

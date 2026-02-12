@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { CreateTemplateForm } from "./CreateTemplateForm";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 /**
  * Session Templates Dashboard Component
@@ -27,9 +29,21 @@ export function SessionTemplatesManager() {
     const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [activeTemplate, setActiveTemplate] = useState<any>(null);
+    const [userCountry, setUserCountry] = useState<string>("India");
 
     useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
         loadTemplates();
+    }, []);
+
+    useEffect(() => {
+        // loadTemplates(); // Moved into the first useEffect
     }, []);
 
     const loadTemplates = async () => {
@@ -126,7 +140,7 @@ export function SessionTemplatesManager() {
                                     <TableCell className="font-medium">
                                         <div className="flex flex-col">
                                             <span>{template.title}</span>
-                                            <span className="text-xs text-muted-foreground">{template.duration}m • ₹{template.price / 100}</span>
+                                            <span className="text-xs text-muted-foreground">{template.duration}m • {formatPriceSimple(template.price / 100, userCountry)}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>

@@ -19,6 +19,7 @@ import {
     User,
 } from "lucide-react";
 import { CoursePurchaseButton } from "./_components/CoursePurchaseButton";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 import { CourseDescription } from "./_components/CourseDescription";
 
@@ -208,11 +209,11 @@ export default async function CourseDetailsPage({
                         <div className="p-6 space-y-6">
                             <div className="flex items-end gap-2">
                                 <span className="text-3xl font-bold text-foreground">
-                                    {course.price === 0 ? "Free" : `₹${course.price}`}
+                                    {formatPriceSimple(course.price || 0, (session?.user as any)?.country)}
                                 </span>
                                 {course.price > 0 && (
                                     <span className="text-lg text-muted-foreground line-through mb-1">
-                                        ₹{Math.round(course.price * 1.5)}
+                                        {formatPriceSimple(Math.round(course.price * 1.5), (session?.user as any)?.country)}
                                     </span>
                                 )}
                             </div>
@@ -228,6 +229,7 @@ export default async function CourseDetailsPage({
                                     <CoursePurchaseButton
                                         courseId={course.id}
                                         price={course.price!}
+                                        country={(session?.user as any)?.country}
                                     />
                                     <p className="text-xs text-center text-muted-foreground">30-Day Money-Back Guarantee</p>
                                 </div>

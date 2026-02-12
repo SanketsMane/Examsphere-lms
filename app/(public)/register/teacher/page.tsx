@@ -35,35 +35,43 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
+import { getCurrencyConfig, formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
-const benefits = [
-  {
-    title: "High Earnings",
-    description: "Earn up to ₹4000/hour teaching what you love.",
-    icon: IndianRupee,
-  },
-  {
-    title: "Global Reach",
-    description: "Connect with students from across the globe.",
-    icon: Globe,
-  },
-  {
-    title: "Total Flexibility",
-    description: "Set your own schedule and work from anywhere.",
-    icon: Rocket,
-  },
-  {
-    title: "Growth & Support",
-    description: "Access professional tools and marketing help.",
-    icon: Sparkles,
-  },
-];
+// Benefits list will be localized inside the component - Author: Sanket
 
 export default function TeacherRegisterPage() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
+  
+  const userCountry = (session?.user as any)?.country || "India";
+  const config = getCurrencyConfig(userCountry);
+  const s = config.symbol;
+  const rate = config.exchangeRate;
+
+  const benefits = [
+    {
+      title: "High Earnings",
+      description: `Earn up to ${s}${Math.round(4000 * rate)}/hour teaching what you love.`,
+      icon: IndianRupee,
+    },
+    {
+      title: "Global Reach",
+      description: "Connect with students from across the globe.",
+      icon: Globe,
+    },
+    {
+      title: "Total Flexibility",
+      description: "Set your own schedule and work from anywhere.",
+      icon: Rocket,
+    },
+    {
+      title: "Growth & Support",
+      description: "Access professional tools and marketing help.",
+      icon: Sparkles,
+    },
+  ];
 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("");
@@ -262,7 +270,7 @@ export default function TeacherRegisterPage() {
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div>
-                <p className="text-2xl font-bold text-white">₹20Cr+</p>
+                <p className="text-2xl font-bold text-white">{s}{Math.round(2000000 * rate)}+</p>
                 <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Teacher Earnings</p>
               </div>
               <div className="w-px h-8 bg-white/10" />
@@ -366,21 +374,21 @@ export default function TeacherRegisterPage() {
                     </div>
 
                     <div className="space-y-4">
-                      <Label htmlFor="hourlyRate" className="text-base font-semibold">Hourly Rate (₹)</Label>
+                      <Label htmlFor="hourlyRate" className="text-base font-semibold">Hourly Rate ({s})</Label>
                       <div className="relative">
                         <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="hourlyRate"
                           type="number"
-                          min="100"
+                          min={Math.round(100 * rate)}
                           required
                           value={formData.hourlyRate}
                           onChange={(e) => setFormData(prev => ({ ...prev, hourlyRate: e.target.value }))}
-                          placeholder="1000"
+                          placeholder={Math.round(1000 * rate).toString()}
                           className="pl-10 h-14 bg-slate-50/50 dark:bg-zinc-950/50 border-muted-foreground/10 rounded-xl focus-visible:ring-primary transition-all pr-4 text-lg font-medium"
                         />
                       </div>
-                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Avg: ₹500 - ₹2500 per hr</p>
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Avg: {s}{Math.round(500 * rate)} - {s}{Math.round(2500 * rate)} per hr</p>
                     </div>
                   </div>
 

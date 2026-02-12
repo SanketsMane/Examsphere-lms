@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, Calendar } from "lucide-react";
 import { SessionCalendarView } from "@/components/marketing/SessionCalendarView";
 import { useDebounce } from "@/hooks/use-debounce";
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 interface Session {
   id: string;
@@ -40,6 +41,18 @@ interface PaginationMeta {
 }
 
 export function LiveSessionsClient() {
+  const [userCountry, setUserCountry] = useState<string>("India");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: session } = await authClient.getSession();
+      if (session?.user) {
+        setUserCountry((session.user as any).country || "India");
+      }
+    };
+    fetchUser();
+  }, []);
+
   // State management (Author: Sanket)
   const [sessions, setSessions] = useState<Session[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>({
@@ -196,6 +209,7 @@ export function LiveSessionsClient() {
               pagination={pagination}
               loading={loading}
               onPageChange={handlePageChange}
+              userCountry={userCountry}
             />
           ) : (
             <SessionCalendarView sessions={sessions.map(s => ({

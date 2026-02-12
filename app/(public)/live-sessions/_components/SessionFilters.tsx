@@ -22,6 +22,8 @@ import {
 import { Search, X, Calendar as CalendarIcon, DollarSign, BookOpen, Clock, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 // Filter state interface (Author: Sanket)
 export interface SessionFilters {
@@ -49,6 +51,21 @@ export function SessionFiltersComponent({
   subjects,
   teachers,
 }: SessionFiltersProps) {
+  const [userCountry, setUserCountry] = useState<string>("India");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: session } = await authClient.getSession();
+      if (session?.user) {
+        setUserCountry((session.user as any).country || "India");
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const config = getCurrencyConfig(userCountry);
+  const s = config.symbol;
+
   const [isOpen, setIsOpen] = useState(true);
 
   // Update filters helper (Author: Sanket)
@@ -158,7 +175,7 @@ export function SessionFiltersComponent({
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              Price
+              Price ({config.code})
             </Label>
             <div className="flex items-center gap-2 mb-2">
               <Checkbox

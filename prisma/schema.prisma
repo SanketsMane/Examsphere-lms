@@ -2076,3 +2076,38 @@ model GiftCard {
 
   @@map("gift_cards")
 }
+
+// Email Management System Models - Author: Sanket
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  subject   String
+  content   String   @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("email_templates")
+}
+
+model EmailProvider {
+  id         String   @id @default(cuid())
+  name       String   @unique // e.g., "SMTP", "Resend", "Gmail"
+  type       String   // e.g., "smtp", "resend", "gmail"
+  config     Json     // Credentials and settings
+  isActive   Boolean  @default(false)
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("email_providers")
+}
+
+model EmailGlobalSettings {
+  id              String   @id @default(cuid())
+  isSystemEnabled Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+
+  @@map("email_global_settings")
+}

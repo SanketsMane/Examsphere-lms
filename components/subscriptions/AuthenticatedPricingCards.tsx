@@ -7,6 +7,8 @@ import { IconCheck, IconX } from "@tabler/icons-react";
 import { createSubscriptionSession, cancelSubscription } from "@/app/actions/subscriptions";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { formatPriceSimple } from "@/lib/currency"; // Use dynamic formatting - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // To get user country
 
 // Helper to load Razorpay script
 const loadRazorpayScript = () => {
@@ -28,9 +30,19 @@ interface PricingCardsProps {
 
 export function AuthenticatedPricingCards({ plans, currentSubscriptionId, showCancelButton }: PricingCardsProps) {
     const [loading, setLoading] = useState<string | null>(null);
+    const [userCountry, setUserCountry] = useState<string | null>("India");
 
     useEffect(() => {
         loadRazorpayScript();
+        
+        // Fetch current user country from session - Author: Sanket
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
     }, []);
 
     const handleSubscribe = async (plan: SubscriptionPlan) => {
@@ -139,7 +151,7 @@ export function AuthenticatedPricingCards({ plans, currentSubscriptionId, showCa
                         <CardDescription>{plan.description}</CardDescription>
                         <div className="mt-4">
                             <span className="text-3xl font-bold">
-                                {plan.price === 0 ? "Free" : `₹${plan.price}`}
+                                {formatPriceSimple(plan.price, userCountry)}
                             </span>
                             <span className="text-muted-foreground">/{plan.interval}</span>
                         </div>

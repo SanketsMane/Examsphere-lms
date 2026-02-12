@@ -91,6 +91,25 @@ export function SettingsForm({ user, preferences, categories }: SettingsFormProp
                                 <Label htmlFor="email">Email</Label>
                                 <Input id="email" type="email" defaultValue={user.email} disabled />
                             </div>
+                            {/* Country Selection for Localization - Author: Sanket */}
+                            <div className="space-y-2">
+                                <Label htmlFor="country">Country (For Localized Pricing)</Label>
+                                <select 
+                                    id="country" 
+                                    name="country" 
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    defaultValue={user.country || "India"}
+                                >
+                                    <option value="India">India (₹)</option>
+                                    <option value="United States">United States ($)</option>
+                                    <option value="United Arab Emirates">United Arab Emirates (AED)</option>
+                                    <option value="United Kingdom">United Kingdom (£)</option>
+                                    <option value="European Union">European Union (€)</option>
+                                    <option value="Singapore">Singapore (S$)</option>
+                                    <option value="Canada">Canada (C$)</option>
+                                    <option value="Australia">Australia (A$)</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div className="space-y-2">

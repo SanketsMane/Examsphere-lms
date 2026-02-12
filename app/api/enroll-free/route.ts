@@ -24,6 +24,17 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Course not found" }, { status: 404 });
         }
 
+        // --- Feature Gating: Subscription Enrollment Limit ---
+        // Author: Sanket - Hardened for expiration
+        const { checkEnrollmentLimit } = await import("@/lib/subscription-limits");
+        const limitCheck = await checkEnrollmentLimit(session.user.id);
+        if (!limitCheck.allowed) {
+            return NextResponse.json({ 
+                error: `You have reached your limit of ${limitCheck.limit} active course/group enrollments or your subscription has expired. Please upgrade your plan.` 
+            }, { status: 403 });
+        }
+        // -----------------------------------------------------
+
         // Direct Access Mode: Bypass price check
         /*
         if (course.price !== 0) {

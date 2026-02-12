@@ -32,11 +32,12 @@ export async function createGroupClass(data: {
 
     if (!teacher) return { error: "Teacher profile not found" };
 
-    // --- Feature Gating: Group Class Limit (Author: Sanket) ---
+    // --- Feature Gating: Group Class Limit (Author: Sanket - Hardened for expiration) ---
+    const { checkGroupClassLimit } = await import("@/lib/subscription-limits");
     const { allowed, limit } = await checkGroupClassLimit((session.user as any).id);
 
     if (!allowed) {
-        return { error: `You have reached the limit of ${limit} active group classes. Upgrade to create more.` };
+        return { error: `You have reached the limit of ${limit} active group classes or your subscription has expired. Upgrade to create more.` };
     }
     // -----------------------------------------
 
@@ -118,11 +119,12 @@ export async function joinGroupClass(groupId: string, paymentMethod: "online" | 
 
     // QA-002: Atomic Transaction Fix (Author: Sanket)
     try {
-        // 2. [STRICT ENFORCEMENT] Subscription Enrollment Limits (Author: Sanket)
-        const limitCheck = await checkEnrollmentLimit((user as any).id);
-        if (!limitCheck.allowed) {
-            return { error: `You have reached your limit of ${limitCheck.limit} active course/group enrollments. Please upgrade your plan.` };
-        }
+    // 2. [STRICT ENFORCEMENT] Subscription Enrollment Limits (Author: Sanket - Hardened for expiration)
+    const { checkEnrollmentLimit } = await import("@/lib/subscription-limits");
+    const limitCheck = await checkEnrollmentLimit((user as any).id);
+    if (!limitCheck.allowed) {
+        return { error: `You have reached your limit of ${limitCheck.limit} active course/group enrollments or your subscription has expired. Please upgrade your plan.` };
+    }
 
         // Start Transaction
         return await prisma.$transaction(async (tx) => {

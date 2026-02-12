@@ -10,7 +10,7 @@ async function main() {
     const password = await hash("password123", 10);
 
     const admin = await prisma.user.upsert({
-        where: { email: "admin@kidokool.com" },
+        where: { email: "a" },
         update: {},
         create: {
             id: "admin-user",

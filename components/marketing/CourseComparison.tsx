@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useEffect } from "react";
 
 // -- Types --
 export type CompressibleCourse = {
@@ -27,6 +30,7 @@ interface ComparisonContextType {
     clearSelection: () => void;
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
+    userCountry: string | null;
 }
 
 const ComparisonContext = createContext<ComparisonContextType | null>(null);
@@ -41,6 +45,17 @@ export function useComparison() {
 export function CourseComparisonProvider({ children }: { children: React.ReactNode }) {
     const [selectedCourses, setSelectedCourses] = useState<CompressibleCourse[]>([]);
     const [isOpen, setIsOpen] = useState(false);
+    const [userCountry, setUserCountry] = useState<string | null>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
 
     const toggleCourse = (course: CompressibleCourse) => {
         if (selectedCourses.find(c => c.id === course.id)) {
@@ -57,7 +72,7 @@ export function CourseComparisonProvider({ children }: { children: React.ReactNo
     const clearSelection = () => setSelectedCourses([]);
 
     return (
-        <ComparisonContext.Provider value={{ selectedCourses, toggleCourse, clearSelection, isOpen, setIsOpen }}>
+        <ComparisonContext.Provider value={{ selectedCourses, toggleCourse, clearSelection, isOpen, setIsOpen, userCountry }}>
             {children}
             <FloatingCompareBar />
             <ComparisonModal />
@@ -138,7 +153,7 @@ function FloatingCompareBar() {
 }
 
 function ComparisonModal() {
-    const { isOpen, setIsOpen, selectedCourses } = useComparison();
+    const { isOpen, setIsOpen, selectedCourses, userCountry } = useComparison();
 
     if (!isOpen) return null;
 
@@ -160,7 +175,7 @@ function ComparisonModal() {
                             <div className="space-y-3 text-sm">
                                 <div className="flex justify-between border-b pb-2 dark:border-gray-800">
                                     <span className="text-muted-foreground">Price</span>
-                                    <span className="font-bold">{course.price === 0 ? "Free" : `₹${(course.price / 100).toFixed(0)}`}</span>
+                                    <span className="font-bold">{course.price === 0 ? "Free" : formatPriceSimple(course.price / 100, userCountry)}</span>
                                 </div>
                                 <div className="flex justify-between border-b pb-2 dark:border-gray-800">
                                     <span className="text-muted-foreground">Level</span>

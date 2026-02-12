@@ -16,15 +16,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRazorpay } from "@/components/payment/use-razorpay";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 interface CoursePurchaseButtonProps {
     courseId: string;
     price: number;
+    country?: string | null; // Added for localization - Author: Sanket
 }
 
 export const CoursePurchaseButton = ({
     courseId,
     price,
+    country,
 }: CoursePurchaseButtonProps) => {
     const [isLoading, setIsLoading] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -127,7 +130,7 @@ export const CoursePurchaseButton = ({
         <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
             <DialogTrigger asChild>
                 <Button className="w-full text-lg h-12 font-bold">
-                    Enroll for ₹{price}
+                    Enroll for {formatPriceSimple(price, country)}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
@@ -149,7 +152,7 @@ export const CoursePurchaseButton = ({
                     </div>
                     <div className="flex items-center justify-between font-medium">
                         <span>Course Price:</span>
-                        <span>₹{price}</span>
+                        <span>{formatPriceSimple(price, country)}</span>
                     </div>
                 </div>
                 <DialogFooter>

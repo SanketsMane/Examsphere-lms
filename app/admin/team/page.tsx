@@ -19,11 +19,15 @@ import {
 import { prisma } from "@/lib/db";
 import { TeacherActions } from "./_components/TeacherActions";
 import { constructS3Url } from "@/lib/s3-utils";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { getSessionWithRole } from "@/app/data/auth/require-roles"; // Added for localization - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminTeamPage() {
   await requireAdmin();
+  const session = await getSessionWithRole();
+  const userCountry = (session?.user as any)?.country || "India";
 
   // Fetch real team members (Admins and Teachers)
   const teamMembers = await prisma.user.findMany({
@@ -162,7 +166,7 @@ export default async function AdminTeamPage() {
                         <strong>Expertise:</strong> {profile.expertise.join(", ")}
                       </div>
                       <div>
-                        <strong>Rate:</strong> ₹{profile.hourlyRate ? profile.hourlyRate / 100 : 0}/hr
+                        <strong>Rate:</strong> {formatPriceSimple(profile.hourlyRate ? profile.hourlyRate / 100 : 0, userCountry)}/hr
                       </div>
                       <div className="col-span-2 text-muted-foreground">
                         {profile.bio}

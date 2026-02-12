@@ -10,14 +10,16 @@ import { useConstructUrl } from "@/hooks/use-construct-url";
 import { School, TimerIcon, DollarSign, Star, Users, Play, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 interface iAppProps {
   data: PublicCourseType;
+  userCountry?: string | null; // Added for localization - Author: Sanket
 }
 
 import { motion } from "framer-motion";
 
-export function PublicCourseCard({ data }: iAppProps) {
+export function PublicCourseCard({ data, userCountry }: iAppProps) {
   const thumbnailUrl = useConstructUrl(data.fileKey || "");
 
   // Randomize some visuals for demo purposes if data missing
@@ -146,7 +148,11 @@ export function PublicCourseCard({ data }: iAppProps) {
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{(data as any).user?.name || "Expert Instructor"}</span>
           </div>
           <span className="text-xl font-bold text-[#011E21] dark:text-white">
-            {(data as any).isEnrolled ? <span className="text-emerald-600 text-sm">Owned</span> : `₹${data.price}`}
+            {(data as any).isEnrolled ? (
+              <span className="text-emerald-600 text-sm">Owned</span>
+            ) : (
+              formatPriceSimple(data.price || 0, userCountry)
+            )}
           </span>
         </div>
       </div>

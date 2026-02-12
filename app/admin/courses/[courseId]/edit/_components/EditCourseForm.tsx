@@ -39,6 +39,9 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { editCourse } from "../actions";
 import { AdminCourseSingularType } from "@/app/data/admin/admin-get-course";
+import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useState, useEffect } from "react";
 
 interface iAppProps {
   data: AdminCourseSingularType;
@@ -47,6 +50,19 @@ interface iAppProps {
 export function EditCourseForm({ data }: iAppProps) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const [userCountry, setUserCountry] = useState<string>("India");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: session } = await authClient.getSession();
+      if (session?.user) {
+        setUserCountry((session.user as any).country || "India");
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const currencyConfig = getCurrencyConfig(userCountry);
   // 1. Define your form.
   const form = useForm<CourseSchemaType>({
     resolver: zodResolver(courseSchema) as any,
@@ -260,9 +276,19 @@ export function EditCourseForm({ data }: iAppProps) {
             name="price"
             render={({ field }) => (
               <FormItem className="w-full">
-                <FormLabel>Price ($)</FormLabel>
+                <FormLabel>Price ({currencyConfig.code})</FormLabel>
                 <FormControl>
-                  <Input placeholder="Price" type="number" {...field} />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
+                      {currencyConfig.symbol}
+                    </span>
+                    <Input 
+                      placeholder="Price" 
+                      type="number" 
+                      className="pl-8"
+                      {...field} 
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SessionCard } from "@/components/ui/session-card";
 import { Button } from "@/components/ui/button";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 interface Session {
   id: string;
@@ -40,6 +41,7 @@ interface SessionGridProps {
   pagination: PaginationMeta;
   loading: boolean;
   onPageChange: (page: number) => void;
+  userCountry?: string; // Added for localization - Author: Sanket
 }
 
 export function SessionGrid({
@@ -47,6 +49,7 @@ export function SessionGrid({
   pagination,
   loading,
   onPageChange,
+  userCountry, // Added for localization - Author: Sanket
 }: SessionGridProps) {
   if (loading) {
     return (
@@ -103,7 +106,7 @@ export function SessionGrid({
               date={start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               time={start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
               duration={`${session.duration} min`}
-              price={session.price === 0 ? "Free" : `₹${(session.price / 100).toFixed(0)}`}
+              price={formatPriceSimple(session.price / 100, userCountry)}
               instructor={session.teacher.name}
               level={status}
               rating={session.teacher.rating}

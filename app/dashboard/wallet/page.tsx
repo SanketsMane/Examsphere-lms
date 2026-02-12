@@ -4,6 +4,7 @@ import { getSiteSettings } from "@/app/actions/settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wallet, Plus, ArrowUpRight, ArrowDownRight, RefreshCw } from "lucide-react";
+import { formatPriceSimple, formatPrice } from "@/lib/currency"; // Added for localization - Author: Sanket
 import { RechargeDialog } from "./_components/RechargeDialog";
 import { Badge } from "@/components/ui/badge";
 import { Suspense } from "react";
@@ -15,7 +16,7 @@ export default async function WalletPage() {
     const wallet = await getWallet(user.id);
     const transactions = await getTransactionHistory(50);
     const settings = await getSiteSettings();
-    const currencySymbol = settings?.currencySymbol || "₹";
+    const userCountry = (user as any).country || "India";
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -34,14 +35,14 @@ export default async function WalletPage() {
             <Card className="mb-8 bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-none shadow-lg">
                 <CardHeader>
                     <CardDescription className="text-blue-100">Available Balance</CardDescription>
-                    <CardTitle className="text-5xl font-bold">{currencySymbol}{wallet.balance.toLocaleString()}</CardTitle>
+                    <CardTitle className="text-5xl font-bold">{formatPriceSimple(wallet.balance, userCountry)}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex gap-3">
                         <RechargeDialog 
                             minRecharge={settings?.minWalletRecharge} 
                             currencyCode={settings?.currencyCode}
-                            currencySymbol={currencySymbol}
+                            userCountry={userCountry}
                         >
                             <Button className="bg-white text-blue-600 hover:bg-blue-50">
                                 <Plus className="mr-2 h-4 w-4" />
@@ -106,10 +107,10 @@ export default async function WalletPage() {
                                         </div>
                                         <div className="text-right">
                                             <p className={`text-lg font-bold ${isCredit ? 'text-green-600' : 'text-red-600'}`}>
-                                                {isCredit ? '+' : ''}{currencySymbol}{Math.abs(txn.amount).toLocaleString()}
+                                                {isCredit ? '+' : ''}{formatPriceSimple(Math.abs(txn.amount), userCountry)}
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                                Balance: {currencySymbol}{txn.balanceAfter.toLocaleString()}
+                                                Balance: {formatPriceSimple(txn.balanceAfter, userCountry)}
                                             </p>
                                         </div>
                                     </div>

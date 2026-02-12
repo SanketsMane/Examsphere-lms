@@ -2,11 +2,14 @@ import { requireUser } from "@/app/data/user/require-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconFileText, IconDownload, IconCalendar } from "@tabler/icons-react";
+import { formatPrice } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { getSessionWithRole } from "@/app/data/auth/require-roles"; // Added for localization - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
-  await requireUser();
+  const session = await getSessionWithRole();
+  const userCountry = (session?.user as any)?.country || "India";
 
   const reports = [
     { name: 'User Registration Report', description: 'Monthly user sign-ups', date: '2025-12-25' },
@@ -48,7 +51,7 @@ export default async function ReportsPage() {
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm">This Month Revenue</span>
-              <span className="font-medium">₹0</span>
+              <span className="font-medium">{formatPrice(0, userCountry)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm">New Users</span>

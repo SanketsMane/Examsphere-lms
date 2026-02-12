@@ -10,6 +10,7 @@ import Link from "next/link";
 import { FadeIn } from "@/components/ui/fade-in";
 import { AnimatedCoursesGrid } from "@/components/marketing/AnimatedCoursesGrid";
 import { getAllCategories } from "@/app/data/marketing/get-marketing-data";
+import { getSessionWithRole } from "@/app/data/auth/require-roles"; // Added for localization - Author: Sanket
 import { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -37,8 +38,11 @@ const trendingTopics = [
 ];
 
 export default async function PublicCoursesRoute({ searchParams }: Props) {
+  const session = await getSessionWithRole();
   const params = await searchParams;
   const allCourses = await getAllCourses();
+  
+  const userCountry = (session?.user as any)?.country || "India";
   const categories = await getAllCategories(); // Fetch all dynamic categories
 
   // Filter courses based on search parameters
@@ -142,7 +146,7 @@ export default async function PublicCoursesRoute({ searchParams }: Props) {
                     ))}
                   </div>
                 }>
-                  <AnimatedCoursesGrid courses={filteredCourses} />
+                  <AnimatedCoursesGrid courses={filteredCourses} userCountry={userCountry} />
                 </Suspense>
               </div>
             </div>

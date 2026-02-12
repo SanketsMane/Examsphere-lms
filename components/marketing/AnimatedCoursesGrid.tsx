@@ -8,9 +8,10 @@ import Link from "next/link";
 
 interface Props {
     courses: PublicCourseType[];
+    userCountry?: string | null; // Added for localization - Author: Sanket
 }
 
-export function AnimatedCoursesGrid({ courses }: Props) {
+export function AnimatedCoursesGrid({ courses, userCountry }: Props) {
     if (courses.length === 0) {
         return (
             <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-muted-foreground bg-card rounded-xl border border-dashed border-border">
@@ -49,7 +50,7 @@ export function AnimatedCoursesGrid({ courses }: Props) {
             className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
         >
             {courses.map((course) => (
-                <PublicCourseCard key={course.id} data={course} />
+                <PublicCourseCard key={course.id} data={course} userCountry={userCountry} />
             ))}
         </motion.div>
     );

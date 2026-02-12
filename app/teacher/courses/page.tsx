@@ -8,6 +8,7 @@ import { Edit, MoreHorizontal, Plus, Trash } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ export default async function TeacherCoursesPage() {
     if (!session || (session.user.role !== "teacher" && session.user.role !== "admin")) {
         return redirect("/login");
     }
+
+    const userCountry = (session.user as any).country || "India";
 
     const courses = await prisma.course.findMany({
         where: {
@@ -89,7 +92,7 @@ export default async function TeacherCoursesPage() {
                                             </Badge>
                                         </div>
                                         <div className="flex justify-between items-center pt-2 border-t">
-                                            <span className="font-bold">${course.price}</span>
+                                            <span className="font-bold">{formatPriceSimple(course.price || 0, userCountry)}</span>
                                             <Button variant="ghost" size="sm" asChild>
                                                 <Link href={`/teacher/courses/${course.id}/edit`}>
                                                     Edit
@@ -117,7 +120,7 @@ export default async function TeacherCoursesPage() {
                                         {courses.map((course) => (
                                             <TableRow key={course.id}>
                                                 <TableCell className="font-medium">{course.title}</TableCell>
-                                                <TableCell>${course.price}</TableCell>
+                                                <TableCell>{formatPriceSimple(course.price || 0, userCountry)}</TableCell>
                                                 <TableCell>
                                                     <Badge variant={course.status === "Published" ? "default" : "secondary"}>
                                                         {course.status}

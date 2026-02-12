@@ -13,11 +13,15 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+import { formatPrice } from "@/lib/currency"; // Added for localization - Author: Sanket
+
 import { getTeacherAnalytics } from "../actions/analytics";
 
 export default async function TeacherDashboardPage() {
   const session = await getSessionWithRole();
   if (!session?.user?.id) redirect("/login");
+
+  const userCountry = (session.user as any).country || "India";
 
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId: session.user.id }
@@ -46,14 +50,14 @@ export default async function TeacherDashboardPage() {
   const earningsStats = [
     {
       title: "Total Earnings",
-      amount: `₹${(stats.totalEarnings / 100).toLocaleString()}`,
+      amount: formatPrice(stats.totalEarnings, userCountry),
       icon: <Wallet className="h-5 w-5" />,
       variant: "blue" as const,
       subTitle: "Lifetime earnings"
     },
     {
       title: "Pending Payout",
-      amount: `₹${(Number(stats.pendingPayouts) / 100).toLocaleString()}`,
+      amount: formatPrice(Number(stats.pendingPayouts), userCountry),
       icon: <Clock className="h-5 w-5" />,
       variant: "orange" as const,
       subTitle: Number(stats.pendingPayouts) > 0 ? "Processing soon" : "No pending payouts"

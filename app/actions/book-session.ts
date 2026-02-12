@@ -54,15 +54,12 @@ export async function bookSessionAction(data: BookSessionInput) {
         }
 
         // Check for Active Subscription
-        // Author: Sanket - Students with active plans (Pro/Unlimited) get sessions included
-        const userSubscription = await prisma.userSubscription.findUnique({
-            where: { userId: session.user.id },
-            include: { plan: true }
-        });
+        // Author: Sanket - Hardened expiration and status check
+        const { getActiveUserSubscription } = await import("@/lib/subscription");
+        const activeSub = await getActiveUserSubscription(session.user.id);
 
-        const hasActiveSubscription = userSubscription?.status === "active";
-        // For simplicity: Unlimited plan covers any 1-on-1 session. Pro might have limits, but we'll stick to Unlimited check for now.
-        const isSubscriptionBooking = hasActiveSubscription && (userSubscription.plan.name === "Unlimited" || userSubscription.plan.name === "Pro");
+        const hasActiveSubscription = !!activeSub;
+        const isSubscriptionBooking = hasActiveSubscription && (activeSub.plan.name === "Unlimited" || activeSub.plan.name === "Pro Student Plan");
 
         // Coupon Logic
         let finalPrice = isSubscriptionBooking ? 0 : data.price;

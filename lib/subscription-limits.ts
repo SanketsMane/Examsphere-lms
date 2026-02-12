@@ -1,39 +1,29 @@
 
 import { prisma } from "@/lib/db";
+import { getEffectivePlan } from "./subscription";
 
+/**
+ * Author: Sanket
+ * Checks course creation limit for teachers, respecting plan expiration.
+ */
 export async function checkCourseLimit(userId: string): Promise<{ allowed: boolean; limit: number; used: number }> {
-    const [subscription, courseCount] = await Promise.all([
-        prisma.userSubscription.findUnique({
-            where: { userId },
-            include: { plan: true }
-        }),
+    const [plan, courseCount] = await Promise.all([
+        getEffectivePlan(userId, "TEACHER"),
         prisma.course.count({ where: { userId } })
     ]);
 
-    // Default limit (e.g. for free tier if no plan found, though everyone should have a plan)
-    // Assuming "Basic Teacher Plan" has limit 3 if not specified in metadata.
+    // Default fallback limits if plan fetching fails (should not happen with default plan in DB)
     let maxCourses = 3; 
 
-    if (subscription && subscription.plan) {
-        const plan = subscription.plan as any;
-        if (plan.metadata) {
-            const meta = plan.metadata;
-            if (typeof meta.maxCourses === 'number') {
-                maxCourses = meta.maxCourses;
-            }
+    if (plan && plan.metadata) {
+        const meta = plan.metadata as any;
+        if (typeof meta.maxCourses === 'number') {
+            maxCourses = meta.maxCourses;
+        } else if (meta.canCreateCourses === false) {
+             maxCourses = 0; // Explicitly blocked on Basic plan according to seed
         }
     }
 
-    // Check if subscription is active or valid
-    if (subscription && subscription.status !== 'active' && subscription.status !== 'trialing' && subscription.plan.price > 0) {
-        // If paid plan but not active, maybe fallback to free limits?
-        // For strictness, if status is 'past_due' or 'canceled', we might still honor the period if currentPeriodEnd > now.
-        // But let's assume 'active' is required for paid limits.
-        // If invalid, fallback to default (Free) limit.
-         maxCourses = 3; // Hardcoded fallback for now
-    }
-    
-    // Allow if used < max
     return {
         allowed: courseCount < maxCourses,
         limit: maxCourses,
@@ -41,25 +31,24 @@ export async function checkCourseLimit(userId: string): Promise<{ allowed: boole
     };
 }
 
+/**
+ * Author: Sanket
+ * Checks group class limit for teachers, respecting plan expiration.
+ */
 export async function checkGroupClassLimit(userId: string): Promise<{ allowed: boolean; limit: number; used: number }> {
-     // Similar logic for group classes
-     const [subscription, groupCount] = await Promise.all([
-        prisma.userSubscription.findUnique({
-            where: { userId },
-            include: { plan: true }
-        }),
+     const [plan, groupCount] = await Promise.all([
+        getEffectivePlan(userId, "TEACHER"),
         prisma.groupClass.count({ where: { teacherId: userId, status: { in: ["Scheduled"] } } })
     ]);
 
-    let maxGroups = 2; // Default
+    let maxGroups = 2; // Default fallback
 
-    if (subscription && subscription.plan) {
-        const plan = subscription.plan as any;
-        if (plan.metadata) {
-            const meta = plan.metadata;
-            if (typeof meta.maxGroups === 'number') {
-                maxGroups = meta.maxGroups;
-            }
+    if (plan && plan.metadata) {
+        const meta = plan.metadata as any;
+        if (typeof meta.maxGroups === 'number') {
+            maxGroups = meta.maxGroups;
+        } else if (plan.name === "Basic Teacher Plan") {
+            maxGroups = 2; // Hardcoded default for free tier
         }
     }
 
@@ -70,24 +59,22 @@ export async function checkGroupClassLimit(userId: string): Promise<{ allowed: b
     };
 }
 
+/**
+ * Author: Sanket
+ * Checks enrollment limit for students, respecting plan expiration.
+ */
 export async function checkEnrollmentLimit(userId: string): Promise<{ allowed: boolean; limit: number; used: number }> {
-    const [subscription, enrollmentCount] = await Promise.all([
-        prisma.userSubscription.findUnique({
-            where: { userId },
-            include: { plan: true }
-        }),
+    const [plan, enrollmentCount] = await Promise.all([
+        getEffectivePlan(userId, "STUDENT"),
         prisma.enrollment.count({ where: { userId, status: "Active" } })
     ]);
 
     let maxEnrollments = 5; // Default for Free Student
 
-    if (subscription && subscription.plan) {
-        const plan = subscription.plan as any;
-        if (plan.metadata) {
-            const meta = plan.metadata;
-            if (typeof meta.maxCourseEnrollments === 'number') {
-                maxEnrollments = meta.maxCourseEnrollments;
-            }
+    if (plan && plan.metadata) {
+        const meta = plan.metadata as any;
+        if (typeof meta.maxCourseEnrollments === 'number') {
+            maxEnrollments = meta.maxCourseEnrollments;
         }
     }
 

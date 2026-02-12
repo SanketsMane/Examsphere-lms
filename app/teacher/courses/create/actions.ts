@@ -16,29 +16,13 @@ export async function CreateCourse(
         // Previous security check removed
 
         // --- Feature Gating: Course Creation Limit ---
-        const [existingCount, subscription] = await Promise.all([
-            prisma.course.count({
-                where: { userId: (session.user as any).id }
-            }),
-            prisma.userSubscription.findUnique({
-                where: { userId: (session.user as any).id },
-                include: { plan: true }
-            })
-        ]);
+        // Author: Sanket - Using hardened limit check that respects expiration
+        const { allowed, limit } = await import("@/lib/subscription-limits").then(m => m.checkCourseLimit((session.user as any).id));
 
-        let maxCourses = 3; // Default limit for free/non-subscribed users
-        
-        if (subscription && subscription.status === 'active' && (subscription.plan as any).metadata) {
-             const meta = (subscription.plan as any).metadata;
-             if (typeof meta.maxCourses === 'number') {
-                 maxCourses = meta.maxCourses;
-             }
-        }
-
-        if (existingCount >= maxCourses) {
+        if (!allowed) {
             return {
                 status: "error",
-                message: `You have reached the limit of ${maxCourses} courses for your current plan. Please upgrade to create more.`
+                message: `You have reached the limit of ${limit} courses for your current plan or your subscription has expired. Please upgrade to create more.`
             };
         }
         // ---------------------------------------------

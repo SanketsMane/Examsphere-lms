@@ -104,6 +104,11 @@ const authOptions = {
         type: "string" as const,
         required: false,
       },
+      // Country field for localization - Author: Sanket
+      country: {
+        type: "string" as const,
+        required: false,
+      },
     },
   },
   plugins: [

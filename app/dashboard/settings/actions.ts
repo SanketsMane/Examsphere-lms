@@ -13,6 +13,7 @@ const profileSchema = z.object({
     categories: z.array(z.string()).optional(),
     goals: z.string().optional(),
     notifications: z.boolean().optional(),
+    country: z.string().optional(), // Added for localization - Author: Sanket
 });
 
 export async function updateProfile(prevState: any, formData: FormData) {
@@ -26,6 +27,7 @@ export async function updateProfile(prevState: any, formData: FormData) {
         categories: formData.getAll("categories") as string[],
         goals: formData.get("goals") as string,
         notifications: formData.get("notifications") === "on",
+        country: formData.get("country") as string, // Added for localization - Author: Sanket
     };
 
     const validation = profileSchema.safeParse(data);
@@ -51,6 +53,7 @@ export async function updateProfile(prevState: any, formData: FormData) {
                     bio: validation.data.bio,
                     education: validation.data.education,
                     image: validation.data.image,
+                    country: validation.data.country, // Added for localization - Author: Sanket
                 },
             }),
             prisma.userPreferences.upsert({

@@ -8,11 +8,16 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Settings, User, Bell, Lock, DollarSign, Calendar } from "lucide-react";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
+import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { getSessionWithRole } from "@/app/data/auth/require-roles"; // Added for localization - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function TeacherSettingsPage() {
   const user = await requireUser();
+  const session = await getSessionWithRole();
+  const userCountry = (session?.user as any)?.country || "India";
+  const { symbol: s } = getCurrencyConfig(userCountry);
 
   return (
     <div className="space-y-6">
@@ -70,7 +75,7 @@ export default async function TeacherSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="hourly-rate">Hourly Rate (₹)</Label>
+              <Label htmlFor="hourly-rate">Hourly Rate ({s})</Label>
               <Input id="hourly-rate" type="number" placeholder="1000" />
             </div>
             <div className="space-y-2">
