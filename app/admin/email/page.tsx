@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { revalidatePath } from "next/cache";
+import { TestEmailForm } from "./_components/test-email-form";
 
 /**
  * Author: Sanket
@@ -224,17 +225,7 @@ export default async function EmailManagementPage() {
           <CardDescription>Verify your email configuration by sending a test message.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 max-w-md">
-            <Input 
-              type="email" 
-              placeholder="admin@example.com" 
-              className="flex-1"
-            />
-            <Button disabled>Send Test Email</Button>
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-2 italic">
-            Note: Test email functionality temporarily disabled for safety. Use the previewer for content testing.
-          </p>
+          <TestEmailForm />
         </CardContent>
       </Card>
     </div>
