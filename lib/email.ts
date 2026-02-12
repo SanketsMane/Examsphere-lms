@@ -62,7 +62,7 @@ async function isEmailSystemEnabled() {
  * Author: Sanket
  * Replaces placeholders in format ${placeholder} with data
  */
-function replacePlaceholders(content: string, data: TemplateData): string {
+export function replacePlaceholders(content: string, data: TemplateData): string {
   return content.replace(/\${(\w+)}/g, (match, key) => {
     return data[key]?.toString() ?? match;
   });

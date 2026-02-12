@@ -144,6 +144,24 @@ export async function requestPayout() {
             }
         });
 
+        // Send Email Notification
+        try {
+            const { sendTemplatedEmail } = await import("@/lib/email");
+            if (session.user.email) {
+                 await sendTemplatedEmail(
+                    "payoutRequested",
+                    session.user.email,
+                    "Payout Request Received",
+                    {
+                        userName: session.user.name || "Partner",
+                        amount: `$${requestedAmountDecimal.toFixed(2)}`
+                    }
+                );
+            }
+        } catch (e) {
+            console.error("Failed to send payout email", e);
+        }
+
         revalidatePath("/teacher/payouts");
         return { success: true };
     } catch (e: any) {

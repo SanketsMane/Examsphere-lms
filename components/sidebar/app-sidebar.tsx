@@ -149,9 +149,26 @@ const data = {
       icon: IconSettings,
     },
     {
-      title: "Email Management",
+      title: "Email System",
       url: "/admin/email",
-      icon: IconFileText, // Using FileText as fallback if Mail is not imported, but I should probably import Mail
+      icon: IconFileText,
+      items: [
+        {
+          title: "Templates",
+          url: "/admin/email/templates",
+          icon: IconListDetails,
+        },
+        {
+          title: "Marketing",
+          url: "/admin/email/marketing",
+          icon: IconSpeakerphone,
+        },
+        {
+          title: "Diagnostics",
+          url: "/admin/email",
+          icon: IconSettings,
+        }
+      ]
     },
     {
       title: "Blog",

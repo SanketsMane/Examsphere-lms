@@ -44,9 +44,11 @@ export default async function EmailTemplatesPage() {
             <p className="text-muted-foreground">Manage and edit your system email templates.</p>
           </div>
         </div>
-        <Button className="flex items-center gap-2">
-          <IconPlus className="h-4 w-4" /> New Template
-        </Button>
+        <Link href="/admin/email/templates/new">
+          <Button className="flex items-center gap-2">
+            <IconPlus className="h-4 w-4" /> New Template
+          </Button>
+        </Link>
       </div>
 
       <Card>

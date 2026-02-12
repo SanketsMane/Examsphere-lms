@@ -174,7 +174,7 @@ export async function approveTeacher(teacherId: string) {
 
         // Send Email
         await sendTemplatedEmail(
-            "teacherApproved",
+            "teacherVerificationApproved", // Updated slug
             user.email,
             "Congratulations! Your Teacher Profile is Approved",
             {
@@ -232,7 +232,7 @@ export async function rejectTeacher(teacherUserId: string, reason: string) {
 
         // Send Email
         await sendTemplatedEmail(
-            "teacherRejected",
+            "teacherVerificationRejected", // Updated slug
             user.email,
             "Update regarding your Teacher Application",
             {

@@ -142,9 +142,41 @@ export async function POST(req: NextRequest) {
                                  (payment.amount / 100).toFixed(2) + " " + payment.currency,
                                  payment.id
                              );
+
+                             // Send Payment Successful Email
+                             const { sendTemplatedEmail } = await import("@/lib/email");
+                             await sendTemplatedEmail(
+                                "paymentSuccessful",
+                                payment.email,
+                                "Payment Successful",
+                                {
+                                    userName: payload.payment.entity.notes.userName || "Student",
+                                    itemName: course?.title || "Course",
+                                    amount: (payment.amount / 100).toFixed(2) + " " + payment.currency,
+                                    transactionId: payment.id
+                                }
+                             );
                         } catch (e) {
                             console.error("Failed to send course receipt email", e);
                         }
+
+                        // Send Payment Successful Email
+                         try {
+                             const { sendTemplatedEmail } = await import("@/lib/email");
+                             await sendTemplatedEmail(
+                                "paymentSuccessful",
+                                payment.email,
+                                "Payment Successful",
+                                {
+                                    userName: payload.payment.entity.notes.userName || "Student",
+                                    itemName: course?.title || "Course",
+                                    amount: (payment.amount / 100).toFixed(2) + " " + payment.currency,
+                                    transactionId: payment.id
+                                }
+                             );
+                         } catch (e) {
+                             console.error("Failed to send payment success email", e);
+                         }
                      }
 
                     console.log(`Enrollment ${enrollment.id} completed via Razorpay`);

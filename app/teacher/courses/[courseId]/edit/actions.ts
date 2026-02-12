@@ -569,6 +569,27 @@ export async function publishCourse(courseId: string): Promise<ApiResponse> {
     revalidatePath(`/teacher/courses/${courseId}/edit`);
     revalidatePath("/teacher/courses");
 
+    // Send Course Published Email (Author: Sanket)
+    if (newStatus === "Published") {
+        try {
+            const { sendTemplatedEmail } = await import("@/lib/email");
+            if (session.user.email) {
+                await sendTemplatedEmail(
+                    "coursePublished",
+                    session.user.email,
+                    "Your Course is Live! 🚀",
+                    {
+                        userName: session.user.name || "Teacher",
+                        courseTitle: course.title,
+                        courseUrl: `${process.env.NEXT_PUBLIC_APP_URL}/courses/${courseId}` // Ideally Slug
+                    }
+                );
+            }
+        } catch (e) {
+            console.error("Failed to send course published email", e);
+        }
+    }
+
     return {
         status: "success",
         message: isFree
