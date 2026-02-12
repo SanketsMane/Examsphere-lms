@@ -1,8 +1,7 @@
 import { env } from "@/lib/env";
 
-const TAWKTOO_API_URL = "http://tawktoo.com:3010/api/v1";
-// Working Key verified by Sanket
-const TAWKTOO_API_KEY = "5e8624ab-acf3-40da-b84e-ea44de66489d.f4d87141e414a3bacfa44142fc72e068b30afa5862e7c47bd00faa2adecb0369";
+const TAWKTOO_API_URL = env.TAWKTOO_API_URL;
+const TAWKTOO_API_KEY = env.TAWKTOO_API_KEY;
 
 interface CreateMeetingParams {
   topic: string;

@@ -23,6 +23,8 @@ export const env = createEnv({
     AWS_REGION: z.string().min(1),
     STRIPE_SECRET_KEY: z.string().min(1),
     STRIPE_WEBHOOK_SECRET: z.string().min(1),
+    TAWKTOO_API_URL: z.string().url(),
+    TAWKTOO_API_KEY: z.string().min(1),
   },
 
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
