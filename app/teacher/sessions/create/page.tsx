@@ -11,24 +11,40 @@ export default async function CreateSessionPage() {
   await requireTeacher();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/teacher/sessions">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold">Create Live Session</h1>
-          <p className="text-muted-foreground mt-1">
-            Set up a new 1-on-1 tutoring session for students to book
-          </p>
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-10">
+      {/* Header with Breadcrumbs - Refined by Sanket */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+            <Link href="/teacher/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+            <span>/</span>
+            <Link href="/teacher/sessions" className="hover:text-primary transition-colors">Live Sessions</Link>
+            <span>/</span>
+            <span className="text-foreground">Create</span>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+                Create Live Session
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl">
+              Design a high-impact learning experience. Set your schedule, define your curriculum, and start teaching globally.
+            </p>
+          </div>
+          
+          <Link href="/teacher/sessions">
+            <Button variant="outline" className="hidden sm:flex items-center gap-2 border-2 font-bold shadow-sm transition-all active:scale-95">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Sessions
+            </Button>
+          </Link>
         </div>
       </div>
 
-      {/* Form */}
-      <CreateSessionForm />
+      {/* Form Implementation */}
+      <div className="bg-background/50 backdrop-blur-sm rounded-3xl">
+        <CreateSessionForm />
+      </div>
     </div>
   );
 }

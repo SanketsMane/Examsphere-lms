@@ -100,7 +100,10 @@ export async function updateSessionStatus(
 }
 
 
+import { tawkTooClient } from "@/lib/video/tawktoo";
+
 // Generate SFU (mediasoup) join URL
+// Updated to use TawkToo API - Author: Sanket
 export async function generateSfuJoinUrl(data: {
   room: string;
   name: string;
@@ -109,42 +112,27 @@ export async function generateSfuJoinUrl(data: {
   video?: boolean;
   chat?: boolean;
 }) {
-  const sfuUrl = process.env.NEXT_PUBLIC_SFU_SERVER_URL || "https://tawktoo.com";
-  const jwtKey = process.env.SFU_JWT_SECRET || "kidokoolsfu_jwt_secret";
-
-  const payload = {
-    username: data.name,
-    password: "password", // Default password for guest/token join
-    presenter: data.isPresenter ? "true" : "false",
-  };
-
   try {
-    // 1. Encrypt payload with AES (match tawktoosfu ServerApi.js)
-    const payloadString = JSON.stringify(payload);
-    const encryptedPayload = CryptoJS.AES.encrypt(payloadString, jwtKey).toString();
-
-    // 2. Sign with JWT (match tawktoosfu ServerApi.js)
-    const token = jwt.sign({ data: encryptedPayload }, jwtKey, { expiresIn: "1h" });
-
-    // 3. Construct Join URL
-    const url = new URL(`${sfuUrl}/join`);
-    url.searchParams.append("room", data.room);
-    url.searchParams.append("name", data.name);
-    url.searchParams.append("audio", data.audio ? "1" : "0");
-    url.searchParams.append("video", data.video ? "1" : "0");
-    url.searchParams.append("chat", data.chat ? "1" : "0");
-    url.searchParams.append("token", token);
+    console.log("Initializing TawkToo meeting for room:", data.room);
     
-    // Additional defaults to match SFU expectations
-    url.searchParams.append("roomPassword", "false");
-    url.searchParams.append("screen", "0");
-    url.searchParams.append("notify", "1");
-    url.searchParams.append("hide", "0");
+    // Call the external API to create a meeting
+    const meeting = await tawkTooClient.createMeeting({
+      topic: data.room,
+      duration: 60, // Default duration
+      // We can pass other fields if the API supports them
+    });
 
-    return { url: url.toString() };
+    console.log("TawkToo meeting created:", meeting);
+
+    // Return the join URL from the API response
+    return { url: meeting.meeting }; 
+
   } catch (err: any) {
-    console.error("Failed to generate SFU join URL", err);
-    throw new Error("Video service currently unavailable");
+    console.error("Failed to create TawkToo meeting:", err);
+    
+    // Fallback or re-throw
+    // For now, re-throwing so the UI sees the error (likely 403 Forbidden)
+    throw new Error("Video service authentication failed. Please check API credentials.");
   }
 }
 
