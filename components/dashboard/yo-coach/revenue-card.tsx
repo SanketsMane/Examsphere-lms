@@ -3,6 +3,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { formatPriceSimple, getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 interface RevenueCardProps {
     title: string;
@@ -16,11 +19,25 @@ interface RevenueCardProps {
 export function RevenueCard({
     title,
     amount,
-    subTitle = "This month ₹0.00",
+    subTitle,
     icon,
     variant = "blue",
     className,
 }: RevenueCardProps) {
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
+
+    const currencyConfig = getCurrencyConfig(userCountry);
+    const displaySubtitle = subTitle || `This month ${currencyConfig.symbol}0.00`;
     const variants = {
         blue: "bg-blue-50 text-blue-600",
         orange: "bg-orange-50 text-orange-600",
@@ -50,7 +67,7 @@ export function RevenueCard({
                     <div className="space-y-1">
                         <p className="text-sm font-semibold text-muted-foreground">{title}</p>
                         <h3 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-50">{amount}</h3>
-                        <p className="text-xs text-muted-foreground font-medium">{subTitle}</p>
+                        <p className="text-xs text-muted-foreground font-medium">{displaySubtitle}</p>
                     </div>
                 </div>
             </CardContent>

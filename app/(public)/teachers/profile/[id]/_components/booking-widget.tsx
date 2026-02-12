@@ -3,8 +3,13 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { Loader2, Calendar as CalendarIcon, Clock, CheckCircle, ShieldCheck } from "lucide-react";
+import { formatPriceSimple } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { QuickBookDrawer } from "@/components/marketing/QuickBookDrawer";
+
+/**
+ * Author: Sanket
+ */
 
 interface BookingWidgetProps {
     teacher: {
@@ -14,16 +19,17 @@ interface BookingWidgetProps {
         headline: string;
         hourlyRate: number;
     };
+    country?: string | null; // Added country support
 }
 
-export function BookingWidget({ teacher }: BookingWidgetProps) {
+export function BookingWidget({ teacher, country }: BookingWidgetProps) {
     return (
         <div className="bg-card border border-border rounded-xl shadow-lg p-6 sticky top-24">
             <h3 className="text-xl font-bold mb-4">Book a Session</h3>
             <div className="flex items-center justify-between mb-6 pb-6 border-b border-border">
                 <span className="text-muted-foreground">Hourly Rate</span>
                 <span className="text-2xl font-bold text-primary">
-                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(teacher.hourlyRate)}
+                    {formatPriceSimple(teacher.hourlyRate, country)}
                 </span>
             </div>
 

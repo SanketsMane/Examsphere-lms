@@ -3,8 +3,10 @@
 import { motion } from "framer-motion";
 import { Star, Clock, BookOpen, ChevronRight, ChevronLeft } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 // Helper type for the data structure we receive
 interface FeaturedCourse {
@@ -43,9 +45,17 @@ interface FeaturedCoursesProps {
 }
 
 export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
-    // Categories for filtering could be dynamic too, but for now we keep the UI simple or just show the courses provided
-    // If we want filtering, we need all courses or a way to filter. 
-    // Given the props are "featured courses", we might just display them directly or offer a "View All" that goes to search.
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
 
     if (!courses || courses.length === 0) {
         return null; // Or return a "Coming Soon" placeholder
@@ -134,7 +144,7 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
 
                                             <div className="pt-3 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
                                                 <span className="text-xl font-bold text-[#011E21] dark:text-white">
-                                                    ₹{((course.price || 0) / 100).toLocaleString('en-IN')}
+                                                    {formatPriceSimple(course.price, userCountry)}
                                                 </span>
                                             </div>
 

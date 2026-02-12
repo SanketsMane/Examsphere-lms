@@ -6,6 +6,11 @@ import { IconCreditCard, IconTrendingUp, IconDownload, IconWallet } from "@table
 import { prisma as db } from "@/lib/db";
 import { format } from "date-fns";
 import Link from "next/link";
+import { formatPrice } from "@/lib/currency";
+
+/**
+ * Author: Sanket
+ */
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +68,7 @@ export default async function PaymentsPage() {
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{(totalRevenue / 100).toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatPrice(totalRevenue)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -106,9 +111,9 @@ export default async function PaymentsPage() {
                   <p className="text-sm text-muted-foreground">User: {enrollment.User.name}</p>
                   <p className="text-xs text-muted-foreground">{format(new Date(enrollment.createdAt), 'PPP p')}</p>
                 </div>
-                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className="font-medium">₹{(enrollment.amount / 100).toLocaleString()}</p>
+                    <p className="font-medium">{formatPrice(enrollment.amount)}</p>
                     <p className="text-xs text-muted-foreground">Course Enrollment</p>
                   </div>
                   <Badge variant={enrollment.status === 'Active' ? 'default' : enrollment.status === 'Pending' ? 'secondary' : 'destructive'}>

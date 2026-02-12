@@ -7,12 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateSiteSettings } from "@/app/actions/settings";
 import { toast } from "sonner";
-import { Globe, Phone, Share2, CreditCard } from "lucide-react";
+import { Globe, Phone, Share2, CreditCard, Coins, Image as ImageIcon } from "lucide-react";
 import { SiteSettings } from "@prisma/client";
 import { FileUpload } from "@/components/ui/file-upload";
 import { FooterLinksEditor } from "./footer-links-editor";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+/**
+ * Author: Sanket
+ */
 
 export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
     const [state, formAction, isPending] = useActionState(updateSiteSettings, {
@@ -20,10 +25,12 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
         success: false
     });
 
-    // Initialize logo URL state from settings or empty string
-    // Initialize logo URL state from settings or empty string
+    // Initialize logo and favicon state
     const [logoUrl, setLogoUrl] = useState((settings as any)?.logo || "");
+    const [faviconUrl, setFaviconUrl] = useState((settings as any)?.favicon || "");
     const [logoSize, setLogoSize] = useState((settings as any)?.logoSize || 100);
+
+    const [currencyCode, setCurrencyCode] = useState(settings?.currencyCode || "INR");
 
     useEffect(() => {
         if (state?.success) {
@@ -46,61 +53,93 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                         <CardDescription>Platform-wide configuration</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="siteName">Site Name</Label>
-                            <Input 
-                                id="siteName" 
-                                name="siteName" 
-                                placeholder="Enter site name (optional)"
-                                defaultValue={settings?.siteName || ""} 
-                            />
-                            <p className="text-xs text-muted-foreground">The display name for your platform. Leave blank to show only the logo.</p>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="siteUrl">Site URL</Label>
-                            <Input id="siteUrl" name="siteUrl" defaultValue={settings?.siteUrl || ""} placeholder="https://kidokool.com" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Logo</Label>
-                            <input type="hidden" name="logo" value={logoUrl} />
-                            <FileUpload
-                                value={logoUrl}
-                                onChange={setLogoUrl}
-                                label="Upload Site Logo"
-                                onFileSelect={async (file) => {
-                                    return new Promise((resolve, reject) => {
-                                        const img = new Image();
-                                        img.src = URL.createObjectURL(file);
-                                        img.onload = () => {
-                                            if (img.width > 512 || img.height > 512) {
-                                                toast.error(`Image too large! Max allowed size is 512x512px. Uploaded: ${img.width}x${img.height}px.`);
-                                                reject(new Error("Image dimensions exceed 512x512px limit"));
-                                            } else {
-                                                resolve(file);
-                                            }
-                                        };
-                                        img.onerror = () => reject(new Error("Invalid image file"));
-                                    });
-                                }}
-                            />
-                            <p className="text-xs text-muted-foreground">Max size: 512x512px (Locked). Transparent PNG recommended.</p>
-                        </div>
-                        <div className="space-y-4 pt-2">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="logoSize">Logo Size Percentage</Label>
-                                <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{logoSize}%</span>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="siteName">Site Name</Label>
+                                    <Input 
+                                        id="siteName" 
+                                        name="siteName" 
+                                        placeholder="Enter site name (optional)"
+                                        defaultValue={settings?.siteName || ""} 
+                                    />
+                                    <p className="text-xs text-muted-foreground">The display name for your platform.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="siteUrl">Site URL</Label>
+                                    <Input id="siteUrl" name="siteUrl" defaultValue={settings?.siteUrl || ""} placeholder="https://kidokool.com" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Favicon</Label>
+                                    <input type="hidden" name="favicon" value={faviconUrl} />
+                                    <FileUpload
+                                        value={faviconUrl}
+                                        onChange={setFaviconUrl}
+                                        label="Upload Favicon"
+                                        onFileSelect={async (file) => {
+                                            return new Promise((resolve, reject) => {
+                                                const img = new Image();
+                                                img.src = URL.createObjectURL(file);
+                                                img.onload = () => {
+                                                    if (img.width > 128 || img.height > 128) {
+                                                        toast.error(`Favicon too large! Max 128x128px. Uploaded: ${img.width}x${img.height}px.`);
+                                                        reject(new Error("Image dimensions exceed 128x128px limit"));
+                                                    } else {
+                                                        resolve(file);
+                                                    }
+                                                };
+                                                img.onerror = () => reject(new Error("Invalid image file"));
+                                            });
+                                        }}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Recommended: 32x32px or 64x64px. Max: 128x128px.</p>
+                                </div>
                             </div>
-                            <input type="hidden" name="logoSize" value={logoSize} />
-                            <Slider
-                                defaultValue={[logoSize]}
-                                max={100}
-                                min={0}
-                                step={1}
-                                onValueChange={(vals) => setLogoSize(vals[0])}
-                            />
-                            <p className="text-xs text-muted-foreground italic">Drag the slider to adjust how large the logo appears in the top navigation bar.</p>
+
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Logo</Label>
+                                    <input type="hidden" name="logo" value={logoUrl} />
+                                    <FileUpload
+                                        value={logoUrl}
+                                        onChange={setLogoUrl}
+                                        label="Upload Site Logo"
+                                        onFileSelect={async (file) => {
+                                            return new Promise((resolve, reject) => {
+                                                const img = new Image();
+                                                img.src = URL.createObjectURL(file);
+                                                img.onload = () => {
+                                                    if (img.width > 512 || img.height > 512) {
+                                                        toast.error(`Image too large! Max 512x512px. Uploaded: ${img.width}x${img.height}px.`);
+                                                        reject(new Error("Image dimensions exceed 512x512px limit"));
+                                                    } else {
+                                                        resolve(file);
+                                                    }
+                                                };
+                                                img.onerror = () => reject(new Error("Invalid image file"));
+                                            });
+                                        }}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Transparent PNG recommended. Max 512x512px.</p>
+                                </div>
+                                <div className="space-y-4 pt-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="logoSize">Logo Size Percentage</Label>
+                                        <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{logoSize}%</span>
+                                    </div>
+                                    <input type="hidden" name="logoSize" value={logoSize} />
+                                    <Slider
+                                        defaultValue={[logoSize]}
+                                        max={100}
+                                        min={0}
+                                        step={1}
+                                        onValueChange={(vals) => setLogoSize(vals[0])}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div className="space-y-2">
+
+                        <div className="space-y-2 pt-4 border-t">
                              <Label htmlFor="maxGroupClassSize">Global Max Group Class Size</Label>
                              <Input 
                                 id="maxGroupClassSize" 
@@ -109,7 +148,51 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                 min="1"
                                 defaultValue={settings?.maxGroupClassSize || 12} 
                              />
-                             <p className="text-xs text-muted-foreground">Maximum students allowed in any group class. Defaults to 12.</p>
+                             <p className="text-xs text-muted-foreground">Maximum students allowed in any group class.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Localization Settings */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Coins className="h-5 w-5" />
+                            Localization
+                        </CardTitle>
+                        <CardDescription>Currency and regional settings</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="currencyCode">Default Site Currency</Label>
+                                <input type="hidden" name="currencyCode" value={currencyCode} />
+                                <Select value={currencyCode} onValueChange={setCurrencyCode}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Currency" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="INR">INR (₹)</SelectItem>
+                                        <SelectItem value="USD">USD ($)</SelectItem>
+                                        <SelectItem value="AED">AED (AED)</SelectItem>
+                                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                                        <SelectItem value="SGD">SGD (S$)</SelectItem>
+                                        <SelectItem value="CAD">CAD (C$)</SelectItem>
+                                        <SelectItem value="AUD">AUD (A$)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="currencySymbol">Currency Symbol</Label>
+                                <Input 
+                                    id="currencySymbol" 
+                                    name="currencySymbol" 
+                                    defaultValue={settings?.currencySymbol || "₹"} 
+                                    placeholder="e.g. ₹ or $" 
+                                />
+                                <p className="text-xs text-muted-foreground">Symbol used for manual displays.</p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -211,13 +294,9 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                 type="password"
                                 defaultValue={(settings as any)?.razorpayWebhookSecret || ""} 
                                 placeholder="••••••••••••••••" 
-                            />
-                            <p className="text-[10px] text-muted-foreground">This secret is used to verify that webhook calls are legitimate and come from Razorpay.</p>
+                             />
+                             <p className="text-[10px] text-muted-foreground">This secret is used to verify that webhook calls are legitimate and come from Razorpay.</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            These credentials are used to process all payments (Course Purchases, Wallet Recharges). 
-                            Get them from your <a href="https://dashboard.razorpay.com/app/website-app-settings/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Razorpay Dashboard</a>.
-                        </p>
                     </CardContent>
                 </Card>
 

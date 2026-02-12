@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Video, DollarSign, Users, Star, TrendingUp, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatPrice } from "@/lib/currency";
+
+/**
+ * Author: Sanket
+ */
 
 interface Stats {
   total: number;
@@ -54,11 +59,9 @@ export function SessionStats() {
     );
   }
 
-  const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(cents / 100);
+  // Multi-currency support
+  const formatCurrency = (amountInBaseUnits: number) => {
+    return formatPrice(amountInBaseUnits);
   };
 
   const statsCards = [

@@ -77,7 +77,7 @@ export function RechargeDialog({
                 amount: data.amount,
                 currency: data.currency,
                 name: "Wallet Recharge",
-                description: `Add ${currencySymbol}${amountNum} to wallet`,
+                description: `Add ${formatPriceSimple(amountNum, userCountry)} to wallet`,
                 user: data.user,
                 onSuccess: (paymentId: any) => {
                     toast.success("Recharge successful! Updating wallet...");
@@ -98,6 +98,9 @@ export function RechargeDialog({
         }
     };
 
+    /**
+     * Author: Sanket
+     */
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -123,7 +126,7 @@ export function RechargeDialog({
                                     onClick={() => setAmount(amt.toString())}
                                     type="button"
                                 >
-                                    {currencySymbol}{amt}
+                                    {formatPriceSimple(amt, userCountry)}
                                 </Button>
                             ))}
                         </div>
@@ -148,7 +151,7 @@ export function RechargeDialog({
                             />
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Min: {currencySymbol}{minRecharge} | Max: {currencySymbol}100,000
+                            Min: {formatPriceSimple(minRecharge, userCountry)} | Max: {formatPriceSimple(100000, userCountry)}
                         </p>
                     </div>
 
@@ -157,7 +160,7 @@ export function RechargeDialog({
                         <div className="bg-muted p-4 rounded-lg">
                             <div className="flex justify-between text-sm mb-1">
                                 <span>Amount</span>
-                                <span className="font-semibold">{currencySymbol}{parseInt(amount).toLocaleString()}</span>
+                                <span className="font-semibold">{formatPriceSimple(parseInt(amount), userCountry)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span>Points to be added</span>
@@ -179,7 +182,7 @@ export function RechargeDialog({
                                 Processing...
                             </>
                         ) : (
-                            `Add ${currencySymbol}${amount || '0'} to Wallet`
+                            `Add ${formatPriceSimple(parseInt(amount || "0"), userCountry)} to Wallet`
                         )}
                     </Button>
                 </div>

@@ -4,6 +4,9 @@ import { motion } from "framer-motion";
 import { Star, Users, Clock, Award, PlayCircle, MessageCircle, Calendar } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 interface InteractiveMentorCardProps {
     name: string;
@@ -23,6 +26,17 @@ interface InteractiveMentorCardProps {
 export function InteractiveMentorCard({
     name, role, company, rating, reviews, students, experience, skills, hourlyRate, image, featured, isOnline = true
 }: InteractiveMentorCardProps) {
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -126,7 +140,9 @@ export function InteractiveMentorCard({
                     <div className="flex flex-col">
                         <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Rate</span>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-lg font-bold text-foreground">₹{hourlyRate}</span>
+                            <span className="text-lg font-bold text-foreground">
+                                {formatPriceSimple(hourlyRate, userCountry)}
+                            </span>
                             <span className="text-xs text-muted-foreground">/hr</span>
                         </div>
                     </div>

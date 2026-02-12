@@ -1,24 +1,27 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { updateFinanceSettings } from "@/app/actions/finance-settings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, CreditCard, Percent, Banknote, Coins } from "lucide-react";
+import { LucideWallet, LucidePercent, LucideDollarSign, Loader2, CreditCard, Coins } from "lucide-react";
+import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 interface FinanceSettingsFormProps {
-    settings: any;
+    initialData: any;
 }
 
 /**
  * Dedicated form for Financial Controls
  * @author Sanket
  */
-export function FinanceSettingsForm({ settings }: FinanceSettingsFormProps) {
-    const [state, formAction, isPending] = useActionState(updateFinanceSettings, null);
+export function FinanceSettingsForm({ initialData }: FinanceSettingsFormProps) {
+    const [state, formAction] = useActionState(updateFinanceSettings, null);
+    const [isPending, setIsPending] = useState(false); // Added - Author: Sanket
+    const currencyConfig = getCurrencyConfig("India"); // Admin default is usually site default or India for now
 
     useEffect(() => {
         if (state?.success) {
@@ -35,23 +38,23 @@ export function FinanceSettingsForm({ settings }: FinanceSettingsFormProps) {
                 <Card className="border-blue-100 shadow-sm">
                     <CardHeader className="bg-blue-50/50 rounded-t-xl">
                         <CardTitle className="flex items-center gap-2 text-blue-700">
-                            <Percent className="h-5 w-5" />
+                            <LucidePercent className="h-5 w-5" />
                             Platform Revenue
                         </CardTitle>
                         <CardDescription>Configure how much the platform earns from transactions</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-6">
                         <div className="space-y-2">
-                            <Label htmlFor="commissionPercentage">Platform Commission (%)</Label>
+                            <Label htmlFor="platformCommission">Platform Commission (%)</Label>
                             <div className="relative">
-                                <Input 
-                                    id="commissionPercentage" 
-                                    name="commissionPercentage" 
+                                <Input
+                                    id="platformCommission"
+                                    name="platformCommission"
                                     type="number"
                                     step="0.01"
-                                    defaultValue={settings?.commissionPercentage || 20.0}
+                                    defaultValue={initialData?.platformCommission || 20}
                                     className="pr-10"
-                                    placeholder="20.00"
+                                    placeholder="e.g. 20"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
                             </div>
@@ -64,7 +67,7 @@ export function FinanceSettingsForm({ settings }: FinanceSettingsFormProps) {
                 <Card className="border-orange-100 shadow-sm">
                     <CardHeader className="bg-orange-50/50 rounded-t-xl">
                         <CardTitle className="flex items-center gap-2 text-orange-700">
-                            <Banknote className="h-5 w-5" />
+                            <LucideDollarSign className="h-5 w-5" />
                             Taxation (GST)
                         </CardTitle>
                         <CardDescription>Manage tax rates for your region (Inclusive logic)</CardDescription>
@@ -73,12 +76,12 @@ export function FinanceSettingsForm({ settings }: FinanceSettingsFormProps) {
                         <div className="space-y-2">
                             <Label htmlFor="gstPercentage">GST Percentage (%)</Label>
                             <div className="relative">
-                                <Input 
-                                    id="gstPercentage" 
-                                    name="gstPercentage" 
+                                <Input
+                                    id="gstPercentage"
+                                    name="gstPercentage"
                                     type="number"
                                     step="0.01"
-                                    defaultValue={settings?.gstPercentage || 0.0}
+                                    defaultValue={initialData?.gstPercentage || 0.0}
                                     className="pr-10"
                                     placeholder="18.00"
                                 />
@@ -95,25 +98,41 @@ export function FinanceSettingsForm({ settings }: FinanceSettingsFormProps) {
                 <Card className="border-indigo-100 shadow-sm">
                     <CardHeader className="bg-indigo-50/50 rounded-t-xl">
                         <CardTitle className="flex items-center gap-2 text-indigo-700">
-                            <Coins className="h-5 w-5" />
+                            <LucideWallet className="h-5 w-5" />
                             Wallet Safeguards
                         </CardTitle>
                         <CardDescription>Control minimum limits for wallet transactions</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-6">
                         <div className="space-y-2">
-                            <Label htmlFor="minWalletRecharge">Min Wallet Recharge</Label>
+                            <Label htmlFor="minWalletRecharge">Min Wallet Recharge ({initialData?.currencyCode || currencyConfig.code})</Label>
                             <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{settings?.currencySymbol || "₹"}</span>
-                                <Input 
-                                    id="minWalletRecharge" 
-                                    name="minWalletRecharge" 
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{initialData?.currencySymbol || currencyConfig.symbol}</span>
+                                <Input
+                                    id="minWalletRecharge"
+                                    name="minWalletRecharge"
                                     type="number"
-                                    defaultValue={settings?.minWalletRecharge || 100}
+                                    defaultValue={initialData?.minWalletRecharge || 100}
                                     className="pl-7"
+                                    placeholder={`e.g. ${currencyConfig.symbol}100`}
                                 />
                             </div>
                             <p className="text-[11px] text-muted-foreground">Minimum amount a student can add to their wallet at once.</p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="minWithdrawal">Min Withdrawal ({initialData?.currencyCode || currencyConfig.code})</Label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{initialData?.currencySymbol || currencyConfig.symbol}</span>
+                                <Input
+                                    id="minWithdrawal"
+                                    name="minWithdrawal"
+                                    type="number"
+                                    defaultValue={initialData?.minWithdrawal || 500}
+                                    className="pl-7"
+                                    placeholder={`e.g. ${currencyConfig.symbol}500`}
+                                />
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">Minimum amount a user can withdraw from their wallet at once.</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -134,7 +153,7 @@ export function FinanceSettingsForm({ settings }: FinanceSettingsFormProps) {
                                 <Input 
                                     id="currencyCode" 
                                     name="currencyCode" 
-                                    defaultValue={settings?.currencyCode || "INR"}
+                                    defaultValue={initialData?.currencyCode || "INR"}
                                     placeholder="INR"
                                 />
                             </div>
@@ -143,7 +162,7 @@ export function FinanceSettingsForm({ settings }: FinanceSettingsFormProps) {
                                 <Input 
                                     id="currencySymbol" 
                                     name="currencySymbol" 
-                                    defaultValue={settings?.currencySymbol || "₹"}
+                                    defaultValue={initialData?.currencySymbol || "₹"}
                                     placeholder="₹"
                                 />
                             </div>

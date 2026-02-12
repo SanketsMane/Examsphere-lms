@@ -41,6 +41,8 @@ interface BookingPageClientProps {
 }
 
 import { useRazorpay } from "@/components/payment/use-razorpay";
+import { PaymentSelectionDialog } from "@/components/payment/PaymentSelectionDialog"; // Added for Wallet Integration - Author: Sanket
+import { joinGroupClass } from "@/app/actions/groups"; // Added for Wallet Integration - Author: Sanket
 
 export function BookingPageClient({ session }: BookingPageClientProps) {
   const router = useRouter();
@@ -53,6 +55,8 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string; discountAmount: number } | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false); // Added for Wallet Integration - Author: Sanket
 
   // ... (handleApplyCoupon omitted for brevity, but let's keep it if we need to replace a range)
   
@@ -90,12 +94,15 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
     }
   };
 
-  const handleBooking = async () => {
+  const handleOpenPaymentDialog = () => {
     if (!agreedToTerms || !agreedToRefund) {
       toast.error("Please agree to the terms and refund policy");
       return;
     }
+    setShowPaymentDialog(true);
+  };
 
+  const initiateRazorpayCheckout = async () => {
     try {
       setLoading(true);
 
@@ -141,11 +148,31 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
             setLoading(false);
         }
       });
+      setShowPaymentDialog(false);
 
     } catch (error: any) {
       toast.error(error.message);
       setLoading(false);
     }
+  };
+
+  const handleWalletPayment = async () => {
+      try {
+          // Call Server Action
+          const result = await joinGroupClass(session.id, "wallet", appliedCoupon?.code) as any;
+
+          if (result.success) {
+              toast.success("Joined successfully via Wallet!");
+              setTimeout(() => {
+                  window.location.href = "/dashboard/groups?booking=success";
+              }, 1500);
+          } else {
+              throw new Error(result.error || "Wallet payment failed");
+          }
+          setShowPaymentDialog(false);
+      } catch (error: any) {
+          toast.error(error.message);
+      }
   };
 
   const platformFee = Math.round(session.price * 0.05); // 5% platform fee
@@ -373,7 +400,7 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
                   </div>
 
                   <Button
-                    onClick={handleBooking}
+                    onClick={handleOpenPaymentDialog}
                     disabled={loading || !agreedToTerms || !agreedToRefund}
                     className="w-full"
                     size="lg"
@@ -390,6 +417,16 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
                       </>
                     )}
                   </Button>
+
+                  <PaymentSelectionDialog 
+                      open={showPaymentDialog}
+                      onOpenChange={setShowPaymentDialog}
+                      amount={finalTotal}
+                      itemType="session"
+                      itemTitle={session.title}
+                      onPaymentCheckout={initiateRazorpayCheckout}
+                      onWalletPayment={handleWalletPayment}
+                  />
 
                   <p className="text-xs text-center text-muted-foreground">
                     You'll be redirected to Stripe for secure payment

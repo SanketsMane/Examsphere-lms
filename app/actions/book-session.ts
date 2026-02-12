@@ -188,3 +188,88 @@ export async function bookSessionAction(data: BookSessionInput) {
         return { success: false, error: "Failed to create session" };
     }
 }
+
+export async function bookSessionWithWallet(data: BookSessionInput) {
+    /**
+     * Handles 1-on-1 session booking via Wallet.
+     * Deducts balance and confirms booking atomically.
+     * Author: Sanket
+     */
+    try {
+        const session = await getSessionWithRole();
+        if (!session || !session.user) {
+            return { success: false, error: "You must be logged in to book a session" };
+        }
+
+        const scheduledAt = new Date(data.dateTime);
+
+        // Deduct from Wallet
+        const { deductFromWallet } = await import("@/app/actions/wallet");
+        
+        const teacherProfile = await prisma.teacherProfile.findUnique({
+             where: { id: data.teacherProfileId },
+             include: { user: true }
+        });
+        if (!teacherProfile) return { success: false, error: "Teacher not found" };
+
+        const hourlyRate = teacherProfile.hourlyRate || 0;
+        let finalPrice = hourlyRate;
+
+        if (data.couponCode) {
+             const coupon = await prisma.coupon.findUnique({ where: { code: data.couponCode, isActive: true } });
+             if (coupon) {
+                 const now = new Date();
+                 if ((!coupon.expiryDate || now <= coupon.expiryDate) && (coupon.usedCount < coupon.usageLimit)) {
+                     if (coupon.type === "PERCENTAGE") {
+                        finalPrice = Math.round((hourlyRate * (100 - coupon.value)) / 100);
+                     } else {
+                        finalPrice = Math.max(0, hourlyRate - coupon.value);
+                     }
+                 }
+             }
+        }
+
+        if (finalPrice <= 0) return { success: false, error: "Use free booking for zero price" };
+
+        // Transaction
+        const result = await prisma.$transaction(async (tx) => {
+             await deductFromWallet(
+                 session.user.id,
+                 finalPrice, 
+                 "SESSION_BOOKING", 
+                 `Session with ${teacherProfile.user?.name || "Teacher"}`,
+                 { teacherId: data.teacherProfileId },
+                 tx
+             );
+
+             const liveSession = await tx.liveSession.create({
+                data: {
+                    teacherId: data.teacherProfileId,
+                    studentId: session.user.id,
+                    title: "1-on-1 Mentorship Session",
+                    description: "Private Live Session",
+                    scheduledAt: scheduledAt,
+                    duration: 60,
+                    price: finalPrice,
+                    status: "scheduled",
+                    meetingUrl: `/video-call/${crypto.randomUUID()}`,
+                    bookings: {
+                        create: {
+                            studentId: session.user.id,
+                            amount: finalPrice, 
+                            status: "confirmed"
+                        }
+                    }
+                }
+            });
+            return liveSession;
+        });
+        
+        revalidatePath("/dashboard/sessions");
+        return { success: true, sessionId: result.id };
+
+    } catch (error: any) {
+        logger.error("Wallet Booking Error", { error });
+        return { success: false, error: error.message || "Wallet payment failed" };
+    }
+}

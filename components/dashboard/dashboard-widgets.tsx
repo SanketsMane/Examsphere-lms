@@ -6,6 +6,9 @@ import { LucideIcon, MoreHorizontal, Calendar, ArrowRight, Wallet, Plus, CreditC
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 // --- STATS CARD ---
 interface StatsCardProps {
@@ -80,6 +83,23 @@ export function StatsCard({
 
 // --- WALLET WIDGET ---
 export function WalletWidget() {
+    const [userCountry, setUserCountry] = useState<string>("India");
+    const [balance, setBalance] = useState<number>(0);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+            
+            // In a real app, balance would come from props or a fetcher
+            // For now, let's keep the mock 12450 but localized
+            setBalance(12450);
+        };
+        fetchData();
+    }, []);
+
     return (
         <MotionWrapper delay={0.1} variant="scale">
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-black dark:to-gray-900 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden h-full flex flex-col justify-between group">
@@ -91,7 +111,7 @@ export function WalletWidget() {
                     <div className="flex justify-between items-start mb-6">
                         <div>
                             <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Total Balance</p>
-                            <h3 className="text-3xl font-bold">₹12,450.00</h3>
+                            <h3 className="text-3xl font-bold">{formatPriceSimple(balance, userCountry)}</h3>
                         </div>
                         <div className="p-2 bg-white/10 rounded-lg">
                             <Wallet className="h-6 w-6 text-white" />

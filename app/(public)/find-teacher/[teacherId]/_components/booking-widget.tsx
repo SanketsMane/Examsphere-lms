@@ -1,13 +1,15 @@
 "use client";
 
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added to fetch user country - Author: Sanket
 import { useState, useTransition } from "react";
 import { format } from "date-fns";
 import { Loader2, Calendar as CalendarIcon, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { bookSessionAction } from "@/app/actions/book-session";
-
-// Removed MOCK_SLOTS
+import { bookSessionAction, bookSessionWithWallet } from "@/app/actions/book-session";
+import { useRazorpay } from "@/components/payment/use-razorpay";
+import { PaymentSelectionDialog } from "@/components/payment/PaymentSelectionDialog";
 
 interface BookingWidgetProps {
     teacherProfileId: string;
@@ -23,18 +25,37 @@ export function BookingWidget({
     userName,
     availableSlots = []
 }: BookingWidgetProps) {
+    const { data: session } = authClient.useSession(); // Fetch user session for country - Author: Sanket
+    const userCountry = (session?.user as any)?.country;
+
     const [selectedDate, setSelectedDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() + 1))); // Tomorrow
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [couponCode, setCouponCode] = useState("");
     const [isPending, startTransition] = useTransition();
+    const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+    
+    // Payment Hooks
+    const { openCheckout } = useRazorpay();
 
     const handleBook = () => {
-        if (!selectedSlot) return;
+        if (!selectedSlot) {
+            toast.error("Please select a time slot");
+            return;
+        }
 
+        // If paid session, open payment dialog
+        if (hourlyRate > 0) {
+            setShowPaymentDialog(true);
+        } else {
+            // Free session direct booking
+            processFreeBooking();
+        }
+    };
+
+    const processFreeBooking = () => {
         startTransition(async () => {
             try {
                 const dateTimeStr = `${format(selectedDate, 'yyyy-MM-dd')} ${selectedSlot}`;
-
                 const result = await bookSessionAction({
                     teacherProfileId,
                     dateTime: dateTimeStr,
@@ -54,13 +75,81 @@ export function BookingWidget({
         });
     };
 
+    const handlePaymentCheckout = async () => {
+        try {
+            const dateTimeStr = `${format(selectedDate, 'yyyy-MM-dd')} ${selectedSlot}`;
+            
+            // Create Checkout Session
+            const response = await fetch("/api/checkout/session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    teacherProfileId,
+                    dateTime: dateTimeStr,
+                    couponCode: couponCode || undefined
+                })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || "Failed to initiate checkout");
+            }
+
+            const data = await response.json();
+
+            // Open Razorpay
+            await openCheckout({
+                orderId: data.orderId,
+                keyId: data.keyId,
+                amount: data.amount,
+                currency: data.currency,
+                name: "1-on-1 Session",
+                description: `Session with ${userName}`,
+                user: data.user,
+                onSuccess: (paymentId) => {
+                    toast.success("Payment Successful! Redirecting...");
+                    window.location.href = "/dashboard/sessions?booking=success";
+                },
+                onError: (err) => {
+                    toast.error("Payment failed. Please try again.");
+                }
+            });
+             setShowPaymentDialog(false);
+
+        } catch (error: any) {
+            toast.error(error.message || "Checkout failed");
+        }
+    };
+
+    const handleWalletPayment = async () => {
+        try {
+            const dateTimeStr = `${format(selectedDate, 'yyyy-MM-dd')} ${selectedSlot}`;
+             const result = await bookSessionWithWallet({
+                teacherProfileId,
+                dateTime: dateTimeStr,
+                price: hourlyRate,
+                couponCode: couponCode || undefined
+            });
+
+            if (result.success && result.sessionId) {
+                toast.success("Paid via Wallet! Redirecting...");
+                window.location.href = `/video-call/${result.sessionId}`;
+            } else {
+                throw new Error(result.error || "Wallet payment failed");
+            }
+             setShowPaymentDialog(false);
+        } catch (error: any) {
+            toast.error(error.message);
+        }
+    };
+
     return (
         <div className="bg-card border border-border rounded-xl shadow-lg p-6">
             <h3 className="text-xl font-bold mb-4">Book a Session</h3>
             <div className="flex items-center justify-between mb-6 pb-6 border-b border-border">
                 <span className="text-muted-foreground">Hourly Rate</span>
                 <span className="text-2xl font-bold text-primary">
-                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(hourlyRate / 100)}
+                    {formatPriceSimple(hourlyRate, userCountry)}
                 </span>
             </div>
 
@@ -120,12 +209,22 @@ export function BookingWidget({
                 onClick={handleBook}
                 disabled={!selectedSlot || isPending}
             >
-                {isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : "Book Now"}
+                {isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (hourlyRate > 0 ? "Proceed to Pay" : "Book Now")}
             </Button>
 
             <p className="text-xs text-center text-muted-foreground mt-4">
                 100% Satisfaction Guarantee. Cancel up to 24h before.
             </p>
+
+            <PaymentSelectionDialog
+                open={showPaymentDialog}
+                onOpenChange={setShowPaymentDialog}
+                amount={hourlyRate}
+                itemType="session"
+                itemTitle={`Session with ${userName}`}
+                onPaymentCheckout={handlePaymentCheckout}
+                onWalletPayment={handleWalletPayment}
+            />
         </div>
     );
 }

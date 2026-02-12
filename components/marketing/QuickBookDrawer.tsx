@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -10,6 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, Clock, CalendarDays, ArrowRight, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRazorpay } from "@/components/payment/use-razorpay";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -34,6 +36,17 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
     const { openCheckout } = useRazorpay();
     const router = useRouter();
     const [imgSrc, setImgSrc] = useState(teacher.image);
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
 
     const timeSlots = [
         "09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "04:00 PM", "06:00 PM"
@@ -204,7 +217,7 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                         <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Rate (1 Hour)</span>
-                                <span className="font-bold">₹{teacher.hourlyRate}</span>
+                                <span className="font-bold">{formatPriceSimple(teacher.hourlyRate, userCountry)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Platform Fee</span>
@@ -212,7 +225,7 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                             </div>
                             <div className="border-t border-blue-100 dark:border-blue-900/20 pt-2 flex justify-between font-bold text-lg text-blue-700 dark:text-blue-300">
                                 <span>Total</span>
-                                <span>₹{teacher.hourlyRate}</span>
+                                <span className="font-bold">{formatPriceSimple(teacher.hourlyRate, userCountry)}</span>
                             </div>
                         </div>
                     </div>

@@ -331,7 +331,7 @@ export function CreateCourseForm({ categories }: CreateCourseFormProps) {
                                                         {currencyConfig.symbol}
                                                     </span>
                                                     <Input 
-                                                        placeholder="Price" 
+                                                        placeholder={`Price in ${currencyConfig.code}`} 
                                                         type="number" 
                                                         className="pl-8"
                                                         {...field} 

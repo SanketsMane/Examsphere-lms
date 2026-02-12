@@ -42,7 +42,33 @@ export async function createBundle(data: {
     }
 }
 
-export async function purchaseBundle(bundleId: string) {
+export async function getTeacherBundles() {
+    try {
+        const session = await getSessionWithRole();
+        const teacherProfile = (session?.user as any).teacherProfile;
+        
+        if (!session || !teacherProfile) {
+            return { bundles: [] }; // Or error, but empty list is safer for UI
+        }
+
+        const bundles = await prisma.sessionBundle.findMany({
+            where: { teacherId: teacherProfile.id },
+            orderBy: { createdAt: "desc" },
+            include: {
+                _count: {
+                    select: { bookings: true }
+                }
+            }
+        });
+
+        return { bundles };
+    } catch (error) {
+        logger.error("Get Teacher Bundles Error", { error });
+        return { bundles: [] };
+    }
+}
+
+export async function purchaseBundle(bundleId: string, paymentMethod: 'razorpay' | 'wallet' = 'razorpay') {
     try {
         const session = await getSessionWithRole();
         if (!session) return { error: "Unauthorized" };
@@ -53,6 +79,40 @@ export async function purchaseBundle(bundleId: string) {
         });
 
         if (!bundle) return { error: "Bundle not found" };
+
+        // Wallet Payment Flow (Author: Sanket)
+        if (paymentMethod === 'wallet') {
+             const { deductFromWallet } = await import("@/app/actions/wallet");
+             
+             try {
+                return await prisma.$transaction(async (tx) => {
+                    // 1. Deduct from wallet
+                    await deductFromWallet(
+                        session.user.id,
+                        bundle.price,
+                        "SESSION_BOOKING", 
+                        `Purchased Bundle: ${bundle.title}`,
+                        { bundleId: bundle.id, bundleTitle: bundle.title, type: "BUNDLE" },
+                        tx
+                    );
+
+                    // 2. Create Bundle Booking
+                    const booking = await tx.bundleBooking.create({
+                        data: {
+                            studentId: session.user.id,
+                            bundleId: bundle.id,
+                            sessionsLeft: bundle.sessionCount,
+                            // paymentStatus: "COMPLETED" // Check schema if needed
+                        }
+                    });
+
+                    return { success: true, bookingId: booking.id };
+                });
+             } catch (e: any) {
+                 if (e.message?.includes("Insufficient")) return { error: "Insufficient wallet balance" };
+                 throw e;
+             }
+        }
 
         // Razorpay Flow (Author: Sanket)
         const { getRazorpayInstance, getRazorpayKeyId } = await import("@/lib/razorpay");

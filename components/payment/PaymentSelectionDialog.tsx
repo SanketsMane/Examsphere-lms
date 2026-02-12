@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Wallet, CreditCard, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 interface PaymentSelectionDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     amount: number;
-    itemType: "course" | "session" | "group";
+    itemType: "course" | "session" | "group" | "bundle";
     itemTitle: string;
     onPaymentCheckout: () => Promise<void>;
     onWalletPayment: () => Promise<void>;
@@ -36,13 +38,22 @@ export function PaymentSelectionDialog({
     const [walletBalance, setWalletBalance] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
     const [loadingBalance, setLoadingBalance] = useState(true);
+    const [userCountry, setUserCountry] = useState<string>("India");
 
-    // Fetch wallet balance
+    // Fetch wallet balance and user country
     useEffect(() => {
         if (open) {
             fetchWalletBalance();
+            fetchUserCountry();
         }
     }, [open]);
+
+    const fetchUserCountry = async () => {
+        const { data: session } = await authClient.getSession();
+        if (session?.user) {
+            setUserCountry((session.user as any).country || "India");
+        }
+    };
 
     const fetchWalletBalance = async () => {
         setLoadingBalance(true);
@@ -91,7 +102,7 @@ export function PaymentSelectionDialog({
                     <div className="bg-muted p-4 rounded-lg">
                         <div className="flex justify-between items-center">
                             <span className="text-sm text-muted-foreground">Total Amount</span>
-                            <span className="text-2xl font-bold">₹{amount.toLocaleString()}</span>
+                            <span className="text-2xl font-bold">{formatPriceSimple(amount, userCountry)}</span>
                         </div>
                     </div>
 
@@ -123,13 +134,13 @@ export function PaymentSelectionDialog({
                                     </div>
                                     <div className="flex-1">
                                         <p className="font-semibold">Wallet Balance</p>
-                                        {loadingBalance ? (
-                                            <p className="text-sm text-muted-foreground">Loading balance...</p>
-                                        ) : (
-                                            <p className="text-sm text-muted-foreground">
-                                                Available: ₹{walletBalance?.toLocaleString() || 0}
-                                            </p>
-                                        )}
+                                            {loadingBalance ? (
+                                                <p className="text-sm text-muted-foreground">Loading balance...</p>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">
+                                                    Available: {formatPriceSimple(walletBalance || 0, userCountry)}
+                                                </p>
+                                            )}
                                     </div>
                                 </div>
                             </Label>
@@ -141,7 +152,7 @@ export function PaymentSelectionDialog({
                         <Alert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
                             <AlertDescription>
-                                Insufficient wallet balance. You need ₹{(amount - (walletBalance || 0)).toLocaleString()} more.
+                                Insufficient wallet balance. You need {formatPriceSimple(amount - (walletBalance || 0), userCountry)} more.
                                 <Button
                                     variant="link"
                                     className="p-0 h-auto ml-1"
@@ -167,7 +178,7 @@ export function PaymentSelectionDialog({
                             </>
                         ) : (
                             <>
-                                {paymentMethod === "razorpay" ? "Proceed to Checkout" : `Pay ₹${amount.toLocaleString()} from Wallet`}
+                                {paymentMethod === "razorpay" ? "Proceed to Checkout" : `Pay ${formatPriceSimple(amount, userCountry)} from Wallet`}
                             </>
                         )}
                     </Button>

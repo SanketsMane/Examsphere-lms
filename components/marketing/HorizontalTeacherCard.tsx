@@ -7,8 +7,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { constructS3Url } from "@/lib/s3-utils";
+import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 
 interface TeacherCardProps {
     teacher: {
@@ -31,9 +33,21 @@ interface TeacherCardProps {
     currency?: { code: string; symbol: string; factor: number };
 }
 
-export function HorizontalTeacherCard({ teacher, currency = { code: "INR", symbol: "₹", factor: 1 } }: TeacherCardProps) {
+// Author: Sanket
+export function HorizontalTeacherCard({ teacher }: TeacherCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
+    const [userCountry, setUserCountry] = useState<string>("India");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: session } = await authClient.getSession();
+            if (session?.user) {
+                setUserCountry((session.user as any).country || "India");
+            }
+        };
+        fetchUser();
+    }, []);
 
     // Mock availability data
     const nextAvailableSlots = teacher.availability
@@ -175,7 +189,7 @@ export function HorizontalTeacherCard({ teacher, currency = { code: "INR", symbo
                 <div className="text-center mb-1">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Hourly Rate</p>
                     <div className="text-3xl font-bold text-slate-800 dark:text-white">
-                        {currency.symbol}{Math.round(teacher.hourlyRate * currency.factor).toLocaleString()}
+                        {formatPriceSimple(teacher.hourlyRate, userCountry)}
                     </div>
                     <p className="text-[10px] text-slate-400">per session</p>
                 </div>

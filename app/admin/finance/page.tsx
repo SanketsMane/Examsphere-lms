@@ -28,7 +28,7 @@ export default async function AdminFinancePage() {
             </div>
 
             <div className="pt-4">
-                <FinanceSettingsForm settings={settings} />
+                <FinanceSettingsForm initialData={settings} />
             </div>
         </div>
     );

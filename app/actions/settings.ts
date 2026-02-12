@@ -17,7 +17,12 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
         const siteName = formData.get("siteName") as string;
         const siteUrl = formData.get("siteUrl") as string;
         const logo = formData.get("logo") as string;
+        const favicon = formData.get("favicon") as string;
         const logoSize = parseInt(formData.get("logoSize") as string) || 100;
+
+        // Localization
+        const currencyCode = formData.get("currencyCode") as string || "INR";
+        const currencySymbol = formData.get("currencySymbol") as string || "₹";
 
         // Contact
         const contactEmail = formData.get("contactEmail") as string;
@@ -37,6 +42,9 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
 
         const existing = await prisma.siteSettings.findFirst();
 
+        /**
+         * Author: Sanket
+         */
         if (existing) {
             await (prisma.siteSettings as any).update({
                 where: { id: existing.id },
@@ -44,7 +52,10 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     siteName,
                     siteUrl,
                     logo,
+                    favicon,
                     logoSize,
+                    currencyCode,
+                    currencySymbol,
                     contactEmail,
                     contactPhone,
                     contactAddress,
@@ -66,7 +77,10 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     siteName: siteName || "Kidokool LMS",
                     siteUrl: siteUrl || "",
                     logo,
+                    favicon,
                     logoSize,
+                    currencyCode,
+                    currencySymbol,
                     contactEmail,
                     contactPhone,
                     contactAddress,
