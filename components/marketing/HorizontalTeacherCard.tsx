@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { constructS3Url } from "@/lib/s3-utils";
+import { constructS3Url } from "@/lib/s3-helper";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 

@@ -23,6 +23,31 @@ export async function getOrCreateConversation(participantId: string) {
     throw new Error("Cannot create conversation with yourself");
   }
 
+  // Anti-Spam Check: Verify relationship exists before creating 1:1 conversation
+  // Relationship = Enrollment (Student/Teacher) or Session Booking
+  const hasRelationship = await prisma.enrollment.findFirst({
+    where: {
+      OR: [
+        { userId: currentUserId, Course: { userId: participantId } },
+        { userId: participantId, Course: { userId: currentUserId } }
+      ]
+    }
+  }) || await prisma.liveSession.findFirst({
+    where: {
+      OR: [
+        { studentId: currentUserId, teacherId: participantId },
+        { studentId: participantId, teacherId: currentUserId }
+      ]
+    }
+  });
+
+  // Admin bypass: Admins can always start conversations (legacy/support)
+  const currentUser = await prisma.user.findUnique({ where: { id: currentUserId }, select: { role: true } });
+  
+  if (!hasRelationship && currentUser?.role !== "admin") {
+    throw new Error("Cannot start conversation: No active enrollment or session relationship found");
+  }
+
   // Try to find existing 1:1 conversation
   let conversation = await prisma.conversation.findFirst({
     where: {
@@ -99,6 +124,19 @@ export async function sendMessage(conversationId: string, content: string, messa
   }
 
   const currentUserId = (session.user as any).id;
+
+  // QA-088: Rate Limiting (Author: Sanket)
+  const lastMessage = await prisma.message.findFirst({
+      where: { senderId: currentUserId },
+      orderBy: { createdAt: "desc" }
+  });
+
+  if (lastMessage) {
+      const fiveSecondsAgo = new Date(Date.now() - 5 * 1000);
+      if (lastMessage.createdAt > fiveSecondsAgo) {
+          throw new Error("You are sending messages too quickly. Please wait a moment.");
+      }
+  }
 
   // Verify user is part of the conversation via Participant table
   const participation = await prisma.conversationParticipant.findUnique({
@@ -225,14 +263,22 @@ export async function getConversationMessages(conversationId: string, page: numb
  * Get current user's conversations (including groups)
  */
 export async function getUserConversations(userId?: string) {
-  let currentUserId = userId;
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) {
+    redirect("/sign-in");
+  }
 
-  if (!currentUserId) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      redirect("/sign-in");
-    }
-    currentUserId = (session.user as any).id;
+  let currentUserId = (session.user as any).id;
+
+  // QA-086: Messaging IDOR Fix (Author: Sanket)
+  // If a specific userId is requested, ensure it matches current user OR requester is admin
+  if (userId && userId !== currentUserId) {
+      const requester = await prisma.user.findUnique({ where: { id: currentUserId }, select: { role: true } });
+      if (requester?.role !== "admin") {
+          console.warn(`[SECURITY] User ${currentUserId} attempted to fetch conversations for user ${userId}`);
+          throw new Error("Unauthorized: You can only view your own conversations");
+      }
+      currentUserId = userId; // Admin can view others
   }
 
   const conversations = await prisma.conversation.findMany({
@@ -368,8 +414,8 @@ export async function searchUsersForChat(query: string) {
     select: {
       id: true,
       name: true,
-      email: true,
       image: true,
+      // email stripped for PII protection - Author: Sanket
       teacherProfile: {
         select: {
           bio: true,

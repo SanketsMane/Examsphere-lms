@@ -10,11 +10,11 @@ export async function GET() {
       headers: await headers(),
     });
 
-    if (!session) {
+    if (!session || (session.user as any).role !== "admin") {
       return NextResponse.json({ 
-        error: "No session found",
-        loggedIn: false 
-      });
+        error: "Unauthorized: Admin access only",
+        loggedIn: !!session 
+      }, { status: 403 });
     }
 
     return NextResponse.json({

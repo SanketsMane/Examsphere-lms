@@ -14,7 +14,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
-import { updatePayoutStatus } from "@/app/actions/payments";
+import { updatePayoutStatus } from "@/app/actions/admin-payouts";
 import { getCurrencyData, convertPrice } from "@/lib/currency";
 import { PayoutRequestStatus } from "@prisma/client";
 import { Check, X } from "lucide-react";

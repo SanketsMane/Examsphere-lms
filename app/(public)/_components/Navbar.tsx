@@ -8,7 +8,7 @@ import { authClient } from "@/lib/auth-client";
 import { UserDropdown } from "./UserDropdown";
 import { Search, Menu as MenuIcon, X } from "lucide-react";
 import Menu, { IMenu } from "@/components/ui/navbar";
-import { constructS3Url } from "@/lib/s3-utils";
+import { constructS3Url } from "@/lib/s3-helper";
 
 const navigationItems: IMenu[] = [
   {

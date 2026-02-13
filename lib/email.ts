@@ -9,7 +9,10 @@ interface EmailData {
 }
 
 interface TemplateData {
-  [key: string]: string | number;
+  [key: string]: string | number | undefined;
+  userId?: string; // Added for tracking - Author: Sanket
+  sessionId?: string; // Added for tracking - Author: Sanket
+  notificationType?: string; // Added for tracking - Author: Sanket
 }
 
 /**
@@ -126,7 +129,7 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully via DB provider:', info.messageId);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending email:', error);
     return false;
   }
@@ -155,12 +158,31 @@ export async function sendTemplatedEmail(
     const html = replacePlaceholders(template.content, data);
     const subject = replacePlaceholders(template.subject, data) || defaultSubject;
 
-    return await sendEmail({
+    const success = await sendEmail({
       to,
       subject,
       html
     });
-  } catch (error) {
+
+    // QA-006: Log notification status for reliability/auditing - Author: Sanket
+    if (data.userId && data.sessionId) {
+      try {
+        await prisma.sentNotification.create({
+          data: {
+            userId: data.userId as string,
+            sessionId: data.sessionId as string,
+            type: data.notificationType as string || templateSlug,
+            status: success ? 'sent' : 'failed',
+            errorMessage: success ? null : 'Failed to deliver email through SMTP',
+          }
+        });
+      } catch (logError) {
+        console.error('CRITICAL: Failed to log notification status:', logError);
+      }
+    }
+
+    return success;
+  } catch (error: any) {
     console.error(`Error sending templated email (${templateSlug}):`, error);
     return false;
   }

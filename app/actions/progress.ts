@@ -12,6 +12,33 @@ export async function updateLessonProgress(lessonId: string, completed: boolean)
             return { error: "Unauthorized" };
         }
 
+        // IDOR Protection: Verify user is enrolled in the course containing this lesson
+        const lesson = await prisma.lesson.findUnique({
+            where: { id: lessonId },
+            include: {
+                Chapter: {
+                    select: { courseId: true }
+                }
+            }
+        });
+
+        if (!lesson?.Chapter?.courseId) {
+            return { error: "Lesson not found" };
+        }
+
+        const enrollment = await prisma.enrollment.findUnique({
+            where: {
+                userId_courseId: {
+                    userId: (session.user as any).id,
+                    courseId: lesson.Chapter.courseId
+                }
+            }
+        });
+
+        if (!enrollment) {
+            return { error: "You must be enrolled in the course to update progress" };
+        }
+
         const progress = await prisma.lessonProgress.upsert({
             where: {
                 userId_lessonId: {
@@ -70,40 +97,43 @@ export async function updateLessonProgress(lessonId: string, completed: boolean)
                 });
 
                 if (completedLessons === totalLessons) {
-                    // Check if certificate exists
-                    const existingCert = await prisma.certificate.findFirst({
-                        where: {
-                            userId: session.user.id,
-                            courseId: courseId
-                        }
-                    });
-
-                    if (!existingCert) {
-                        // Fetch details for certificate
-                        const course = await prisma.course.findUnique({
-                            where: { id: courseId },
-                            select: {
-                                title: true,
-                                user: {
-                                    select: { name: true }
-                                }
+                    // QA-092: Atomic Certificate Generation (Author: Sanket)
+                    await prisma.$transaction(async (tx) => {
+                        // Double-check existence inside transaction (locked row if possible, or just atomic sequence)
+                        const existingCert = await tx.certificate.findFirst({
+                            where: {
+                                userId: session.user.id,
+                                courseId: courseId
                             }
                         });
 
-                        if (course && course.user?.name && session.user.name) {
-                             await prisma.certificate.create({
-                                data: {
-                                    userId: session.user.id,
-                                    courseId: courseId,
-                                    certificateNumber: `CERT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                                    studentName: session.user.name,
-                                    courseName: course.title,
-                                    teacherName: course.user.name,
-                                    completionDate: new Date()
+                        if (!existingCert) {
+                            // Fetch details for certificate
+                            const course = await tx.course.findUnique({
+                                where: { id: courseId },
+                                select: {
+                                    title: true,
+                                    user: {
+                                        select: { name: true }
+                                    }
                                 }
-                             });
+                            });
+
+                            if (course && course.user?.name && session.user.name) {
+                                await tx.certificate.create({
+                                    data: {
+                                        userId: session.user.id,
+                                        courseId: courseId,
+                                        certificateNumber: `CERT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                                        studentName: session.user.name,
+                                        courseName: course.title,
+                                        teacherName: course.user.name,
+                                        completionDate: new Date()
+                                    }
+                                });
+                            }
                         }
-                    }
+                    });
                 }
             }
         }

@@ -2,8 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const updateSessionSchema = z.object({
+  title: z.string().min(3).max(100).optional(),
+  description: z.string().max(1000).optional().nullable(),
+  subject: z.string().min(2).optional(),
+  scheduledAt: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid date format",
+  }).optional(),
+  duration: z.number().min(15).max(480).optional(),
+  price: z.number().min(50).optional(),
+  timezone: z.string().optional(),
+});
 
 // GET - Get session details
 export async function GET(
@@ -121,7 +134,16 @@ export async function PUT(
       );
     }
 
-    const body = await req.json();
+    const json = await req.json();
+    const validation = updateSessionSchema.safeParse(json);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: validation.error.format() },
+        { status: 400 }
+      );
+    }
+
     const {
       title,
       description,
@@ -130,7 +152,7 @@ export async function PUT(
       duration,
       price,
       timezone
-    } = body;
+    } = validation.data;
 
     // Validate scheduled time if provided
     if (scheduledAt) {
@@ -139,6 +161,75 @@ export async function PUT(
         return NextResponse.json(
           { error: "Scheduled time must be in the future" },
           { status: 400 }
+        );
+      }
+
+      // Conflict checks for updated time
+      const finalDuration = duration || liveSession.duration;
+      const conflictingSession = await prisma.liveSession.findFirst({
+        where: {
+          id: { not: id },
+          teacherId: liveSession.teacherId,
+          status: { in: ['scheduled', 'in_progress'] },
+          OR: [
+            {
+              AND: [
+                { scheduledAt: { lte: scheduledDate } },
+                {
+                  scheduledAt: {
+                    gte: new Date(scheduledDate.getTime() - finalDuration * 60000)
+                  }
+                }
+              ]
+            },
+            {
+              scheduledAt: {
+                gte: scheduledDate,
+                lt: new Date(scheduledDate.getTime() + finalDuration * 60000)
+              }
+            }
+          ]
+        }
+      });
+
+      if (conflictingSession) {
+        return NextResponse.json(
+          { error: "New time slot conflicts with another session" },
+          { status: 409 }
+        );
+      }
+    } else if (duration) {
+       // If only duration changed, check for conflicts at current scheduled time
+       const conflictingSession = await prisma.liveSession.findFirst({
+        where: {
+          id: { not: id },
+          teacherId: liveSession.teacherId,
+          status: { in: ['scheduled', 'in_progress'] },
+          OR: [
+            {
+              AND: [
+                { scheduledAt: { lte: liveSession.scheduledAt } },
+                {
+                  scheduledAt: {
+                    gte: new Date(liveSession.scheduledAt.getTime() - duration * 60000)
+                  }
+                }
+              ]
+            },
+            {
+              scheduledAt: {
+                gte: liveSession.scheduledAt,
+                lt: new Date(liveSession.scheduledAt.getTime() + duration * 60000)
+              }
+            }
+          ]
+        }
+      });
+
+      if (conflictingSession) {
+        return NextResponse.json(
+          { error: "Updated duration conflicts with another session" },
+          { status: 409 }
         );
       }
     }

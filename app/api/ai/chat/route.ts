@@ -5,8 +5,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 // Configuration for Flowversal AI
-const FLOWVERSAL_API_URL = "http://139.84.155.227:3000/api/tanchat";
-const FLOWVERSAL_API_KEY = "sk-61285d7b0909e3681bd84c2290a7199410b241fc889bf45f";
+const FLOWVERSAL_API_URL = process.env.FLOWVERSAL_API_URL || "http://139.84.155.227:3000/api/tanchat";
+const FLOWVERSAL_API_KEY = process.env.FLOWVERSAL_API_KEY;
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +16,11 @@ export async function POST(req: Request) {
 
     if (!session) {
       return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    if (!FLOWVERSAL_API_KEY) {
+        console.error("[AI_CHAT] FLOWVERSAL_API_KEY is not configured in environment variables");
+        return new NextResponse("AI Service Configuration Error", { status: 500 });
     }
 
     interface ChatRequestBody {
@@ -85,7 +90,7 @@ export async function POST(req: Request) {
         contextMessages = messages.length > 10 ? messages.slice(-10) : messages;
     }
 
-    // Ensure system prompt is first
+    // Ensure system prompt is first - Author: Sanket
     const systemPrompt = `You are Kidokool Ai, a helpful AI assistant for the Kidokool LMS platform. 
     The current user is a ${(session.user as any).role}. 
     Provide concise, helpful, and accurate information. If they ask about Kidokool, mention that it's a language learning platform.
@@ -105,8 +110,6 @@ export async function POST(req: Request) {
       }
     };
 
-    console.log("[AI_CHAT] Sending request to Flowversal AI...");
-
     const response = await fetch(FLOWVERSAL_API_URL, {
       method: "POST",
       headers: {
@@ -118,15 +121,15 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
         const errorText = await response.text();
-        console.error("[AI_CHAT_ERROR] Upstream API error:", response.status, errorText);
-        return new NextResponse(`AI Service Error: ${response.status}`, { status: response.status });
+        console.error("[AI_CHAT_ERROR] Upstream API error:", response.status);
+        return new NextResponse(`AI Service Error`, { status: response.status });
     }
 
     if (!response.body) {
         throw new Error("No response body received from AI service");
     }
 
-    // Handle SSE Stream and aggregate response (ROBUST SSE PARSER)
+    // Handle SSE Stream and aggregate response (ROBUST SSE PARSER) - Author: Sanket
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullContent = "";
@@ -150,17 +153,18 @@ export async function POST(req: Request) {
                     
                     try {
                         const json = JSON.parse(data);
-                        // Upstream API uses 'delta' for chunk content
+                        // Standardized parsing: handle both 'delta' (incremental) and 'content' (cumulative)
                         if (json.delta) {
                             fullContent += json.delta;
-                        } else if (json.content && !json.delta) {
-                            // Fallback if delta is missing but content is provided (non-cumulative)
-                            // Note: Our upstream provides cumulative in 'content' and delta in 'delta'
-                            // So using 'delta' is CRITICAL to avoid duplicates.
+                        } else if (json.content && fullContent === "") {
+                            // Only use 'content' as fallback for initial chunk if delta is missing
+                            fullContent = json.content;
+                        } else if (json.choices?.[0]?.delta?.content) {
+                            // Compatibility with OpenAI-style responses
+                            fullContent += json.choices[0].delta.content;
                         }
                     } catch (e) {
-                         // Likely partial JSON chunk, but with line-based SSE this is rare
-                         // unless upstream sends invalid JSON or multi-line data
+                         // Likely partial JSON chunk
                     }
                 }
             }
@@ -188,6 +192,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("[AI_CHAT_ERROR]", error);
-    return new NextResponse("Internal Server Error: " + error.message, { status: 500 });
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

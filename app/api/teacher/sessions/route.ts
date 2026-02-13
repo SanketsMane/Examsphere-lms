@@ -2,8 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const createSessionSchema = z.object({
+  title: z.string().min(3).max(100),
+  description: z.string().max(1000).optional(),
+  subject: z.string().min(2),
+  scheduledAt: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid date format",
+  }),
+  duration: z.number().min(15).max(480), // 15 mins to 8 hours
+  price: z.number().min(50), // Minimum 50 cents (0.5 USD in cents)
+  timezone: z.string().optional(),
+  isRecurring: z.boolean().optional(),
+  recurringPattern: z.string().nullable().optional(),
+});
 
 // GET - List all sessions for a teacher
 export async function GET(req: NextRequest) {
@@ -160,7 +175,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
     }
 
-    const body = await req.json();
+    const json = await req.json();
+    const validation = createSessionSchema.safeParse(json);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: validation.error.format() },
+        { status: 400 }
+      );
+    }
+
     const {
       title,
       description,
@@ -171,15 +195,7 @@ export async function POST(req: NextRequest) {
       timezone,
       isRecurring,
       recurringPattern
-    } = body;
-
-    // Validation
-    if (!title || !scheduledAt || !duration || !price) {
-      return NextResponse.json(
-        { error: "Missing required fields: title, scheduledAt, duration, price" },
-        { status: 400 }
-      );
-    }
+    } = validation.data;
 
     // Validate scheduled time is in the future
     const scheduledDate = new Date(scheduledAt);

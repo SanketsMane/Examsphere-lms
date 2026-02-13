@@ -96,6 +96,21 @@ export async function GET(
         return NextResponse.json({ error: "Quiz not available" }, { status: 403 });
       }
 
+      // CRITICAL SECURITY FIX: Enrollment Check (Author: Sanket)
+      if (quiz.courseId) {
+          const enrollment = await prisma.enrollment.findUnique({
+              where: {
+                  userId_courseId: {
+                      userId: session.user.id,
+                      courseId: quiz.courseId
+                  }
+              }
+          });
+          if (!enrollment) {
+              return NextResponse.json({ error: "Forbidden: You must be enrolled in the course to access this quiz" }, { status: 403 });
+          }
+      }
+
       // Check availability dates
       const now = new Date();
       if (quiz.availableFrom && now < quiz.availableFrom) {
@@ -106,14 +121,34 @@ export async function GET(
       }
     }
 
-    return NextResponse.json(quiz);
+    // Sanitize questions for students - Author: Sanket
+    if ((session.user as any).role === 'student') {
+        quiz.questions = quiz.questions.map((q: any) => {
+            const { explanation, ...rest } = q;
+            let sanitizedData = { ...q.questionData };
 
+            // Strip correct answers/indicators from questionData
+            if (sanitizedData.options) {
+                sanitizedData.options = sanitizedData.options.map((opt: any) => {
+                    const { isCorrect, ...optRest } = opt;
+                    return optRest;
+                });
+            }
+            if (sanitizedData.correctAnswer) delete sanitizedData.correctAnswer;
+            if (sanitizedData.correctAnswers) delete sanitizedData.correctAnswers;
+            if (sanitizedData.pairs) {
+                // For Matching, don't leak the pairs
+                delete sanitizedData.pairs;
+            }
+
+            return { ...rest, questionData: sanitizedData };
+        });
+    }
+
+    return NextResponse.json(quiz);
   } catch (error) {
     console.error('Error fetching quiz:', error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -153,6 +188,30 @@ export async function PUT(
 
     const body = await request.json();
     const validatedData = updateQuizSchema.parse(body);
+
+    // CRITICAL SECURITY FIX: Teacher Ownership Check (Author: Sanket)
+    if ((session.user as any).role === 'teacher') {
+        if (validatedData.courseId) {
+            const course = await prisma.course.findFirst({
+                where: { id: validatedData.courseId, userId: session.user.id }
+            });
+            if (!course) return NextResponse.json({ error: "Forbidden: You don't own this course" }, { status: 403 });
+        }
+        
+        if (validatedData.chapterId) {
+            const chapter = await prisma.chapter.findFirst({
+                where: { id: validatedData.chapterId, Course: { userId: session.user.id } }
+            });
+            if (!chapter) return NextResponse.json({ error: "Forbidden: You don't own this chapter" }, { status: 403 });
+        }
+
+        if (validatedData.lessonId) {
+            const lesson = await prisma.lesson.findFirst({
+                where: { id: validatedData.lessonId, Chapter: { Course: { userId: session.user.id } } }
+            });
+            if (!lesson) return NextResponse.json({ error: "Forbidden: You don't own this lesson" }, { status: 403 });
+        }
+    }
 
     // Handle questions update separately
     const { questions, ...quizData } = validatedData;

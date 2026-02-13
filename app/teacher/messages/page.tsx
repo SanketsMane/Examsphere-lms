@@ -20,7 +20,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { constructS3Url } from "@/lib/s3-utils";
+import { constructS3Url } from "@/lib/s3-helper";
 
 export const dynamic = "force-dynamic";
 

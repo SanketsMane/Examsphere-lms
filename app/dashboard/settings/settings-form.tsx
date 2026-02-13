@@ -16,7 +16,7 @@ import { Uploader } from "@/components/file-uploader/Uploader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
-import { constructS3Url } from "@/lib/s3-utils";
+import { constructS3Url } from "@/lib/s3-helper";
 
 const initialState = {
     message: "",

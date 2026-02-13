@@ -1,4 +1,3 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { prisma as db } from "@/lib/db";
@@ -15,10 +14,12 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
+
 export const dynamic = "force-dynamic";
 
-export default async function TransactionLogsPage() {
-  await requireUser();
+export default async function TransactionsPage() {
+  await requireAdmin();
 
   const transactions = await db.systemTransaction.findMany({
     orderBy: { createdAt: "desc" },

@@ -112,12 +112,12 @@ export async function PUT(
       return NextResponse.json({ error: "Whiteboard not found" }, { status: 404 });
     }
 
-    // Check permissions
+    // Check permissions: Only owner or admin can update whiteboard settings
     const isOwner = whiteboard.createdById === session.user.id;
-    const isAdminOrTeacher = ['admin', 'teacher'].includes((session.user as any).role || '');
+    const isAdmin = (session.user as any).role === 'admin';
 
-    if (!isOwner && !isAdminOrTeacher) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "Access denied: Only the owner or admin can update settings" }, { status: 403 });
     }
 
     const body = await request.json();

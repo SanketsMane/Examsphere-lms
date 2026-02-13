@@ -5,6 +5,15 @@ import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { sendNotificationEmail } from "@/lib/email-notifications";
+import { z } from "zod"; // author: Sanket
+
+const messageSchema = z.object({
+    recipientId: z.string().optional(),
+    subject: z.string().min(3).max(100),
+    message: z.string().min(10).max(1000),
+    isBroadcast: z.boolean(),
+    broadcastRole: z.enum(['teacher', 'student', 'all']).optional()
+});
 
 async function requireAdmin() {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -18,15 +27,21 @@ export async function sendMessage(prevState: any, formData: FormData) {
     try {
         const admin = await requireAdmin();
 
-        const recipientId = formData.get("recipientId") as string;
-        const subject = formData.get("subject") as string;
-        const message = formData.get("message") as string;
-        const isBroadcast = formData.get("isBroadcast") === "true";
-        const broadcastRole = formData.get("broadcastRole") as string; // 'teacher', 'student', 'all'
+        // Validate types - author: Sanket
+        const rawData = {
+            recipientId: formData.get("recipientId") as string || undefined,
+            subject: formData.get("subject") as string,
+            message: formData.get("message") as string,
+            isBroadcast: formData.get("isBroadcast") === "true",
+            broadcastRole: formData.get("broadcastRole") as string || "all",
+        };
 
-        if (!subject || !message) {
-            return { error: "Subject and Message are required" };
+        const validated = messageSchema.safeParse(rawData);
+        if (!validated.success) {
+            return { error: "Invalid message data. Subject must be 3-100 chars, Message 10-1000 chars." };
         }
+
+        const { recipientId, subject, message, isBroadcast, broadcastRole } = validated.data;
 
         let recipients: { id: string; name: string | null; email: string | null }[] = [];
 

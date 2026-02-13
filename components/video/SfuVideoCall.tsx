@@ -57,7 +57,7 @@ export default function SfuVideoCall({ sessionId, onCallEnd }: SfuVideoCallProps
         method: "POST",
         body: JSON.stringify({ 
           action: "generateSfuUrl", 
-          channelName: meetingRoom.roomId, 
+          sessionId, 
           uid 
         }),
         headers: { "Content-Type": "application/json" }

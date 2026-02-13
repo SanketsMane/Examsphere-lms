@@ -111,16 +111,11 @@ export async function cancelSubscription() {
         // Razorpay API defaults to cancel_at_cycle_end=false (immediate) unless specified.
         await cancelRazorpaySubscription(subscription.razorpaySubscriptionId);
 
-        // Update local DB
-        await prisma.userSubscription.update({
-            where: { id: subscription.id },
-            data: {
-                status: "canceled",
-                cancelAtPeriodEnd: false 
-                // In a real-world scenario we might want 'cancel_at_cycle_end' = true
-                // But for simplicity/MVP let's assume immediate cancellation or Razorpay handles the 'pending' state
-            }
-        });
+        // Local DB state should ideally be updated via Webhooks to avoid race conditions.
+        // We only initiate the cancellation via API.
+        
+        // Note: Removing the manual update here to ensure Webhooks are the SSOT.
+        // Author: Sanket
 
         return { success: true };
     } catch (error: any) {

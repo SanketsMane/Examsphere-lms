@@ -67,12 +67,35 @@ export async function GET(request: NextRequest) {
     if ((session.user as any).role === 'student') {
       whereClause.isPublished = true;
       whereClause.isActive = true;
+
+      // CRITICAL SECURITY FIX: Enrollment Check (Author: Sanket)
+      if (courseId) {
+          const enrollment = await prisma.enrollment.findUnique({
+              where: {
+                  userId_courseId: {
+                      userId: session.user.id,
+                      courseId: courseId
+                  }
+              }
+          });
+          if (!enrollment) {
+              return NextResponse.json({ error: "Forbidden: You must be enrolled in this course to view quizzes" }, { status: 403 });
+          }
+      } else {
+          // If no specific courseId, only show quizzes for enrolled courses
+          const myEnrollments = await prisma.enrollment.findMany({
+              where: { userId: session.user.id },
+              select: { courseId: true }
+          });
+          const myCourseIds = myEnrollments.map(e => e.courseId);
+          whereClause.courseId = { in: myCourseIds };
+      }
     }
 
     const quizzes = await prisma.quiz.findMany({
       where: whereClause,
       include: {
-        questions: {
+        questions: (session.user as any).role === 'student' ? false : {
           orderBy: { position: 'asc' }
         },
         course: {
@@ -124,6 +147,29 @@ export async function POST(request: NextRequest) {
 
     const validatedData = createQuizSchema.parse(body);
 
+    // CRITICAL SECURITY FIX: Teacher Ownership Check (Author: Sanket)
+    if ((session.user as any).role === 'teacher') {
+        if (validatedData.courseId) {
+            const course = await prisma.course.findFirst({
+                where: { id: validatedData.courseId, userId: session.user.id }
+            });
+            if (!course) return NextResponse.json({ error: "Forbidden: You don't own this course" }, { status: 403 });
+        }
+        
+        if (validatedData.chapterId) {
+            const chapter = await prisma.chapter.findFirst({
+                where: { id: validatedData.chapterId, Course: { userId: session.user.id } }
+            });
+            if (!chapter) return NextResponse.json({ error: "Forbidden: You don't own this chapter" }, { status: 403 });
+        }
+
+        if (validatedData.lessonId) {
+            const lesson = await prisma.lesson.findFirst({
+                where: { id: validatedData.lessonId, Chapter: { Course: { userId: session.user.id } } }
+            });
+            if (!lesson) return NextResponse.json({ error: "Forbidden: You don't own this lesson" }, { status: 403 });
+        }
+    }
 
     const quiz = await prisma.quiz.create({
       data: {

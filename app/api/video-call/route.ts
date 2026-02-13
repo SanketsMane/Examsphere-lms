@@ -28,11 +28,11 @@ export async function POST(request: NextRequest) {
     const { action, sessionId, channelName, uid } = await request.json();
     
     if (action === "generateSfuUrl") {
-      if (!channelName) {
-        return NextResponse.json({ error: "Channel name is required" }, { status: 400 });
+      if (!sessionId) {
+        return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
       }
       const sfuData = await generateSfuJoinUrl({ 
-        room: channelName, 
+        sessionId, 
         name: uid || "User",
         isPresenter: uid === "teacher" 
       });

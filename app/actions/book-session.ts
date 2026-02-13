@@ -8,7 +8,6 @@ import { logger } from "@/lib/logger";
 interface BookSessionInput {
     teacherProfileId: string;
     dateTime: string; // "2025-12-20 10:00 AM"
-    price: number;
     couponCode?: string;
 }
 
@@ -25,14 +24,47 @@ export async function bookSessionAction(data: BookSessionInput) {
         }
 
         const scheduledAt = new Date(data.dateTime);
+        const duration = 60; // Standard duration for these actions
 
-        // Get teacher profile to check free trial eligibility
+        // Get teacher profile to check free trial eligibility and price
         const teacherProfile = await prisma.teacherProfile.findUnique({
             where: { id: data.teacherProfileId }
         });
 
         if (!teacherProfile) {
             return { success: false, error: "Teacher not found" };
+        }
+
+        // ----------------------------------------------------------------
+        // QA-004: Check for Student Scheduling Overlaps
+        // ----------------------------------------------------------------
+        const studentOverlap = await prisma.liveSession.findFirst({
+            where: {
+                studentId: session.user.id,
+                status: { in: ['scheduled', 'in_progress'] },
+                OR: [
+                    {
+                        AND: [
+                            { scheduledAt: { lte: scheduledAt } },
+                            {
+                                scheduledAt: {
+                                    gte: new Date(scheduledAt.getTime() - duration * 60000)
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        scheduledAt: {
+                            gte: scheduledAt,
+                            lt: new Date(scheduledAt.getTime() + duration * 60000)
+                        }
+                    }
+                ]
+            }
+        });
+
+        if (studentOverlap) {
+            return { success: false, error: "You already have another session booked at this time." };
         }
 
         // Check Free Trial Eligibility (Per-Teacher System)
@@ -45,13 +77,8 @@ export async function bookSessionAction(data: BookSessionInput) {
             teacherId: data.teacherProfileId
         });
 
-        // If price is 0 and student has already used free trial with this teacher, reject
-        if (data.price === 0 && !isEligibleForFreeTrial) {
-            return { 
-                success: false, 
-                error: "You have already used your free trial session with this teacher." 
-            };
-        }
+        const hourlyRate = teacherProfile.hourlyRate || 0;
+        const basePrice = hourlyRate;
 
         // Check for Active Subscription
         // Author: Sanket - Hardened expiration and status check
@@ -62,7 +89,7 @@ export async function bookSessionAction(data: BookSessionInput) {
         const isSubscriptionBooking = hasActiveSubscription && (activeSub.plan.name === "Unlimited" || activeSub.plan.name === "Pro Student Plan");
 
         // Coupon Logic
-        let finalPrice = isSubscriptionBooking ? 0 : data.price;
+        let finalPrice = isSubscriptionBooking ? 0 : basePrice;
         let couponId: string | undefined;
 
         if (data.couponCode) {
@@ -84,11 +111,11 @@ export async function bookSessionAction(data: BookSessionInput) {
                 if (isValid && isApplicableForTeacher && isApplicableOnType) {
                     let discount = 0;
                     if (coupon.type === "PERCENTAGE") {
-                        discount = Math.round((data.price * coupon.value) / 100);
+                        discount = Math.round((basePrice * coupon.value) / 100);
                     } else {
                         discount = coupon.value;
                     }
-                    finalPrice = Math.max(0, data.price - discount);
+                    finalPrice = Math.max(0, basePrice - discount);
                     couponId = coupon.id;
                 } else {
                     return { success: false, error: "Invalid or expired coupon" };
@@ -104,7 +131,7 @@ export async function bookSessionAction(data: BookSessionInput) {
         }
 
         // Determine if this is a free trial booking
-        const isFreeTrialBooking = data.price === 0 && isEligibleForFreeTrial;
+        const isFreeTrialBooking = finalPrice === 0 && isEligibleForFreeTrial;
 
         // Create Session
         const liveSession = await prisma.liveSession.create({
@@ -213,7 +240,8 @@ export async function bookSessionWithWallet(data: BookSessionInput) {
         if (!teacherProfile) return { success: false, error: "Teacher not found" };
 
         const hourlyRate = teacherProfile.hourlyRate || 0;
-        let finalPrice = hourlyRate;
+        const basePrice = hourlyRate;
+        let finalPrice = basePrice;
 
         if (data.couponCode) {
              const coupon = await prisma.coupon.findUnique({ where: { code: data.couponCode, isActive: true } });
@@ -221,9 +249,9 @@ export async function bookSessionWithWallet(data: BookSessionInput) {
                  const now = new Date();
                  if ((!coupon.expiryDate || now <= coupon.expiryDate) && (coupon.usedCount < coupon.usageLimit)) {
                      if (coupon.type === "PERCENTAGE") {
-                        finalPrice = Math.round((hourlyRate * (100 - coupon.value)) / 100);
+                        finalPrice = Math.round((basePrice * (100 - coupon.value)) / 100);
                      } else {
-                        finalPrice = Math.max(0, hourlyRate - coupon.value);
+                        finalPrice = Math.max(0, basePrice - coupon.value);
                      }
                  }
              }

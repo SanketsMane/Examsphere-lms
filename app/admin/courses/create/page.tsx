@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { CourseForm } from "./_components/course-form";
-import { requireUser } from "@/app/data/user/require-user";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +17,8 @@ async function getCategories() {
   return categories;
 }
 
-export default async function CourseCreationPage() {
-  await requireUser();
+export default async function AdminCreateCoursePage() {
+  await requireAdmin();
   const categories = await getCategories();
 
   return <CourseForm categories={categories} />;

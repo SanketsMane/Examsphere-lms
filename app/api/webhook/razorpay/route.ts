@@ -180,6 +180,14 @@ export async function POST(req: NextRequest) {
                      }
 
                     console.log(`Enrollment ${enrollment.id} completed via Razorpay`);
+
+                    // 1b. Trigger Referral Reward (Author: Sanket)
+                    try {
+                        const { rewardReferrer } = await import("@/app/actions/referrals");
+                        await rewardReferrer(enrollment.userId);
+                    } catch (e) {
+                        console.error("Failed to trigger referral reward for enrollment", e);
+                    }
                 }
                 return NextResponse.json({ status: "ok" });
             }
@@ -355,6 +363,14 @@ export async function POST(req: NextRequest) {
                            });
  
                            console.log(`Session Booking ${booking.id} confirmed via Razorpay`);
+
+                           // 3c. Trigger Referral Reward (Author: Sanket)
+                           try {
+                               const { rewardReferrer } = await import("@/app/actions/referrals");
+                               await rewardReferrer(booking.studentId);
+                           } catch (e) {
+                               console.error("Failed to trigger referral reward for session booking", e);
+                           }
                       }
                       return NextResponse.json({ status: "ok" });
                  }
@@ -418,11 +434,79 @@ export async function POST(req: NextRequest) {
                     });
 
                     console.log(`Group Enrollment ${groupEnrollment.id} completed via Razorpay`);
+
+                    // 4c. Trigger Referral Reward (Author: Sanket)
+                    try {
+                        const { rewardReferrer } = await import("@/app/actions/referrals");
+                        await rewardReferrer(groupEnrollment.studentId);
+                    } catch (e) {
+                        console.error("Failed to trigger referral reward for group enrollment", e);
+                    }
                 }
                 return NextResponse.json({ status: "ok" });
             }
 
             console.log(`Razorpay order ${orderId} match not found in local DB`);
+        }
+
+        // 5. Handle Gift Card Purchase (Author: Sanket)
+        if (event.event === "payment.captured" || event.event === "order.paid") {
+            const payment = payload.payment.entity;
+            if (payment.notes.type === "GIFT_CARD_PURCHASE") {
+                const recipientEmail = payment.notes.recipientEmail;
+                const message = payment.notes.message;
+                const buyerId = payment.notes.userId;
+                const amount = payment.amount / 100; // Paisa to INR
+
+                // Generate unique gift card code
+                const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+
+                await prisma.giftCard.create({
+                    data: {
+                        code,
+                        amount,
+                        senderId: buyerId,
+                        recipientEmail,
+                        message,
+                        isRedeemed: false
+                    }
+                });
+
+                // Log System Transaction
+                await prisma.systemTransaction.create({
+                    data: {
+                        amount: payment.amount,
+                        currency: payment.currency,
+                        status: "SUCCESS",
+                        method: payment.method,
+                        providerOrderId: payment.order_id,
+                        providerPaymentId: payment.id,
+                        type: "GIFT_CARD_PURCHASE",
+                        description: `Gift Card Purchase for ${recipientEmail}`,
+                        userId: buyerId,
+                    }
+                });
+
+                // Send Gift Card Email (Author: Sanket)
+                try {
+                    const { sendTemplatedEmail } = await import("@/lib/email");
+                    await sendTemplatedEmail(
+                        "giftCardReceived",
+                        recipientEmail,
+                        "You've received a Gift Card! 🎁",
+                        {
+                            amount: `${amount} ${payment.currency}`,
+                            code: code,
+                            message: message || "Enjoy your learning journey!",
+                            buyerName: payment.notes.userName || "A friend"
+                        }
+                    );
+                } catch (emailError) {
+                    console.error("Failed to send gift card email", emailError);
+                }
+
+                return NextResponse.json({ status: "ok" });
+            }
         }
 
         // Handle Subscription Events

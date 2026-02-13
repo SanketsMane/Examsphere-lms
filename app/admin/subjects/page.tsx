@@ -1,4 +1,4 @@
-import { requireUser } from "@/app/data/user/require-user";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 import { prisma } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -22,13 +22,7 @@ async function getSubjects() {
 }
 
 export default async function AdminSubjectsPage() {
-    // Ensure admin access
-    const user = await requireUser();
-    
-    // Check role
-    if ((user as any).role !== "admin") {
-        return redirect("/");
-    }
+    await requireAdmin();
 
     const subjects = await getSubjects();
 

@@ -5,10 +5,18 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
+import { z } from "zod";
+
 /**
  * Session Feedback & Rating Actions
  * Author: Sanket
  */
+
+const feedbackSchema = z.object({
+    sessionId: z.string().uuid(),
+    rating: z.number().min(1).max(5),
+    comment: z.string().max(1000).optional(),
+});
 
 interface SubmitFeedbackInput {
     sessionId: string;
@@ -18,6 +26,12 @@ interface SubmitFeedbackInput {
 
 export async function submitSessionFeedback(data: SubmitFeedbackInput) {
     try {
+        // Formal Validation (Author: Sanket)
+        const validated = feedbackSchema.safeParse(data);
+        if (!validated.success) {
+            return { success: false, error: "Invalid feedback data" };
+        }
+
         const session = await auth.api.getSession({ headers: await headers() });
         if (!session?.user) return { success: false, error: "Unauthorized" };
 

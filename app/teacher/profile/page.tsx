@@ -25,7 +25,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import Link from "next/link";
-import { constructS3Url } from "@/lib/s3-utils";
+import { constructS3Url } from "@/lib/s3-helper";
 
 export const dynamic = "force-dynamic";
 

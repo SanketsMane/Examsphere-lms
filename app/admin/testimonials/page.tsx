@@ -1,4 +1,3 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { prisma } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,11 +6,12 @@ import { Users } from "lucide-react";
 import { TestimonialDialog } from "./_components/testimonial-dialog";
 import { DeleteTestimonialButton } from "./_components/delete-testimonial-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminTestimonialsPage() {
-    await requireUser();
+    await requireAdmin();
 
     const testimonials = await prisma.testimonial.findMany({
         orderBy: { createdAt: "desc" }

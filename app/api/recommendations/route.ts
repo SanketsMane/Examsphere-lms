@@ -15,7 +15,19 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || session.user.id;
+    let userId = session.user.id;
+    
+    // IDOR Protection: Only admins can fetch recommendations for other users
+    const requestedUserId = searchParams.get('userId');
+    if (requestedUserId && requestedUserId !== session.user.id) {
+       const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+       if (user?.role === "admin") {
+          userId = requestedUserId;
+       } else {
+          return NextResponse.json({ error: "Access denied: Cannot fetch recommendations for another user" }, { status: 403 });
+       }
+    }
+
     const currentCourse = searchParams.get('currentCourse') || undefined;
     const limit = parseInt(searchParams.get('limit') || '10');
 

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { requestPayout } from "@/app/actions/payments";
+import { requestPayout } from "@/app/actions/teacher-payouts";
 import { formatPrice } from "@/lib/currency"; // Updated to use unified currency logic - Author: Sanket
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner"; // Switching to sonner if use-toast not standard or use user's prefered

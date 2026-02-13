@@ -1,4 +1,3 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { prisma } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,11 +16,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function StudentDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-    await requireUser();
+    await requireAdmin();
     const { id } = await params;
 
     const student = await prisma.user.findUnique({

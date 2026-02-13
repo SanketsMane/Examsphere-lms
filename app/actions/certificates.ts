@@ -27,6 +27,17 @@ export async function generateCertificate(courseId: string) {
 
         if (!course) throw new Error("Course not found");
 
+        // CRITICAL SECURITY FIX: Verify Enrollment (Author: Sanket)
+        const enrollment = await prisma.enrollment.findUnique({
+            where: {
+                userId_courseId: {
+                    userId: session.id,
+                    courseId: courseId
+                }
+            }
+        });
+        if (!enrollment) throw new Error("Unauthorized: Enrollment not found");
+
         const totalLessons = course.chapter.reduce(
             (acc, chap) => acc + chap.lessons.length,
             0
@@ -51,42 +62,48 @@ export async function generateCertificate(courseId: string) {
             };
         }
 
-        // 2. Check if already exists
-        const existingCert = await prisma.certificate.findFirst({
-            where: {
-                userId: session.id,
-                courseId: courseId,
-            },
+        // 2. Check if already exists & Create (Atomic)
+        const cert = await prisma.$transaction(async (tx) => {
+            const existingCert = await tx.certificate.findFirst({
+                where: {
+                    userId: session.id,
+                    courseId: courseId,
+                },
+            });
+
+            if (existingCert) {
+                return existingCert;
+            }
+
+            // 3. Create Certificate
+            const certNumber = `CERT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+            return await tx.certificate.create({
+                data: {
+                    userId: session.id,
+                    courseId: courseId,
+                    certificateNumber: certNumber,
+                    studentName: session.name || "Student",
+                    courseName: course.title,
+                    teacherName: course.user?.name || "Kidokool Instructor",
+                    completionDate: new Date(),
+                },
+            });
         });
 
-        if (existingCert) {
-            return {
+        if (cert.createdAt && new Date().getTime() - new Date(cert.createdAt).getTime() < 1000) {
+             // New certificate created
+             revalidatePath("/dashboard/courses");
+             return {
                 status: "success",
-                message: "Certificate already exists",
-                id: existingCert.id,
+                message: "Certificate generated successfully!",
+                id: cert.id,
             };
         }
 
-        // 3. Create Certificate
-        // Simple ID generation for demo
-        const certNumber = `CERT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-        const cert = await prisma.certificate.create({
-            data: {
-                userId: session.id,
-                courseId: courseId,
-                certificateNumber: certNumber,
-                studentName: session.name || "Student",
-                courseName: course.title,
-                teacherName: course.user?.name || "Kidokool Instructor",
-                completionDate: new Date(),
-            },
-        });
-
-        revalidatePath("/dashboard/courses");
         return {
             status: "success",
-            message: "Certificate generated successfully!",
+            message: "Certificate already exists",
             id: cert.id,
         };
     } catch (error) {

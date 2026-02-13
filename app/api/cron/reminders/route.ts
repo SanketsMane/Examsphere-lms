@@ -7,11 +7,12 @@ import { checkAndSendReminders } from '@/lib/notifications/reminder-engine';
  */
 
 export async function GET(request: Request) {
-  // Check for authorization header (for Vercel Cron or simple secret-based security)
+  // Check for authorization header (FAIL CLOSED if secret is missing) - Author: Sanket
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    console.error('[Cron] Unauthorized or secret missing');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

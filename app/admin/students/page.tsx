@@ -1,4 +1,3 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,11 +5,12 @@ import { IconUserCircle, IconBook, IconTrendingUp } from "@tabler/icons-react";
 import { prisma as db } from "@/lib/db";
 import { MessageDialog } from "./_components/message-dialog";
 import Link from "next/link";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function StudentsPage() {
-  await requireUser();
+  await requireAdmin();
 
   const students = await db.user.findMany({
     where: { role: 'student' },

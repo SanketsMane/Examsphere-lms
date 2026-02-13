@@ -3,7 +3,7 @@
 import { Loader2, Lock } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { constructS3Url } from "@/lib/s3-utils";
+import { constructS3Url } from "@/lib/s3-helper";
 
 interface VideoPlayerProps {
     videoKey?: string | null;

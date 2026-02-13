@@ -1,16 +1,16 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { SettingsForm } from "./_components/settings-form";
-import { getSiteSettings } from "@/app/actions/settings";
+import { getAdminSiteSettings } from "@/app/actions/settings";
 import { Settings } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminSettingsPage() {
-  await requireUser(); // Ensure auth
+export default async function SettingsPage() {
+  await requireAdmin(); // Ensure auth
 
-  // Fetch settings from DB
-  const settings = await getSiteSettings();
+  // Fetch all settings including secrets securely for Admin UI
+  const settings = await getAdminSiteSettings();
 
   return (
     <div className="space-y-6">

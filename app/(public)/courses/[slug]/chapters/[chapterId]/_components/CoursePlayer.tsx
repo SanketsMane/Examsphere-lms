@@ -12,6 +12,8 @@ import { useWindowSize } from "react-use";
 import { updateLessonProgress } from "@/app/actions/progress";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
+import DOMPurify from "isomorphic-dompurify";
+
 interface CoursePlayerProps {
     course: any; // Using permissive types for simpler integration
     chapterId: string;
@@ -142,7 +144,7 @@ export function CoursePlayer({
                         {lesson?.description && (
                             <div className="prose dark:prose-invert max-w-none mt-8 p-6 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800">
                                 <h3 className="text-lg font-semibold mb-2">About this lesson</h3>
-                                <div dangerouslySetInnerHTML={{ __html: lesson.description }} />
+                                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lesson.description) }} />
                             </div>
                         )}
 

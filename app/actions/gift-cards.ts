@@ -66,21 +66,29 @@ export async function redeemGiftCard(code: string) {
         if (!giftCard) return { error: "Invalid gift card code" };
         if (giftCard.isRedeemed) return { error: "Gift card already redeemed" };
 
-        await prisma.$transaction([
-            prisma.giftCard.update({
+        const { creditToWallet } = await import("@/app/actions/wallet");
+
+        await prisma.$transaction(async (tx) => {
+            // 1. Mark as redeemed
+            await tx.giftCard.update({
                 where: { id: giftCard.id },
                 data: {
                     isRedeemed: true,
                     redeemedById: session.user.id,
                     redeemedAt: new Date()
                 }
-            }),
-            prisma.wallet.upsert({
-                where: { userId: session.user.id },
-                update: { balance: { increment: giftCard.amount } },
-                create: { userId: session.user.id, balance: giftCard.amount }
-            })
-        ]);
+            });
+
+            // 2. Credit to wallet with proper audit trail - author: Sanket
+            await creditToWallet(
+                session.user.id,
+                giftCard.amount,
+                "ADMIN_CREDIT", // Closest match for external injection
+                `Redeemed Gift Card: ${code}`,
+                { giftCardId: giftCard.id, code },
+                tx as any
+            );
+        });
 
         return { success: true, amount: giftCard.amount };
     } catch (error) {

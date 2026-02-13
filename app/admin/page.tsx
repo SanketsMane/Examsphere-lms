@@ -4,10 +4,10 @@ import { RevenueCard } from "@/components/dashboard/yo-coach/revenue-card";
 import { StatBox } from "@/components/dashboard/yo-coach/stat-box";
 import { LayoutDashboard, Wallet, MonitorPlay, CreditCard, Ticket } from "lucide-react";
 import { formatPrice } from "@/lib/currency"; // Added for localization - Author: Sanket
-import { getSessionWithRole } from "@/app/data/auth/require-roles"; // To get admin session
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export default async function AdminDashboardPage() {
-  const session = await getSessionWithRole();
+  const session = await requireAdmin();
   const { stats, revenueOverTime } = await getPlatformAnalytics();
 
   const userCountry = (session?.user as any)?.country || "India";

@@ -18,10 +18,6 @@ export async function setTeacherRole() {
     // but this action is for new teacher signup. 
     // Safety: Only allow changing from 'user' to 'teacher'.
 
-    if ((session.user as any).role === "admin") {
-        return { success: true, message: "Already admin" };
-    }
-
     await prisma.user.update({
         where: { id: session.user.id },
         data: { role: "teacher" },

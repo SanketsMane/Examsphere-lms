@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { requireTeacher } from "@/lib/action-security";
 
 export async function createResource(data: {
     title: string;
@@ -14,6 +15,9 @@ export async function createResource(data: {
     courseId?: string;
 }) {
     try {
+        // Strict Role Check (Author: Sanket)
+        await requireTeacher();
+
         const session = await auth.api.getSession({ headers: await headers() });
         if (!session?.user?.id) throw new Error("Unauthorized");
 

@@ -1,11 +1,11 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { BroadcastForm } from "./_components/broadcast-form";
 import { IconMessage, IconSpeakerphone } from "@tabler/icons-react";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
-export default async function BroadcastPage() {
-    await requireUser();
+export default async function AdminMessagesPage() {
+    await requireAdmin();
 
     return (
         <div className="space-y-6">

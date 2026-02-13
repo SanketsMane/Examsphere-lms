@@ -1,15 +1,15 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { HelpCircle, Mail, Book, FileText, Server, Shield } from "lucide-react";
 import Link from "next/link";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminHelpPage() {
-  await requireUser();
+  await requireAdmin();
 
   const faqs = [
     {

@@ -43,6 +43,9 @@ export async function getAllBroadcasts() {
     }
 }
 
+// Helper to sanitize text - Author: Sanket
+const sanitizeText = (text: string) => text.replace(/<[^>]*>?/gm, '');
+
 // Admin: Create
 export async function createBroadcast(data: {
     text: string;
@@ -55,10 +58,16 @@ export async function createBroadcast(data: {
 }) {
     await requireAdmin();
 
+    const sanitizedData = {
+        ...data,
+        text: sanitizeText(data.text),
+        buttonText: data.buttonText ? sanitizeText(data.buttonText) : undefined,
+    };
+
     // @ts-ignore - Prisma client is generated at build time
     await prisma.broadcast.create({
         data: {
-            ...data,
+            ...sanitizedData,
             isActive: true
         }
     });
@@ -71,10 +80,14 @@ export async function createBroadcast(data: {
 export async function updateBroadcast(id: string, data: any) {
     await requireAdmin();
 
+    const updateData = { ...data };
+    if (updateData.text) updateData.text = sanitizeText(updateData.text);
+    if (updateData.buttonText) updateData.buttonText = sanitizeText(updateData.buttonText);
+
     // @ts-ignore - Prisma client is generated at build time
     await prisma.broadcast.update({
         where: { id },
-        data
+        data: updateData
     });
     revalidatePath("/");
     revalidatePath("/admin/broadcasts");

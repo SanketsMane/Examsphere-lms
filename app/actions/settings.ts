@@ -6,8 +6,40 @@ import { requireAdmin } from "@/lib/action-security";
 
 
 export async function getSiteSettings() {
-    const settings = await prisma.siteSettings.findFirst();
+    const settings = await prisma.siteSettings.findFirst({
+        select: {
+            id: true,
+            siteName: true,
+            siteUrl: true,
+            logo: true,
+            favicon: true,
+            logoSize: true,
+            currencyCode: true,
+            currencySymbol: true,
+            contactEmail: true,
+            contactPhone: true,
+            contactAddress: true,
+            facebook: true,
+            twitter: true,
+            instagram: true,
+            linkedin: true,
+            youtube: true,
+            footerLinks: true,
+            maxGroupClassSize: true,
+            minWalletRecharge: true,
+            // Razorpay secrets EXCLUDED from public select - Author: Sanket
+        }
+    });
     return settings;
+}
+
+/**
+ * Admin: Get all site settings including secrets
+ * Author: Sanket
+ */
+export async function getAdminSiteSettings() {
+    await requireAdmin();
+    return await prisma.siteSettings.findFirst();
 }
 
 export async function updateSiteSettings(prevState: any, formData: FormData) {

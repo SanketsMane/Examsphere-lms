@@ -4,7 +4,7 @@ import { getFeaturedMentors } from "@/app/data/marketing/get-marketing-data";
 import { auth } from "@/lib/auth";
 import { getCurrencyData } from "@/lib/currency";
 import { headers } from "next/headers";
-import { constructS3Url } from "@/lib/s3-utils";
+import { constructS3Url } from "@/lib/s3-helper";
 
 export const dynamic = "force-dynamic";
 

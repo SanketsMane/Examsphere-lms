@@ -1,4 +1,4 @@
-import { requireUser } from "@/app/data/user/require-user";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import { formatPrice } from "@/lib/currency";
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage() {
-  await requireUser();
+  await requireAdmin();
 
   const enrollments = await db.enrollment.findMany({
     include: {

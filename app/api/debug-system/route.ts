@@ -1,10 +1,14 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-// @ts-ignore
-import nodemailer from "nodemailer";
+import { getSessionWithRole } from "@/app/data/auth/require-roles"; // author: Sanket
 
 export async function GET() {
+    // Standard Security Guard - author: Sanket
+    const session = await getSessionWithRole();
+    if (session?.user?.role !== "ADMIN") {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
+
     const results = {
         database: { status: "pending", error: null as any },
         email: { status: "pending", error: null as any },
@@ -12,7 +16,6 @@ export async function GET() {
             EMAIL_USER: (process.env.EMAIL_USER || "").trim() ? "SET" : "MISSING",
             EMAIL_PASS: (process.env.EMAIL_PASS || "").trim() ? "SET" : "MISSING",
             EMAIL_HOST: (process.env.EMAIL_HOST || "").trim(),
-            DATABASE_URL_START: (process.env.DATABASE_URL || "").substring(0, 10) + "...",
         }
     };
 
@@ -42,7 +45,7 @@ export async function GET() {
 
     } catch (error: any) {
         console.error("Email Error:", error);
-        return NextResponse.json({ status: "error", error: error.message, stack: (error as any).stack } as any, { status: 500 });
+        return NextResponse.json({ status: "error", error: error.message } as any, { status: 500 });
     }
 
     return NextResponse.json(results, { status: 200 });

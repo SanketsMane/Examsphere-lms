@@ -1,14 +1,12 @@
 
-import { requireUser } from "@/app/data/user/require-user";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 import { prisma } from "@/lib/db";
 import { SubscriptionPlansTable } from "./_components/subscription-plans-table";
 import { SubscriptionPlanDialog } from "./_components/subscription-plan-dialog";
 import { IconCreditCard } from "@tabler/icons-react";
 
-export const dynamic = "force-dynamic";
-
 export default async function SubscriptionManagementPage() {
-    await requireUser();
+  await requireAdmin();
 
     // Fetch all plans
     const plans = await prisma.subscriptionPlan.findMany({

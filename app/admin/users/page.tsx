@@ -1,4 +1,4 @@
-import { requireUser } from "@/app/data/user/require-user";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ export default async function UsersManagementPage({
 }: {
   searchParams: Promise<{ role?: string; search?: string }>;
 }) {
-  await requireUser();
+  await requireAdmin();
   const params = await searchParams;
   const role = params.role;
   const search = params.search;

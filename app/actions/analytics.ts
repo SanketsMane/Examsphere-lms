@@ -12,6 +12,17 @@ export async function getUserAnalytics(userId?: string) {
 
   const targetUserId = userId || session.user.id;
 
+  // IDOR Protection: Only the user themselves or an admin can view analytics
+  if (targetUserId !== session.user.id) {
+    const requester = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    });
+    if (requester?.role !== "admin") {
+      throw new Error("Unauthorized: Access denied to other user's analytics");
+    }
+  }
+
   // Get basic stats
   const [
     enrollmentCount,

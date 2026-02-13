@@ -1,4 +1,4 @@
-import { requireUser } from "@/app/data/user/require-user";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 import { getSiteSettings } from "@/app/actions/settings";
 import { Banknote } from "lucide-react";
 import { FinanceSettingsForm } from "./_components/finance-settings-form";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  * @author Sanket
  */
 export default async function AdminFinancePage() {
-    await requireUser();
+    await requireAdmin();
 
     const settings = await getSiteSettings();
 

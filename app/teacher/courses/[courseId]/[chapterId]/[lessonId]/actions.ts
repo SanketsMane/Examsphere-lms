@@ -7,6 +7,8 @@ import { prisma } from "@/lib/db";
 import { ApiResponse } from "@/lib/types";
 import { lessonSchema, LessonSchemaType } from "@/lib/zodSchemas";
 
+import DOMPurify from "isomorphic-dompurify";
+
 export async function updateLesson(
   values: LessonSchemaType,
   lessonId: string
@@ -42,7 +44,7 @@ export async function updateLesson(
       },
       data: {
         title: result.data.name,
-        description: result.data.description,
+        description: result.data.description ? DOMPurify.sanitize(result.data.description) : result.data.description, // QA-096: XSS Sanitization (Author: Sanket)
         thumbnailKey: result.data.thumbnailKey,
         videoKey: result.data.videoKey,
         videoUrl: result.data.videoUrl,

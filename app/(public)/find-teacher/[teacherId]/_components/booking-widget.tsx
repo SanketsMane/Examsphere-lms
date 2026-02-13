@@ -59,7 +59,6 @@ export function BookingWidget({
                 const result = await bookSessionAction({
                     teacherProfileId,
                     dateTime: dateTimeStr,
-                    price: hourlyRate,
                     couponCode: couponCode || undefined
                 });
 
@@ -127,7 +126,6 @@ export function BookingWidget({
              const result = await bookSessionWithWallet({
                 teacherProfileId,
                 dateTime: dateTimeStr,
-                price: hourlyRate,
                 couponCode: couponCode || undefined
             });
 

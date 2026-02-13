@@ -1,70 +1,29 @@
-// Author: Sanket
-// Purpose: Centralized S3 utility functions for URL construction and key extraction
-
 import { env } from "@/lib/env";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { getS3Client } from "./S3Client";
+import { extractKeyFromUrl } from "./s3-helper";
+
+// Re-export for backward compatibility if needed, but preferably update imports
+export { constructS3Url, extractKeyFromUrl, isValidS3Reference } from "./s3-helper";
 
 /**
- * Constructs a full S3 URL from a key or returns the URL as-is if already complete
+ * Generates a signed URL for temporary access to a private S3 object
  * @param key - S3 object key or full URL
- * @returns Full S3 URL
+ * @param expiresIn - Expiration time in seconds (default 1 hour)
+ * @returns Signed URL string
  */
-export function constructS3Url(key: string): string {
-    if (!key) return "";
+export async function getSignedDownloadUrl(key: string, expiresIn = 3600): Promise<string> {
+    const s3Key = extractKeyFromUrl(key);
+    if (!s3Key) throw new Error("Invalid S3 key or URL");
 
-    // If already a full URL, return as-is
-    if (key.startsWith("http://") || key.startsWith("https://")) {
-        return key;
-    }
+    const client = getS3Client();
+    const bucket = env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES; // Assuming recordings are in the same bucket or env bucket
 
-    // Construct AWS S3 URL
-    const bucket = env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES;
-    const region = env.NEXT_PUBLIC_AWS_REGION || "ap-southeast-2";
+    const command = new GetObjectCommand({
+        Bucket: bucket,
+        Key: s3Key,
+    });
 
-    // Using path-style URL (s3.region.amazonaws.com/bucket/key) 
-    // This is often more compatible with various bucket names and SSL configurations
-    return `https://s3.${region}.amazonaws.com/${bucket}/${key}`;
-}
-
-/**
- * Extracts the S3 key from a full S3 URL
- * @param url - Full S3 URL or key
- * @returns S3 key or null if invalid
- */
-export function extractKeyFromUrl(url: string): string | null {
-    if (!url) return null;
-
-    // If it's already just a key (no http/https), return as-is
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-        return url;
-    }
-
-    try {
-        const urlObj = new URL(url);
-        // Remove leading slash from pathname to get the key
-        return urlObj.pathname.substring(1);
-    } catch {
-        return null;
-    }
-}
-
-/**
- * Validates if a string is a valid S3 key or URL
- * @param value - String to validate
- * @returns True if valid S3 key or URL
- */
-export function isValidS3Reference(value: string): boolean {
-    if (!value) return false;
-
-    // Check if it's a valid URL
-    if (value.startsWith("http://") || value.startsWith("https://")) {
-        try {
-            new URL(value);
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    // Check if it's a valid key (non-empty string without http(s))
-    return value.length > 0;
+    return await getSignedUrl(client, command, { expiresIn });
 }

@@ -1,14 +1,14 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, Users } from "lucide-react";
 import { NotificationForm } from "./_components/NotificationForm";
 import { prisma } from "@/lib/db";
 import { formatDistanceToNow } from "date-fns";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  await requireUser();
+  await requireAdmin();
 
   // Fetch recent system notifications to show history
   // distinct: ['title', 'message'] isn't fully supported in all prisma adapters or might be tricky with large data

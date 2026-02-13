@@ -26,45 +26,50 @@ import { FeedbackDialog } from "@/components/sessions/FeedbackDialog";
 
 export const dynamic = "force-dynamic";
 
-async function getUserSessions(userId: string) {
-  const bookings = await prisma.sessionBooking.findMany({
-    where: { studentId: userId },
-    include: {
-      session: {
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          subject: true,
-          scheduledAt: true,
-          duration: true,
-          status: true,
-          meetingUrl: true,
-          recordingUrl: true,
-          studentRating: true,
-          cancelledBy: true,
-          cancellationReason: true,
-          teacher: {
-            include: {
-              user: {
-                select: {
-                  name: true,
-                  image: true,
-                  id: true,
+async function getUserSessions(userId: string, page = 1, limit = 10) {
+  const skip = (page - 1) * limit;
+  
+  const [bookings, total] = await Promise.all([
+    prisma.sessionBooking.findMany({
+      where: { studentId: userId },
+      include: {
+        session: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            subject: true,
+            scheduledAt: true,
+            duration: true,
+            status: true,
+            meetingUrl: true,
+            recordingUrl: true,
+            studentRating: true,
+            cancelledBy: true,
+            cancellationReason: true,
+            teacher: {
+              include: {
+                user: {
+                  select: { name: true, image: true, id: true }
                 }
               }
             }
           }
         }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit
+    }),
+    prisma.sessionBooking.count({ where: { studentId: userId } })
+  ]);
 
-  return bookings;
+  return { bookings, total, pages: Math.ceil(total / limit) };
 }
 
-export default async function SessionsDashboard() {
+export default async function SessionsDashboard({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
+  const page = parseInt(params.page || "1");
   const user = await requireUser();
 
   return (
@@ -100,25 +105,25 @@ export default async function SessionsDashboard() {
 
         <TabsContent value="upcoming" className="space-y-4">
           <Suspense fallback={<SessionsLoadingSkeleton />}>
-            <SessionsList userId={user.id} filter="upcoming" />
+            <SessionsList userId={user.id} filter="upcoming" page={page} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="completed" className="space-y-4">
           <Suspense fallback={<SessionsLoadingSkeleton />}>
-            <SessionsList userId={user.id} filter="completed" />
+            <SessionsList userId={user.id} filter="completed" page={page} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="cancelled" className="space-y-4">
           <Suspense fallback={<SessionsLoadingSkeleton />}>
-            <SessionsList userId={user.id} filter="cancelled" />
+            <SessionsList userId={user.id} filter="cancelled" page={page} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="all" className="space-y-4">
           <Suspense fallback={<SessionsLoadingSkeleton />}>
-            <SessionsList userId={user.id} filter="all" />
+            <SessionsList userId={user.id} filter="all" page={page} />
           </Suspense>
         </TabsContent>
       </Tabs>
@@ -126,8 +131,8 @@ export default async function SessionsDashboard() {
   );
 }
 
-async function SessionsList({ userId, filter }: { userId: string; filter: string }) {
-  const bookings = await getUserSessions(userId);
+async function SessionsList({ userId, filter, page }: { userId: string; filter: string; page: number }) {
+  const { bookings, pages } = await getUserSessions(userId, page);
 
   // Filter bookings based on status and date
   const now = new Date();
@@ -179,11 +184,46 @@ async function SessionsList({ userId, filter }: { userId: string; filter: string
   }
 
   return (
-    <div className="space-y-4">
-      {filteredBookings.map((booking) => (
-        // @ts-ignore - Subject nullable mismatch
-        <StudentSessionCard key={booking.id} booking={booking} />
-      ))}
+    <div className="space-y-6">
+      <div className="space-y-4">
+        {filteredBookings.map((booking) => (
+          // @ts-ignore - Subject nullable mismatch
+          <StudentSessionCard key={booking.id} booking={booking} />
+        ))}
+      </div>
+
+      {/* Pagination Controls */}
+      {pages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            asChild={page > 1}
+          >
+            {page > 1 ? (
+              <Link href={`/dashboard/sessions?page=${page - 1}`}>Previous</Link>
+            ) : (
+              <span>Previous</span>
+            )}
+          </Button>
+          <div className="text-sm font-medium">
+            Page {page} of {pages}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pages}
+            asChild={page < pages}
+          >
+            {page < pages ? (
+              <Link href={`/dashboard/sessions?page=${page + 1}`}>Next</Link>
+            ) : (
+              <span>Next</span>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

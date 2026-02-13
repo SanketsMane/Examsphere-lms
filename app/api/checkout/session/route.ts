@@ -44,25 +44,64 @@ export async function POST(req: Request) {
             return new NextResponse("Teacher Not Found", { status: 404 });
         }
 
+        // Verify teacher status - author: Sanket
+        if (!teacher.isApproved || !teacher.isVerified) {
+            console.warn("[Checkout] Teacher not eligible:", teacherProfileId);
+            return NextResponse.json({ error: "This teacher's sessions are currently unavailable" }, { status: 403 });
+        }
+
         const scheduledAt = new Date(dateTime);
         const hourlyRate = teacher.hourlyRate || 0;
+        const duration = 60; // Standard duration
         
         console.log("[Checkout] Teacher:", teacher.id, "Rate:", hourlyRate, "Time:", scheduledAt);
 
-        // Coupon Logic (Simplified duplication of bookSessionAction logic)
+        // ----------------------------------------------------------------
+        // QA-004: Check for Student Scheduling Overlaps
+        // ----------------------------------------------------------------
+        const studentOverlap = await prisma.liveSession.findFirst({
+            where: {
+                studentId: userId,
+                status: { in: ['scheduled', 'in_progress'] },
+                OR: [
+                    {
+                        AND: [
+                            { scheduledAt: { lte: scheduledAt } },
+                            {
+                                scheduledAt: {
+                                    gte: new Date(scheduledAt.getTime() - duration * 60000)
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        scheduledAt: {
+                            gte: scheduledAt,
+                            lt: new Date(scheduledAt.getTime() + duration * 60000)
+                        }
+                    }
+                ]
+            }
+        });
+
+        if (studentOverlap) {
+            console.warn("[Checkout] Student has overlap:", userId);
+            return NextResponse.json({ error: "You already have another session booked at this time." }, { status: 409 });
+        }
+
+        // Coupon Logic (Server-side calculation)
         let finalPrice = hourlyRate;
         let couponId: string | undefined;
 
         if (couponCode) {
-             // ... existing coupon logic ...
-             // For debugging, just log if coupon is present
              console.log("[Checkout] Validating coupon:", couponCode);
              const coupon = await prisma.coupon.findUnique({
                 where: { code: couponCode, isActive: true }
             });
+
              if (coupon) {
                  const now = new Date();
-                const isValid = (!coupon.expiryDate || now <= coupon.expiryDate) && (coupon.usedCount < coupon.usageLimit);
+                 const isValid = (!coupon.expiryDate || now <= coupon.expiryDate) && (coupon.usedCount < coupon.usageLimit);
                  if (isValid) {
                       if (coupon.type === "PERCENTAGE") {
                         finalPrice = Math.round((hourlyRate * (100 - coupon.value)) / 100);
@@ -71,7 +110,11 @@ export async function POST(req: Request) {
                     }
                     couponId = coupon.id;
                     console.log("[Checkout] Coupon applied. Final Price:", finalPrice);
+                 } else {
+                     console.warn("[Checkout] Invalid coupon:", couponCode);
                  }
+             } else {
+                 console.warn("[Checkout] Coupon not found:", couponCode);
              }
         }
 

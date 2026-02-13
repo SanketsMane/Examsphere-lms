@@ -1,13 +1,13 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { IconShieldCheck, IconCheck, IconX, IconClock } from "@tabler/icons-react";
+import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function ContentReviewPage() {
-  await requireUser();
+  await requireAdmin();
 
   const pendingItems = [
     { id: 1, type: 'Course', title: 'Advanced JavaScript Patterns', teacher: 'John Doe', submitted: '2 hours ago' },

@@ -34,18 +34,27 @@ export async function getReferralCode() {
 
 export async function linkReferral(referralCode: string, refereeId: string) {
     try {
+        const session = await getSessionWithRole();
+        if (!session) return { error: "Unauthorized" };
+
+        // Ensure user can only link themselves as referee unless admin
+        if (refereeId !== session.user.id && (session.user as any).role !== "admin") {
+            return { error: "Unauthorized: Cannot link other users to referral codes" };
+        }
+
         // Find referrer by code
-        // For simplicity, we assume codes match a specific format or we search all referrals
         const referrer = await prisma.user.findFirst({
             where: { 
-                // In a real app, you'd have a ReferralCode model, but we'll use a hack for now 
-                // or assume the code is stored in User metadata or a dedicated table.
-                // Given our schema added Referral model:
                 referralsMade: { some: { code: referralCode } }
             }
         });
 
         if (!referrer) return { error: "Invalid referral code" };
+
+        // Prevent self-referral
+        if (referrer.id === refereeId) {
+            return { error: "You cannot refer yourself" };
+        }
 
         await prisma.referral.create({
             data: {
@@ -63,6 +72,10 @@ export async function linkReferral(referralCode: string, refereeId: string) {
     }
 }
 
+/**
+ * Marks referral as rewarded - Protected (Internal use only)
+ * Author: Sanket
+ */
 export async function rewardReferrer(refereeId: string) {
     try {
         const referral = await prisma.referral.findUnique({
@@ -72,25 +85,33 @@ export async function rewardReferrer(refereeId: string) {
 
         if (!referral || referral.status === "completed") return;
 
-        // Award $10 credit to referrer
-        await prisma.referralReward.create({
-            data: {
-                userId: referral.referrerId,
-                amount: 10,
-                type: "CREDITS",
-            }
-        });
+        const { creditToWallet } = await import("@/app/actions/wallet");
 
-        // Add to wallet if it exists
-        await prisma.wallet.upsert({
-            where: { userId: referral.referrerId },
-            update: { balance: { increment: 10 } },
-            create: { userId: referral.referrerId, balance: 10 }
-        });
+        // Perform in transaction for atomicity
+        await prisma.$transaction(async (tx) => {
+            // Award $10 credit to referrer - author: Sanket
+            await tx.referralReward.create({
+                data: {
+                    userId: referral.referrerId,
+                    amount: 10,
+                    type: "CREDITS",
+                }
+            });
 
-        await prisma.referral.update({
-            where: { id: referral.id },
-            data: { status: "completed" }
+            // Standardized wallet credit with audit trail - author: Sanket
+            await creditToWallet(
+                referral.referrerId,
+                10,
+                "ADMIN_CREDIT", 
+                `Referral Reward for user: ${referral.refereeId}`,
+                { refereeId: referral.refereeId, referralId: referral.id },
+                tx as any
+            );
+
+            await tx.referral.update({
+                where: { id: referral.id },
+                data: { status: "completed" }
+            });
         });
 
         logger.info("Referral reward issued", { referrerId: referral.referrerId, refereeId });

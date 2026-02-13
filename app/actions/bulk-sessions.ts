@@ -28,6 +28,11 @@ export async function validateSessionsBatch(sessions: any[]) {
             return { success: false, error: "Unauthorized" };
         }
 
+        // QA-071: Batch Size Limit
+        if (sessions.length > 50) {
+            return { success: false, error: "Batch size exceeds maximum limit of 50 sessions" };
+        }
+
         const teacherProfile = await prisma.teacherProfile.findUnique({
             where: { userId: authSession.user.id }
         });
@@ -38,10 +43,14 @@ export async function validateSessionsBatch(sessions: any[]) {
         
         for (const sessionData of sessions) {
             const errors: string[] = [];
-            const scheduledDate = new Date(sessionData.scheduledAt);
             
-            // 1. Basic Schema Validation
-            if (!sessionData.title || sessionData.title.length < 5) errors.push("Title too short");
+            // 1. Schema Validation (Author: Sanket)
+            const validation = bulkSessionSchema.element.safeParse(sessionData);
+            if (!validation.success) {
+                errors.push(...validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
+            }
+
+            const scheduledDate = new Date(sessionData.scheduledAt);
             if (scheduledDate < new Date()) errors.push("Date is in the past");
             
             // 2. Conflict Detection
@@ -89,11 +98,27 @@ export async function createSessionsBatch(sessions: any[]) {
             return { success: false, error: "Unauthorized" };
         }
 
+        if (sessions.length > 50) {
+            return { success: false, error: "Batch size exceeds maximum limit of 50 sessions" };
+        }
+
         const teacherProfile = await prisma.teacherProfile.findUnique({
             where: { userId: authSession.user.id }
         });
 
         if (!teacherProfile) return { success: false, error: "Teacher profile not found" };
+
+        // QA-072: Enforce Subscription Limits (Author: Sanket)
+        const { checkGroupClassLimit } = await import("@/lib/subscription-limits");
+        const { allowed, limit, used } = await checkGroupClassLimit(authSession.user.id);
+        
+        const remaining = Math.max(0, limit - used);
+        if (sessions.length > remaining) {
+            return { 
+                success: false, 
+                error: `Limit reached: You can only create ${remaining} more sessions on your current plan.` 
+            };
+        }
 
         // Process sessions in a transaction
         const createdSessions = await prisma.$transaction(

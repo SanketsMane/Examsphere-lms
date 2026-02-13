@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireTeacher } from "@/lib/action-security";
 import { sendTeacherVerificationSubmissionEmail } from "@/lib/email-notifications";
 import { env } from "@/lib/env";
-import { constructS3Url } from "@/lib/s3-utils";
+import { constructS3Url } from "@/lib/s3-helper";
 
 export async function saveBankDetails(data: {
     bankAccountName: string;
@@ -26,10 +26,13 @@ export async function saveBankDetails(data: {
         create: {
             teacherId: teacher.id,
             ...data,
-            // status default is Pending in schema, so we can omit or explicit
+            status: "Pending" // author: Sanket
         },
         update: {
-            ...data
+            ...data,
+            status: "Pending", // author: Sanket
+            approvedAt: null,
+            reviewedAt: null
         }
     });
 
@@ -99,9 +102,15 @@ export async function saveVerificationDocument(type: 'identity' | 'qualification
         where: { teacherId: teacher.id },
         create: {
             teacherId: teacher.id,
-            ...updateData
+            ...updateData,
+            status: "Pending" // author: Sanket
         },
-        update: updateData
+        update: {
+            ...updateData,
+            status: "Pending", // Reset to pending on change - author: Sanket
+            approvedAt: null,
+            reviewedAt: null
+        }
     });
 
     revalidatePath("/teacher/verification");
@@ -121,6 +130,11 @@ export async function submitVerification() {
     });
 
     if (!teacher || !teacher.verification) throw new Error("Teacher profile or verification data not found");
+
+    // Prevent submission spam if already pending - Author: Sanket
+    if (teacher.verification.status === "Pending") {
+        return { error: "Verification already in progress" };
+    }
 
     // Validate required fields
     if (!teacher.verification.identityDocumentUrl) {

@@ -125,6 +125,7 @@ export async function getBlogPosts(
       include: {
         author: {
           select: {
+            id: true,
             name: true,
             image: true,
           }
@@ -147,7 +148,10 @@ export async function getBlogPostBySlug(slug: string) {
     where: { slug },
     include: {
       author: {
-        include: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
           teacherProfile: {
             select: {
               expertise: true,
@@ -177,7 +181,7 @@ export async function getFeaturedBlogPosts(limit: number = 3) {
   return prisma.blogPost.findMany({
     where: { isPublished: true },
     include: {
-      author: { select: { name: true, image: true } },
+      author: { select: { id: true, name: true, image: true } },
       category: true,
       tags: true
     },

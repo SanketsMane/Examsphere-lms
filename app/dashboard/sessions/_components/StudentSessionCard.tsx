@@ -18,6 +18,8 @@ import {
 import Link from "next/link";
 import { format, formatDistance, isPast, isWithinInterval, addMinutes } from "date-fns";
 import { CancelBookingDialog } from "./CancelBookingDialog";
+import { generateRecordingSignedUrl } from "@/app/actions/video-call"; // Added for secure downloads - Author: Sanket
+import { toast } from "sonner";
 
 interface StudentSessionCardProps {
   booking: {
@@ -115,6 +117,19 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
     );
   };
 
+  const handleDownloadRecording = async () => {
+    try {
+      const result = await generateRecordingSignedUrl(session.id);
+      if (result.success && result.url) {
+        window.open(result.url, "_blank");
+      } else {
+        toast.error(result.error || "Failed to get recording link");
+      }
+    } catch (error) {
+      toast.error("An error occurred while fetching the recording");
+    }
+  };
+
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
@@ -209,7 +224,7 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
         {/* Actions */}
         <div className="flex gap-2 pt-2">
           {canJoin && session.meetingUrl && (
-            <Link href={session.meetingUrl} className="flex-1">
+            <Link href={session.meetingUrl as any} className="flex-1">
               <Button className="w-full" size="lg">
                 <Video className="mr-2 h-5 w-5" />
                 Join Session
@@ -227,12 +242,10 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
           )}
 
           {isCompleted && session.recordingUrl && (
-            <Link href={session.recordingUrl} target="_blank" className="flex-1">
-              <Button variant="outline" className="w-full">
-                <Download className="mr-2 h-4 w-4" />
-                Download Recording
-              </Button>
-            </Link>
+            <Button variant="outline" className="flex-1" onClick={handleDownloadRecording}>
+              <Download className="mr-2 h-4 w-4" />
+              Download Recording
+            </Button>
           )}
 
           {isCompleted && !session.studentRating && (

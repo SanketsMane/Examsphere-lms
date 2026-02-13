@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
 import CryptoJS from "crypto-js";
+import { getSignedDownloadUrl } from "@/lib/s3-utils";
+import { constructS3Url } from "@/lib/s3-helper";
 
 // Generate a unique meeting room for a live session
 
@@ -103,9 +105,9 @@ export async function updateSessionStatus(
 import { tawkTooClient } from "@/lib/video/tawktoo";
 
 // Generate SFU (mediasoup) join URL
-// Updated to use TawkToo API - Author: Sanket
+// Updated to use TawkToo API and added Security Auth - Author: Sanket
 export async function generateSfuJoinUrl(data: {
-  room: string;
+  sessionId: string;
   name: string;
   isPresenter: boolean;
   audio?: boolean;
@@ -113,13 +115,29 @@ export async function generateSfuJoinUrl(data: {
   chat?: boolean;
 }) {
   try {
-    console.log("Initializing TawkToo meeting for room:", data.room);
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.id) {
+       throw new Error("Unauthorized: Login Required");
+    }
+
+    // Verify session and user access
+    const liveSession = await prisma.liveSession.findUnique({
+       where: { id: data.sessionId },
+       include: { teacher: true }
+    });
+
+    if (!liveSession) throw new Error("Session not found");
+
+    const isAuthorized = liveSession.teacher.userId === session.user.id || liveSession.studentId === session.user.id;
+    if (!isAuthorized) throw new Error("Unauthorized: You are not part of this session");
+
+    const roomId = `room_${data.sessionId}`;
+    console.log("Initializing TawkToo meeting for room:", roomId);
     
     // Call the external API to create a meeting
     const meeting = await tawkTooClient.createMeeting({
-      topic: data.room,
-      duration: 60, // Default duration
-      // We can pass other fields if the API supports them
+      topic: roomId,
+      duration: liveSession.duration || 60,
     });
 
     console.log("TawkToo meeting created:", meeting);
@@ -133,6 +151,31 @@ export async function generateSfuJoinUrl(data: {
     // Fallback or re-throw
     // For now, re-throwing so the UI sees the error (likely 403 Forbidden)
     throw new Error("Video service authentication failed. Please check API credentials.");
+  }
+}
+
+// Generate a signed URL for a session recording - Added for Security Audit - Author: Sanket
+export async function generateRecordingSignedUrl(sessionId: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const liveSession = await prisma.liveSession.findUnique({
+      where: { id: sessionId },
+      select: { studentId: true, teacher: { select: { userId: true } }, recordingUrl: true }
+    });
+
+    if (!liveSession || !liveSession.recordingUrl) throw new Error("Recording not found");
+
+    // Verify user is authorized to view this recording
+    const isAuthorized = liveSession.teacher.userId === session.user.id || liveSession.studentId === session.user.id;
+    if (!isAuthorized) throw new Error("Unauthorized");
+
+    const signedUrl = await getSignedDownloadUrl(liveSession.recordingUrl);
+    return { success: true, url: signedUrl };
+  } catch (err: any) {
+    console.error("Failed to generate signed URL:", err);
+    return { success: false, error: err.message };
   }
 }
 

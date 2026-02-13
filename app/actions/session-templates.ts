@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { requireTeacher } from "@/lib/action-security";
 
 /**
  * Session Template Server Actions
@@ -74,9 +75,25 @@ export async function createSessionTemplate(data: {
 
 export async function deleteSessionTemplate(id: string) {
     try {
+        await requireTeacher(); // Enhanced role check - Author: Sanket
         const session = await getSessionWithRole();
         if (!session || session.user.role !== "teacher") {
             return { success: false, error: "Unauthorized" };
+        }
+
+        const teacherProfile = await prisma.teacherProfile.findUnique({
+            where: { userId: session.user.id }
+        });
+
+        if (!teacherProfile) return { success: false, error: "Teacher profile not found" };
+
+        // Verify ownership (Author: Sanket)
+        const template = await prisma.sessionTemplate.findUnique({
+            where: { id }
+        });
+
+        if (!template || template.teacherId !== teacherProfile.id) {
+            return { success: false, error: "Unauthorized: Template not found or access denied" };
         }
 
         await prisma.sessionTemplate.delete({
@@ -96,16 +113,26 @@ export async function deleteSessionTemplate(id: string) {
  */
 export async function applyTemplateBatch(templateId: string, dates: Date[]) {
     try {
+        await requireTeacher(); // Enhanced role check - Author: Sanket
         const session = await getSessionWithRole();
         if (!session || session.user.role !== "teacher") {
             return { success: false, error: "Unauthorized" };
         }
 
+        const teacherProfile = await prisma.teacherProfile.findUnique({
+            where: { userId: session.user.id }
+        });
+
+        if (!teacherProfile) return { success: false, error: "Teacher profile not found" };
+
         const template = await prisma.sessionTemplate.findUnique({
             where: { id: templateId }
         });
 
-        if (!template) return { success: false, error: "Template not found" };
+        // Verify ownership (Author: Sanket)
+        if (!template || template.teacherId !== teacherProfile.id) {
+            return { success: false, error: "Unauthorized: Template not found or access denied" };
+        }
 
         // Generate sessions for each date
         const createdSessions = await prisma.$transaction(

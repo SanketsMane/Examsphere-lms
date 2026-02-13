@@ -55,9 +55,9 @@ export async function GET(
     const isOwner = whiteboard.createdById === session.user.id;
     const isParticipant = whiteboard.participants.length > 0;
     const isPublic = whiteboard.isPublic;
-    const isAdminOrTeacher = ['admin', 'teacher'].includes((session.user as any).role || '');
+    const isAdmin = (session.user as any).role === 'admin';
 
-    if (!isOwner && !isParticipant && !isPublic && !isAdminOrTeacher) {
+    if (!isOwner && !isParticipant && !isPublic && !isAdmin) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 

@@ -31,6 +31,19 @@ export async function createIssue(data: {
     }
 
     try {
+        // QA-081: Rate Limiting (Author: Sanket)
+        const lastIssue = await prisma.issue.findFirst({
+            where: { reporterId: session.user.id },
+            orderBy: { createdAt: "desc" }
+        });
+
+        if (lastIssue) {
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            if (lastIssue.createdAt > fiveMinutesAgo) {
+                return { error: "You are reporting issues too frequently. Please wait a few minutes." };
+            }
+        }
+
         const issue = await prisma.issue.create({
             data: {
                 reporterId: session.user.id,

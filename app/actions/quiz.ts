@@ -35,6 +35,19 @@ export async function submitQuizAttempt(payload: {
             throw new Error("This quiz is not available for submission.");
         }
 
+        // CRITICAL SECURITY FIX: Verify Enrollment (Author: Sanket)
+        if (quiz.courseId) {
+            const enrollment = await prisma.enrollment.findUnique({
+                where: {
+                    userId_courseId: {
+                        userId: userId,
+                        courseId: quiz.courseId
+                    }
+                }
+            });
+            if (!enrollment) throw new Error("You must be enrolled in the course to take this quiz.");
+        }
+
         // CRITICAL FIX: Check attempt count and enforce limits
         const attemptCount = await prisma.quizAttempt.count({
             where: {
@@ -47,10 +60,23 @@ export async function submitQuizAttempt(payload: {
             throw new Error(`Maximum attempts (${quiz.maxAttempts}) reached for this quiz.`);
         }
 
+        // QA-080: Rate Limiting (Author: Sanket)
+        const lastAttempt = await prisma.quizAttempt.findFirst({
+            where: { quizId, userId },
+            orderBy: { submittedAt: "desc" }
+        });
+
+        if (lastAttempt && lastAttempt.submittedAt) {
+            const sixtySecondsAgo = new Date(Date.now() - 60 * 1000);
+            if (lastAttempt.submittedAt > sixtySecondsAgo) {
+                throw new Error("You are submitting attempts too quickly. Please wait a minute.");
+            }
+        }
+
         // 2. Calculate Score
         let totalPoints = 0;
         let earnedPoints = 0;
-        const responseData = [];
+        const responseData: any[] = [];
 
         for (const question of quiz.questions) {
             totalPoints += question.points;
@@ -61,7 +87,7 @@ export async function submitQuizAttempt(payload: {
 
             if (userAnswer !== undefined) {
                 // Grading Logic (Simplified for MVP)
-                // TODO: Expand logic for other types like Matching/Ordering
+                // Grading Logic (Simplified for MVP)
 
                 if (question.type === 'MultipleChoice') {
                     const options = (question.questionData as any).options || [];
@@ -139,27 +165,42 @@ export async function submitQuizAttempt(payload: {
 
         // Attempt count already checked above for validation
 
-        const attempt = await prisma.quizAttempt.create({
-            data: {
-                quizId: quizId,
-                userId: userId,
-                attemptNumber: attemptCount + 1,
-                status: 'Completed',
-                totalPoints: earnedPoints,
-                maxPoints: totalPoints,
-                percentage: percentage,
-                passed: passed,
-                submittedAt: new Date(),
-                passingScore: quiz.passingScore,
-                responses: {
-                    create: responseData.map(r => ({
-                        questionId: r.questionId,
-                        answer: r.answer,
-                        isCorrect: r.isCorrect,
-                        pointsAwarded: r.pointsAwarded
-                    }))
+        // 3. Create Quiz Attempt Record (Atomic)
+        const attempt = await prisma.$transaction(async (tx) => {
+            // Re-verify attempt count inside transaction to prevent race conditions
+            const txAttemptCount = await tx.quizAttempt.count({
+                where: {
+                    quizId: quizId,
+                    userId: userId
                 }
+            });
+
+            if (quiz.maxAttempts && txAttemptCount >= quiz.maxAttempts) {
+                throw new Error(`Maximum attempts (${quiz.maxAttempts}) reached for this quiz.`);
             }
+
+            return await tx.quizAttempt.create({
+                data: {
+                    quizId: quizId,
+                    userId: userId,
+                    attemptNumber: txAttemptCount + 1,
+                    status: 'Completed',
+                    totalPoints: earnedPoints,
+                    maxPoints: totalPoints,
+                    percentage: percentage,
+                    passed: passed,
+                    submittedAt: new Date(),
+                    passingScore: quiz.passingScore,
+                    responses: {
+                        create: responseData.map(r => ({
+                            questionId: r.questionId,
+                            answer: r.answer,
+                            isCorrect: r.isCorrect,
+                            pointsAwarded: r.pointsAwarded
+                        }))
+                    }
+                }
+            });
         });
 
         revalidatePath(`/courses/${quiz.courseId}`);

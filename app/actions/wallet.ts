@@ -171,24 +171,21 @@ export async function creditToWallet(
     amount: number,
     type: 'REFUND' | 'ADMIN_CREDIT',
     description: string,
-    metadata?: any
+    metadata?: any,
+    tx?: Prisma.TransactionClient
 ) {
-    if (amount <= 0) {
-        throw new Error("Amount must be positive");
-    }
-
-    const wallet = await getWallet(userId);
-
-    const result = await prisma.$transaction(async (tx) => {
+    const db = tx || prisma;
+    const result = await (db as any).$transaction(async (t: Prisma.TransactionClient) => {
+        const wallet = await getWallet(userId, t);
         const balanceBefore = wallet.balance;
         const balanceAfter = balanceBefore + amount;
 
-        const updatedWallet = await tx.wallet.update({
+        const updatedWallet = await t.wallet.update({
             where: { id: wallet.id },
             data: { balance: balanceAfter }
         });
 
-        const transaction = await tx.walletTransaction.create({
+        const transaction = await t.walletTransaction.create({
             data: {
                 walletId: wallet.id,
                 type,

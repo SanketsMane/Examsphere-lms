@@ -80,21 +80,51 @@ export async function getTeacherPayoutData() {
     };
 }
 
-export async function requestPayout() {
+export async function requestPayout(data?: {
+    amount?: number;
+    bankAccountName?: string;
+    bankAccountNumber?: string;
+    bankName?: string;
+}) {
     const session = await requireTeacher();
 
     const teacherProfile = await prisma.teacherProfile.findUnique({
         where: { userId: session.user.id },
         include: {
-            verification: true // Correct relation name
+            verification: true
         }
     });
 
-    if (!teacherProfile) throw new Error("Teacher profile not found");
+    if (!teacherProfile) return { success: false, error: "Teacher profile not found" };
 
+    // 1. Eligibility Check
+    if (!teacherProfile.isApproved || !teacherProfile.isVerified) {
+        return { success: false, error: "Your profile must be approved and verified to request payouts." };
+    }
+
+    // 2. Prevent Duplicate Requests
+    const activePayout = await prisma.payoutRequest.findFirst({
+        where: {
+            teacherId: teacherProfile.id,
+            status: { in: ["Pending", "Processing", "Approved"] }
+        }
+    });
+
+    if (activePayout) {
+        return { success: false, error: "You already have a payout request in progress." };
+    }
+
+    // Use bank details from args if provided (allowing overrides), otherwise from verification
+    // But strict security might prefer verification only. 
+    // However, existing verification flow saves to DB first.
+    // WithdrawForm sends data that matches verification form usually.
     const { verification } = teacherProfile;
-    if (!verification || !verification.bankAccountNumber) {
-        throw new Error("Bank details not configured. Please complete verification settings.");
+    const bankAccountName = data?.bankAccountName || verification?.bankAccountName;
+    const bankAccountNumber = data?.bankAccountNumber || verification?.bankAccountNumber;
+    // const bankName = data?.bankName; // Note used in DB model currently based on create below
+
+    if (!bankAccountName || !bankAccountNumber) {
+        return { success: false, error: "Bank details not configured. Please complete verification settings." };
     }
 
     // Calculate Available Balance
@@ -108,27 +138,46 @@ export async function requestPayout() {
     const totalCents = pendingCommissions.reduce((sum: number, c: any) => sum + c.netAmount, 0);
     const MIN_PAYOUT_CENTS = 5000; // $50.00
     if (totalCents < MIN_PAYOUT_CENTS) {
-        throw new Error(`Minimum payout amount is $50.00. Current balance: $${(totalCents / 100).toFixed(2)}`);
+        return { success: false, error: `Minimum payout amount is $50.00. Current balance: $${(totalCents / 100).toFixed(2)}` };
     }
 
+    // Note: We currently process ALL pending commissions regardless of requested 'amount'.
+    // Partial payouts are not implemented.
     const requestedAmountDecimal = totalCents / 100.0;
 
     try {
         await prisma.$transaction(async (tx: any) => {
+            // Re-verify balance inside transaction
+            const currentPendingCommissions = await tx.commission.findMany({
+                where: {
+                    teacherId: teacherProfile.id,
+                    status: "Pending"
+                },
+            });
+
+            if (currentPendingCommissions.length === 0) {
+                throw new Error("No pending commissions available for payout");
+            }
+
+            const currentTotalCents = currentPendingCommissions.reduce((sum: number, c: any) => sum + c.netAmount, 0);
+            if (currentTotalCents < MIN_PAYOUT_CENTS) {
+                throw new Error("Insufficient balance at transaction time");
+            }
+
             const payoutRequest = await tx.payoutRequest.create({
                 data: {
                     teacherId: teacherProfile.id,
-                    requestedAmount: requestedAmountDecimal,
+                    requestedAmount: currentTotalCents / 100.0,
                     currency: "USD",
                     status: "Pending",
-                    bankAccountName: verification.bankAccountName || "Unknown",
-                    bankAccountNumber: verification.bankAccountNumber!,
-                    bankRoutingNumber: verification.bankRoutingNumber,
+                    bankAccountName: bankAccountName || "Unknown",
+                    bankAccountNumber: bankAccountNumber!,
+                    bankRoutingNumber: verification?.bankRoutingNumber,
                     adminNotes: "Auto-generated request via Action"
                 }
             });
 
-            for (const comm of pendingCommissions) {
+            for (const comm of currentPendingCommissions) {
                 await tx.payoutCommission.create({
                     data: {
                         payoutRequestId: payoutRequest.id,
@@ -166,6 +215,6 @@ export async function requestPayout() {
         return { success: true };
     } catch (e: any) {
         console.error("Payout Transaction Failed", e);
-        throw new Error("Failed to process payout request");
+        return { success: false, error: e.message || "Failed to process payout request" };
     }
 }

@@ -1,4 +1,4 @@
-import { constructS3Url } from './s3-utils';
+import { constructS3Url } from './s3-helper';
 
 /**
  * Custom Next.js image loader for S3 images

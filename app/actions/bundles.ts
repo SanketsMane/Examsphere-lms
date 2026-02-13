@@ -4,6 +4,14 @@ import { prisma } from "@/lib/db";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { z } from "zod"; // author: Sanket
+
+const bundleSchema = z.object({
+    title: z.string().min(3).max(100),
+    description: z.string().max(500).optional(),
+    price: z.number().min(1), // cents
+    sessionCount: z.number().min(1).max(100),
+});
 
 /**
  * Bundle Management Server Actions
@@ -17,6 +25,11 @@ export async function createBundle(data: {
     sessionCount: number;
 }) {
     try {
+        const validated = bundleSchema.safeParse(data);
+        if (!validated.success) {
+            return { error: "Invalid bundle data" };
+        }
+
         const session = await getSessionWithRole();
         const teacherProfile = (session?.user as any).teacherProfile;
         
@@ -27,10 +40,7 @@ export async function createBundle(data: {
         const bundle = await prisma.sessionBundle.create({
             data: {
                 teacherId: teacherProfile.id,
-                title: data.title,
-                description: data.description,
-                price: data.price,
-                sessionCount: data.sessionCount,
+                ...validated.data
             }
         });
 
@@ -79,6 +89,11 @@ export async function purchaseBundle(bundleId: string, paymentMethod: 'razorpay'
         });
 
         if (!bundle) return { error: "Bundle not found" };
+
+        // Ensure teacher is approved and verified - author: Sanket
+        if (!bundle.teacher.isApproved || !bundle.teacher.isVerified) {
+            return { error: "This teacher's bundles are currently unavailable" };
+        }
 
         // Wallet Payment Flow (Author: Sanket)
         if (paymentMethod === 'wallet') {

@@ -56,15 +56,27 @@ export async function PATCH(
       }
     });
 
-    // If processed, create commission record (if applicable)
+    // If processed, create records and calculate fees dynamically (Author: Sanket)
     if (status === 'Completed') {
-      // Note: This would typically link to actual earnings/commissions
-      // For now, we'll skip automatic commission creation
+      const settings = await prisma.siteSettings.findFirst();
+      const platformFeePercent = (settings as any)?.commissionPercentage ?? 20;
+      
       const requestedAmount = Number(payout.requestedAmount);
       updateData.processedAt = new Date();
-      updateData.netAmount = requestedAmount * 0.92; // 8% platform fee
-      updateData.processingFee = requestedAmount * 0.08;
+      updateData.processingFee = requestedAmount * (platformFeePercent / 100);
+      updateData.netAmount = requestedAmount - updateData.processingFee;
       updateData.processedAmount = requestedAmount;
+      
+      // Secondary update to store the calculated financial fields
+      await prisma.payoutRequest.update({
+          where: { id: payoutId },
+          data: {
+              processingFee: updateData.processingFee,
+              netAmount: updateData.netAmount,
+              processedAmount: updateData.processedAmount,
+              processedAt: updateData.processedAt
+          }
+      });
     }
 
     return NextResponse.json({

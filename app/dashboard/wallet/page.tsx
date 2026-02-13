@@ -40,7 +40,7 @@ export default async function WalletPage() {
                 <CardContent>
                     <div className="flex gap-3">
                         <RechargeDialog 
-                            minRecharge={settings?.minWalletRecharge} 
+                            minRecharge={settings?.minWalletRecharge ?? undefined} 
                             currencyCode={settings?.currencyCode}
                             userCountry={userCountry}
                         >

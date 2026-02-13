@@ -35,12 +35,10 @@ export async function POST(req: NextRequest) {
         }
         // -----------------------------------------------------
 
-        // Direct Access Mode: Bypass price check
-        /*
+        // Direct Access Mode: Enforce strict price check - author: Sanket
         if (course.price !== 0) {
             return NextResponse.json({ error: "Course is not free" }, { status: 400 });
         }
-        */
 
         const existingEnrollment = await prisma.enrollment.findUnique({
             where: {

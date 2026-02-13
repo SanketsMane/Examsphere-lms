@@ -72,7 +72,11 @@ export async function createGroupClass(data: {
 
 export async function deleteGroupClass(groupId: string) {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user || (session.user as any).role !== "teacher") return { error: "Unauthorized" };
+    if (!session?.user) return { error: "Unauthorized" };
+    
+    // Add Admin bypass for moderation - Author: Sanket
+    const isAdmin = (session.user as any).role === "admin";
+    if (!isAdmin && (session.user as any).role !== "teacher") return { error: "Unauthorized" };
 
     try {
         // QA-001: Fix IDOR - Check ownership
@@ -87,7 +91,12 @@ export async function deleteGroupClass(groupId: string) {
         });
 
         if (!group) return { error: "Group not found" };
-        if (group.teacherId !== teacher.id) return { error: "Unauthorized" };
+        
+        // Admin bypass for moderation - Author: Sanket
+        const isAdmin = (session.user as any).role === "admin";
+        if (!isAdmin && group.teacherId !== teacher?.id) {
+            return { error: "Unauthorized" };
+        }
 
         await prisma.groupClass.delete({
             where: { id: groupId }
@@ -268,6 +277,24 @@ export async function joinGroupClass(groupId: string, paymentMethod: "online" | 
                     }
                 });
 
+                // --- Synchronize Chat Participation (Author: Sanket) ---
+                if (groupClass.chatGroupId) {
+                    await tx.conversationParticipant.upsert({
+                        where: {
+                            conversationId_userId: {
+                                conversationId: groupClass.chatGroupId,
+                                userId: (user as any).id
+                            }
+                        },
+                        update: {},
+                        create: {
+                            conversationId: groupClass.chatGroupId,
+                            userId: (user as any).id
+                        }
+                    });
+                }
+                // -----------------------------------------------------
+
                 // Commission
                 if (finalPrice > 0) {
                     const { calculatePlatformCommission } = await import("@/lib/finance");
@@ -436,7 +463,11 @@ export async function updateGroupClass(groupId: string, data: any) {
     const maxStudents = Math.min(data.maxStudents || 12, 12);
 
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user || (session.user as any).role !== "teacher") return { error: "Unauthorized" };
+    if (!session?.user) return { error: "Unauthorized" };
+
+    // Admin bypass for moderation - Author: Sanket
+    const isAdmin = (session.user as any).role === "admin";
+    if (!isAdmin && (session.user as any).role !== "teacher") return { error: "Unauthorized" };
 
     try {
         const teacher = await prisma.teacherProfile.findUnique({
@@ -446,7 +477,11 @@ export async function updateGroupClass(groupId: string, data: any) {
 
         const group = await prisma.groupClass.findUnique({ where: { id: groupId } });
         if (!group) return { error: "Group not found" };
-        if (group.teacherId !== teacher.id) return { error: "Unauthorized" };
+
+        // Admin can update any class, Teacher must own it - Author: Sanket
+        if (!isAdmin && group.teacherId !== teacher?.id) {
+            return { error: "Unauthorized" };
+        }
         
         await prisma.groupClass.update({
             where: { id: groupId },
@@ -482,6 +517,13 @@ export async function createGroupChat(groupId: string) {
         });
 
         if (!group) return { error: "Group not found" };
+
+        const teacher = await prisma.teacherProfile.findUnique({
+            where: { userId: (session.user as any).id }
+        });
+        if (!teacher || group.teacherId !== teacher.id) {
+            return { error: "Unauthorized: Only the teacher of this class can create a chat." };
+        }
 
         if (group.chatGroupId) {
             return { success: true, conversationId: group.chatGroupId };

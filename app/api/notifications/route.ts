@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    const result = await getUserNotifications(page, limit, undefined, session.user.id);
+    const result = await getUserNotifications(page, limit, undefined);
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching notifications:", error);

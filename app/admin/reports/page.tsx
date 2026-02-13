@@ -1,9 +1,8 @@
-import { requireUser } from "@/app/data/user/require-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconFileText, IconDownload, IconCalendar } from "@tabler/icons-react";
 import { formatPrice } from "@/lib/currency"; // Added for localization - Author: Sanket
-import { getSessionWithRole } from "@/app/data/auth/require-roles"; // Added for localization - Author: Sanket
+import { getSessionWithRole, requireAdmin } from "@/app/data/auth/require-roles"; // Added for localization - Author: Sanket // Secure Admin Check - Author: Sanket
 
 export const dynamic = "force-dynamic";
 

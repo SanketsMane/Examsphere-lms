@@ -108,14 +108,21 @@ export async function editCourse(
       }
     }
 
+    // QA-061: Prevent teacher self-promotion (Author: Sanket)
+    const dataToSave: any = {
+      ...result.data,
+      description: result.data.description ? DOMPurify.sanitize(result.data.description) : result.data.description,
+      smallDescription: result.data.smallDescription ? DOMPurify.sanitize(result.data.smallDescription) : result.data.smallDescription,
+      status: statusToSave as any,
+    };
+
+    if (user.role === "teacher") {
+      delete dataToSave.isFeatured;
+    }
+
     await prisma.course.update({
       where: whereClause,
-      data: {
-        ...result.data,
-        description: result.data.description ? DOMPurify.sanitize(result.data.description) : result.data.description,
-        smallDescription: result.data.smallDescription ? DOMPurify.sanitize(result.data.smallDescription) : result.data.smallDescription,
-        status: statusToSave as any,
-      },
+      data: dataToSave,
     });
 
 
@@ -151,7 +158,24 @@ export async function reorderLessons(
   lessons: { id: string; position: number }[],
   courseId: string
 ): Promise<ApiResponse> {
-  await requireTeacher();
+  const session = await requireTeacher();
+  const user = session.user as any;
+
+  // QA-016: IDOR - Verify course ownership before reordering lessons
+  if (user.role === "teacher") {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { userId: true }
+    });
+
+    if (!course || course.userId !== session.user.id) {
+      return {
+        status: "error",
+        message: "Unauthorized: You do not own this course"
+      };
+    }
+  }
+
   try {
     if (!lessons || lessons.length === 0) {
       return {
@@ -171,6 +195,12 @@ export async function reorderLessons(
         },
       })
     );
+
+    // QA-063: Verify chapter belongs to the authorized course (Author: Sanket)
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId, courseId: courseId }
+    });
+    if (!chapter) throw new Error("Chapter not found in this course");
 
     await prisma.$transaction(updates);
 
@@ -192,7 +222,24 @@ export async function reorderChapters(
   courseId: string,
   chapters: { id: string; position: number }[]
 ): Promise<ApiResponse> {
-  await requireTeacher();
+  const session = await requireTeacher();
+  const user = session.user as any;
+
+  // QA-016: IDOR - Verify course ownership before reordering chapters
+  if (user.role === "teacher") {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { userId: true }
+    });
+
+    if (!course || course.userId !== session.user.id) {
+      return {
+        status: "error",
+        message: "Unauthorized: You do not own this course"
+      };
+    }
+  }
+
   try {
     if (!chapters || chapters.length === 0) {
       return {
@@ -213,6 +260,12 @@ export async function reorderChapters(
       })
     );
 
+    // QA-066: Verify chapters belong to the authorized course (Author: Sanket)
+    const chapterCheck = await prisma.chapter.findFirst({
+      where: { id: chapters[0].id, courseId: courseId }
+    });
+    if (!chapterCheck) throw new Error("Chapters not found in this course");
+
     await prisma.$transaction(updates);
 
     revalidatePath(`/teacher/courses/${courseId}/edit`);
@@ -232,7 +285,24 @@ export async function reorderChapters(
 export async function createChapter(
   values: ChapterSchemaType
 ): Promise<ApiResponse> {
-  await requireTeacher();
+  const session = await requireTeacher();
+  const user = session.user as any;
+
+  // QA-016: IDOR - Verify course ownership before creating chapter
+  if (user.role === "teacher") {
+    const course = await prisma.course.findUnique({
+      where: { id: values.courseId },
+      select: { userId: true }
+    });
+
+    if (!course || course.userId !== session.user.id) {
+      return {
+        status: "error",
+        message: "Unauthorized: You do not own this course"
+      };
+    }
+  }
+
   try {
     const result = chapterSchema.safeParse(values);
 
@@ -282,7 +352,31 @@ export async function createChapter(
 export async function createLesson(
   values: LessonSchemaType
 ): Promise<ApiResponse> {
-  await requireTeacher();
+  const session = await requireTeacher();
+  const user = session.user as any;
+
+  // QA-016: IDOR - Verify course ownership before creating lesson
+  if (user.role === "teacher") {
+    const course = await prisma.course.findUnique({
+      where: { id: values.courseId, userId: session.user.id }
+    });
+
+    if (!course) {
+      return {
+        status: "error",
+        message: "Unauthorized: You do not own this course or course not found"
+      };
+    }
+
+    // QA-064: Verify chapter belongs to the course (Author: Sanket)
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: values.chapterId, courseId: values.courseId }
+    });
+    if (!chapter) {
+      return { status: "error", message: "Chapter not found in this course" };
+    }
+  }
+
   try {
     const result = lessonSchema.safeParse(values);
 
@@ -294,11 +388,6 @@ export async function createLesson(
     }
 
     // Limit check: Max 50 lessons per course
-    const existingLessons = await prisma.lesson.count({
-      where: { chapterId: result.data.chapterId } // Ideally check course wide but chapter wide is simpler for now, user asked for limits.
-    });
-    // Or check course id if available in schema. Schema has courseId in LessonSchema but createLesson doesn't strictly check courseId consistency directly here.
-    // The lesson schema has courseId.
     const courseLessonCount = await prisma.lesson.count({
       where: { Chapter: { courseId: result.data.courseId } }
     });
@@ -326,7 +415,7 @@ export async function createLesson(
       await tx.lesson.create({
         data: {
           title: result.data.name,
-          description: result.data.description,
+          description: result.data.description ? DOMPurify.sanitize(result.data.description) : result.data.description, // QA-096: XSS Sanitization (Author: Sanket)
           videoKey: result.data.videoKey,
           thumbnailKey: result.data.thumbnailKey,
           videoUrl: result.data.videoUrl, // Save the video URL
@@ -359,7 +448,24 @@ export async function deleteLesson({
   courseId: string;
   lessonId: string;
 }): Promise<ApiResponse> {
-  await requireTeacher();
+  const session = await requireTeacher();
+  const user = session.user as any;
+
+  // QA-016: IDOR - Verify course ownership before deleting lesson
+  if (user.role === "teacher") {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { userId: true }
+    });
+
+    if (!course || course.userId !== session.user.id) {
+      return {
+        status: "error",
+        message: "Unauthorized: You do not own this course"
+      };
+    }
+  }
+
   try {
     const chapterWithLessons = await prisma.chapter.findUnique({
       where: {
@@ -375,13 +481,14 @@ export async function deleteLesson({
             position: true,
           },
         },
+        courseId: true,
       },
     });
 
-    if (!chapterWithLessons) {
+    if (!chapterWithLessons || chapterWithLessons.courseId !== courseId) {
       return {
         status: "error",
-        message: "Chapter not Found",
+        message: "Chapter not Found or doesn't belong to this course",
       };
     }
 
@@ -435,7 +542,31 @@ export async function deleteChapter({
   chapterId: string;
   courseId: string;
 }): Promise<ApiResponse> {
-  await requireTeacher();
+  const session = await requireTeacher();
+  const user = session.user as any;
+
+  // QA-016: IDOR - Verify course ownership before deleting chapter
+  if (user.role === "teacher") {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId, userId: session.user.id }
+    });
+
+    if (!course) {
+      return {
+        status: "error",
+        message: "Unauthorized: You do not own this course or course not found"
+      };
+    }
+
+    // QA-066: Verify chapter belongs to the course (Author: Sanket)
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId, courseId: courseId }
+    });
+    if (!chapter) {
+      return { status: "error", message: "Chapter not found in this course" };
+    }
+  }
+
   try {
     const courseWithChapters = await prisma.course.findUnique({
       where: {

@@ -153,6 +153,7 @@ export function CreateSessionForm() {
   }, [isFreeTrial, setValue]); // watchedPrice omitted to prevent loop
 
   const onSubmit = async (data: SessionFormData) => {
+    if (loading) return;
     try {
       setLoading(true);
 
