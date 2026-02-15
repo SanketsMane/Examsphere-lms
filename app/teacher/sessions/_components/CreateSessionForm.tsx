@@ -64,6 +64,7 @@ const sessionSchema = z.object({
       path: ["scheduledDate"],
     });
   }
+  // FIX: Allow price to be 0 if it is a free trial eligible session
   if (!data.isFreeTrialEligible && data.price < 50) { // Enforce minimum price if not free trial
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -588,18 +589,18 @@ export function CreateSessionForm() {
                          </div>
                       </div>
 
-                      <div className="bg-white/5 rounded-3xl p-6 border border-white/10 space-y-4">
-                        <div className="flex justify-between items-end">
-                           <div className="space-y-1">
-                              <span className="text-[10px] uppercase font-black tracking-widest text-white/40">Tuition Fee</span>
-                              <p className="text-4xl font-black text-blue-400">
-                                 {isFreeTrial ? "0.00" : formatPriceSimple(watchedPrice || 0, userCountry)}
-                              </p>
-                           </div>
-                           <div className="bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-xl">
-                              <span className="text-[10px] font-black text-blue-400 tracking-tighter uppercase">{config.code}</span>
-                           </div>
-                        </div>
+                       <div className="bg-white/5 rounded-3xl p-6 border border-white/10 space-y-4">
+                         <div className="flex justify-between items-end">
+                            <div className="space-y-1">
+                               <span className="text-[10px] uppercase font-black tracking-widest text-white/40">Tuition Fee</span>
+                               <p className="text-4xl font-black text-blue-400">
+                                  {isFreeTrial ? "0.00" : formatPriceSimple(watchedPrice || 0, userCountry)}
+                               </p>
+                            </div>
+                            <div className="bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-xl">
+                               <span className="text-[10px] font-black text-blue-400 tracking-tighter uppercase">{config.code}</span>
+                            </div>
+                         </div>
 
                         {!isFreeTrial && (
                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
