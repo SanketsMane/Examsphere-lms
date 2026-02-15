@@ -203,3 +203,48 @@ export async function creditToWallet(
     revalidatePath('/dashboard/wallet');
     return result;
 }
+
+/**
+ * Withdraw funds from wallet
+ * @author Sanket
+ */
+export async function withdrawWalletBalance(
+    userId: string,
+    amount: number,
+    metadata?: any
+) {
+    if (amount <= 0) throw new Error("Amount must be positive");
+
+    return await prisma.$transaction(async (tx) => {
+        const wallet = await getWallet(userId, tx);
+
+        if (wallet.balance < amount) {
+            throw new Error("Insufficient balance");
+        }
+
+        const balanceBefore = wallet.balance;
+        const balanceAfter = balanceBefore - amount;
+
+        const updatedWallet = await tx.wallet.update({
+            where: { id: wallet.id },
+            data: { balance: balanceAfter }
+        });
+
+        const transaction = await tx.walletTransaction.create({
+            data: {
+                walletId: wallet.id,
+                type: "ADMIN_DEBIT", // Using ADMIN_DEBIT to avoid migration, distinguishing via description
+                amount: -amount,
+                balanceBefore,
+                balanceAfter,
+                description: "Withdrawal Request",
+                metadata: metadata ? JSON.parse(JSON.stringify(metadata)) : null
+            }
+        });
+
+        // In a real app, we would create a PayoutRequest record here
+        // await tx.payoutRequest.create({ ... })
+
+        return { wallet: updatedWallet, transaction };
+    });
+}

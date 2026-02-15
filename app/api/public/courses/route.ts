@@ -36,6 +36,16 @@ export async function GET() {
             reviews: true,
           },
         },
+        chapter: {
+          select: {
+            id: true,
+            lessons: {
+              select: {
+                id: true,
+              }
+            }
+          }
+        }
       },
       orderBy: [
         { isFeatured: "desc" },

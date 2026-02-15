@@ -3,7 +3,11 @@ import { requireUser } from "./require-user";
 import { prisma } from "@/lib/db";
 
 export async function getEnrolledCourses() {
-  const user = await requireUser();
+  const user = await requireUser(false);
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
 
   const data = await prisma.enrollment.findMany({
     where: {
@@ -20,6 +24,13 @@ export async function getEnrolledCourses() {
           level: true,
           slug: true,
           duration: true,
+          category: true,
+          user: {
+            select: {
+              name: true,
+              image: true,
+            }
+          },
           chapter: {
             select: {
               id: true,

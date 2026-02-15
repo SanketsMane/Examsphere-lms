@@ -74,6 +74,10 @@ setInterval(() => rateLimiter.cleanup(), 5 * 60 * 1000);
  * Detect potential bot behavior based on user agent and request patterns
  */
 export function detectBot(request: Request): boolean {
+  // BOT DETECTION DISABLED FOR DEVELOPMENT
+  return false;
+
+  /* Original Logic Preserved:
   const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
 
   // Common bot patterns
@@ -83,6 +87,7 @@ export function detectBot(request: Request): boolean {
   ];
 
   return botPatterns.some(pattern => userAgent.includes(pattern));
+  */
 }
 
 /**

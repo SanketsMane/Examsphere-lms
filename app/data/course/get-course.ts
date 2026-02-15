@@ -3,7 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 
-export async function getIndividualCourse(slug: string) {
+export async function getIndividualCourse(slug: string, userId?: string) {
   const course = await prisma.course.findUnique({
     where: {
       slug: slug,
@@ -26,6 +26,11 @@ export async function getIndividualCourse(slug: string) {
             select: {
               id: true,
               title: true,
+              lessonProgress: userId ? {
+                where: {
+                  userId: userId
+                }
+              } : false
             },
             orderBy: {
               position: "asc",
@@ -36,6 +41,16 @@ export async function getIndividualCourse(slug: string) {
           position: "asc",
         },
       },
+      resources: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          fileUrl: true,
+          fileType: true,
+          size: true,
+        }
+      }
     },
   });
 

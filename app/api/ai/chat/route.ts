@@ -18,11 +18,6 @@ export async function POST(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    if (!FLOWVERSAL_API_KEY) {
-        console.error("[AI_CHAT] FLOWVERSAL_API_KEY is not configured in environment variables");
-        return new NextResponse("AI Service Configuration Error", { status: 500 });
-    }
-
     interface ChatRequestBody {
       messages: { role: string; content: string }[];
       conversationId?: string;
@@ -100,7 +95,51 @@ export async function POST(req: Request) {
       { role: "system", content: systemPrompt },
       ...contextMessages
     ];
-    
+
+    // Check for API Key - Fallback to Ollama if missing - Author: Sanket
+    if (!FLOWVERSAL_API_KEY) {
+        console.warn("[AI_CHAT] FLOWVERSAL_API_KEY missing. Falling back to local Ollama service.");
+        
+        const ollamaPayload = {
+            model: process.env.AI_MODEL || "qwen2.5:3b",
+            messages: chatMessages,
+            stream: false
+        };
+
+        const ollamaRes = await fetch(`${process.env.AI_BASE_URL}/chat/completions`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Basic ${Buffer.from(`${process.env.AI_AUTH_USER}:${process.env.AI_AUTH_PASS}`).toString('base64')}`
+            },
+            body: JSON.stringify(ollamaPayload)
+        });
+
+        if (!ollamaRes.ok) {
+            console.error("[AI_CHAT_ERROR] Ollama request failed:", await ollamaRes.text());
+            return new NextResponse("AI Service (Ollama) Unavailable", { status: 503 });
+        }
+
+        const ollamaData = await ollamaRes.json();
+        const aiResponse = ollamaData.choices?.[0]?.message?.content || "";
+
+        // Persist AI Response
+        if (conversationId && aiResponse) {
+            await prisma.aiMessage.create({
+                data: {
+                    conversationId,
+                    role: "assistant",
+                    content: aiResponse
+                }
+            });
+        }
+
+        return NextResponse.json({
+            role: "assistant",
+            content: aiResponse
+        });
+    }
+
     // Prepare payload for Flowversal AI
     const payload = {
       messages: chatMessages,

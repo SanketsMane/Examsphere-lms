@@ -5,13 +5,16 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
-export const requireUser = cache(async () => {
+export const requireUser = cache(async (shouldRedirect: boolean = true) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
   if (!session) {
-    return redirect("/login");
+    if (shouldRedirect) {
+      return redirect("/login");
+    }
+    return null;
   }
 
   return session.user as typeof session.user & { role: string | null };

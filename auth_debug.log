@@ -1,0 +1,24 @@
+[2026-02-14T15:15:59.672Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
+[2026-02-14T15:16:01.852Z]  ⚠️ BetterAuth Error 401: {"code":"INVALID_EMAIL_OR_PASSWORD","message":"Invalid email or password"}
+[2026-02-14T15:16:03.913Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
+[2026-02-14T15:16:05.476Z]  ⚠️ BetterAuth Error 401: {"code":"INVALID_EMAIL_OR_PASSWORD","message":"Invalid email or password"}
+[2026-02-14T15:17:09.154Z] Incoming Request: POST /api/auth/sign-up/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
+[2026-02-14T15:17:09.819Z]  ⚠️ BetterAuth Error 422: {"code":"USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL","message":"User already exists. Use another email."}
+[2026-02-14T15:17:22.596Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
+[2026-02-14T15:17:24.171Z]  ⚠️ BetterAuth Error 401: {"code":"INVALID_EMAIL_OR_PASSWORD","message":"Invalid email or password"}
+[2026-02-14T15:17:36.195Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
+[2026-02-14T15:17:38.075Z]  ⚠️ BetterAuth Error 401: {"code":"INVALID_EMAIL_OR_PASSWORD","message":"Invalid email or password"}
+[2026-02-14T15:18:53.648Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
+[2026-02-14T15:18:55.549Z]  ⚠️ BetterAuth Error 401: {"code":"INVALID_EMAIL_OR_PASSWORD","message":"Invalid email or password"}
+[2026-02-14T15:19:12.568Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
+[2026-02-14T15:19:14.429Z]  ⚠️ BetterAuth Error 401: {"code":"INVALID_EMAIL_OR_PASSWORD","message":"Invalid email or password"}
+[2026-02-14T15:20:05.065Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://localhost:3000 | Host: localhost:3000
+[2026-02-14T15:20:09.760Z]  ⚠️ BetterAuth Error 401: {"code":"INVALID_EMAIL_OR_PASSWORD","message":"Invalid email or password"}
+[2026-02-14T15:20:20.917Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://localhost:3000 | Host: localhost:3000
+[2026-02-14T15:20:22.399Z]  ⚠️ BetterAuth Error 401: {"code":"INVALID_EMAIL_OR_PASSWORD","message":"Invalid email or password"}
+[2026-02-14T15:21:03.276Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://localhost:3000 | Host: localhost:3000
+[2026-02-14T15:21:06.727Z]  ✅ BetterAuth Success 200
+[2026-02-14T15:22:03.651Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
+[2026-02-14T15:22:06.189Z]  ✅ BetterAuth Success 200
+[2026-02-15T08:56:39.481Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
+[2026-02-15T08:56:46.758Z]  ✅ BetterAuth Success 200

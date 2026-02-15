@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Kidokool LMS",
+    "slug": "kidokool-lms",
+    "scheme": "kidokool-lms",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#020817"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kidokool.lms"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.kidokool.lms",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff"
+        }
+      ],
+      "expo-secure-store",
+      "expo-video"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "" 
+      }
+    }
+  }
+}

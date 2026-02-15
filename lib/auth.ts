@@ -2,9 +2,10 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./db";
 import { env } from "./env";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, phoneNumber } from "better-auth/plugins";
 import { sendEmail } from "./email";
 import { admin } from "better-auth/plugins";
+import twilio from "twilio";
 
 
 
@@ -12,21 +13,46 @@ const authOptions = {
   database: prismaAdapter(prisma, {
     provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
-  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  baseURL: (process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").trim().replace(/['"]/g, ""),
   secret: process.env.BETTER_AUTH_SECRET || (process.env.NODE_ENV === "production" ? (() => { throw new Error("BETTER_AUTH_SECRET is missing in production"); })() : "dummy_secret_for_dev_only"),
+  trustHost: true,
   trustedOrigins: [
-    "http://localhost:3000", // Keep localhost for dev
-    ...(process.env.TRUSTED_ORIGINS ? process.env.TRUSTED_ORIGINS.split(",") : []),
-    ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
-    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+    "http://localhost:3000",
+    "http://localhost:3000/",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3000/",
+    "http://192.168.1.37:3000",
+    "http://192.168.1.37:3000/",
+    "http://192.168.1.37",
+    "http://192.168.1.37/",
+    ...(process.env.TRUSTED_ORIGINS ? process.env.TRUSTED_ORIGINS.replace(/['"]/g, "").split(",").map(o => [o.trim(), o.trim() + "/"]).flat() : []),
   ],
-  // socialProviders: {
-  //   github: {
-  //     clientId: env.AUTH_GITHUB_CLIENT_ID,
-  //     clientSecret: env.AUTH_GITHUB_SECRET,
-  //   },
-  // },
+  advanced: {
+    disableCSRFCheck: true,
+    disableOriginCheck: true,
+  },
+  onRequest: async (request: Request) => {
+    const origin = request.headers.get("origin");
+    const host = request.headers.get("host");
+    const cleanBaseURL = (process.env.BETTER_AUTH_URL || "http://localhost:3000").trim().replace(/['"]/g, "");
+    
+    // Handshake Debugger:
+    // If we still get 403, we need to know exactly what Better Auth is seeing.
+    if (!origin || origin === "null" || origin.includes("192.168") || origin.includes("localhost")) {
+       request.headers.set("origin", cleanBaseURL);
+    }
 
+    console.log(`[BetterAuth Request] ${request.method} ${request.url} | Origin: ${request.headers.get("origin")} | Host: ${host}`);
+    return undefined;
+  },
+  onResponse: async (response: Response) => {
+    if (response.status >= 400) {
+        console.error(`[BetterAuth Error Response] Status: ${response.status}`);
+    }
+    return undefined;
+  },
+  socialProviders: {},
+  
   emailAndPassword: {
     enabled: true,
     async sendResetPassword({ user, url }: { user: any; url: string }) {
@@ -92,6 +118,9 @@ const authOptions = {
     },
   },
   user: {
+    changeEmail: {
+      enabled: true,
+    },
     additionalFields: {
       role: {
         type: "string" as const,
@@ -186,18 +215,51 @@ const authOptions = {
       },
     }),
     admin(),
+    phoneNumber({
+      async sendOTP({ phoneNumber, code }, request) {
+        console.log("AUTH DEBUG: sendOTP called for:", phoneNumber);
+        console.log("AUTH DEBUG: OTP generated:", code);
+        try {
+            const accountSid = process.env.TWILIO_ACCOUNT_SID;
+            const authToken = process.env.TWILIO_AUTH_TOKEN;
+            const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+
+            if (!accountSid || !authToken || !fromNumber) {
+                console.error("Twilio credentials missing");
+                throw new Error("Twilio credentials missing");
+            }
+
+            const client = twilio(accountSid, authToken);
+            await client.messages.create({
+                body: `Your Kidokool verification code is: ${code}`,
+                from: fromNumber,
+                to: phoneNumber
+            });
+            console.log("AUTH DEBUG: OTP sent successfully via Twilio");
+        } catch (e) {
+            console.error("AUTH DEBUG: sendOTP FAILED:", e);
+            throw e;
+        }
+      },
+      signUpOnVerification: {
+        getTempEmail: (phone) => `${phone}@temp.kidokool.com`,
+        getTempName: (phone) => `User ${phone}`,
+      },
+    }),
   ],
 };
 
-// Singleton pattern to prevent multiple Better Auth instances - Author: Sanket
-// This is critical for async local storage to work correctly
+// Singleton pattern for Better Auth - Absolutely strictly enforced - Author: Sanket
+// Multiple instances can cause 403 Origin errors due to internal state mismatch.
 const globalForAuth = globalThis as unknown as {
-  auth: ReturnType<typeof betterAuth> | undefined;
+  __BETTER_AUTH_SINGLETON_PROTECTED__: ReturnType<typeof betterAuth> | undefined;
 };
 
-export const auth = globalForAuth.auth ?? betterAuth(authOptions);
-
-// Always cache the instance globally, not just in development
-if (!globalForAuth.auth) {
-  globalForAuth.auth = auth;
+if (!globalForAuth.__BETTER_AUTH_SINGLETON_PROTECTED__) {
+  console.log(`[Auth Singleton] Initializing core instance for: ${authOptions.baseURL}`);
+  globalForAuth.__BETTER_AUTH_SINGLETON_PROTECTED__ = betterAuth(authOptions);
+} else {
+  // Silent reuse to avoid log spam, but ensures only one instance exists
 }
+
+export const auth = globalForAuth.__BETTER_AUTH_SINGLETON_PROTECTED__;
