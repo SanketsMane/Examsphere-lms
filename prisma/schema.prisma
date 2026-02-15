@@ -922,6 +922,7 @@ model SiteSettings {
   minWalletRecharge     Float    @default(100.0)
   currencyCode          String   @default("INR")
   currencySymbol        String   @default("₹")
+  currencyRates         Json?    // Stores exchange rates relative to base currency (INR) - Author: Sanket
   updatedAt             DateTime @updatedAt
 }
 

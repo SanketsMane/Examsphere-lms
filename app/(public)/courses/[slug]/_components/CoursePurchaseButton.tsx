@@ -19,6 +19,7 @@ import { useRazorpay } from "@/components/payment/use-razorpay";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 import { PaymentSelectionDialog } from "@/components/payment/PaymentSelectionDialog"; // Added for Wallet Integration - Author: Sanket
 import { enrollInCourseWithWallet } from "../actions"; // Added for Wallet Integration - Author: Sanket
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 
 interface CoursePurchaseButtonProps {
     courseId: string;
@@ -35,6 +36,7 @@ export const CoursePurchaseButton = ({
     const [showCheckout, setShowCheckout] = useState(false);
     const [couponCode, setCouponCode] = useState("");
     const { openCheckout } = useRazorpay();
+    const { rates } = useCurrency();
 
     const [showPaymentDialog, setShowPaymentDialog] = useState(false); // Added for Wallet Integration - Author: Sanket
 
@@ -166,7 +168,7 @@ export const CoursePurchaseButton = ({
         <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
             <DialogTrigger asChild>
                 <Button className="w-full text-lg h-12 font-bold">
-                    Enroll for {formatPriceSimple(price, country)}
+                    Enroll for {formatPriceSimple(price, country, rates)}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
@@ -188,7 +190,7 @@ export const CoursePurchaseButton = ({
                     </div>
                     <div className="flex items-center justify-between font-medium">
                         <span>Course Price:</span>
-                        <span>{formatPriceSimple(price, country)}</span>
+                        <span>{formatPriceSimple(price, country, rates)}</span>
                     </div>
                 </div>
                 <DialogFooter>

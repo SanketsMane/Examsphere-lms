@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/action-security";
 
 
 export async function getSiteSettings() {
-    const settings = await prisma.siteSettings.findFirst({
+    const settings = await (prisma.siteSettings as any).findFirst({
         select: {
             id: true,
             siteName: true,
@@ -27,6 +27,7 @@ export async function getSiteSettings() {
             footerLinks: true,
             maxGroupClassSize: true,
             minWalletRecharge: true,
+            currencyRates: true, // Author: Sanket
             // Razorpay secrets EXCLUDED from public select - Author: Sanket
         }
     });
@@ -100,7 +101,8 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     maxGroupClassSize,
                     razorpayKeyId,
                     razorpayKeySecret,
-                    razorpayWebhookSecret: formData.get("razorpayWebhookSecret") as string
+                    razorpayWebhookSecret: formData.get("razorpayWebhookSecret") as string,
+                    currencyRates: JSON.parse(formData.get("currencyRates") as string || "{}"), // Author: Sanket
                 } as any,
             });
         } else {

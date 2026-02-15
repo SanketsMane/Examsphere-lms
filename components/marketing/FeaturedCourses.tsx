@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 
 // Helper type for the data structure we receive
 interface FeaturedCourse {
@@ -45,6 +46,7 @@ interface FeaturedCoursesProps {
 }
 
 export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
+    const { rates } = useCurrency();
     const [userCountry, setUserCountry] = useState<string>("India");
 
     useEffect(() => {
@@ -144,7 +146,7 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
 
                                             <div className="pt-3 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
                                                 <span className="text-xl font-bold text-[#011E21] dark:text-white">
-                                                    {formatPriceSimple(course.price, userCountry)}
+                                                    {formatPriceSimple(course.price, userCountry, rates)}
                                                 </span>
                                             </div>
 

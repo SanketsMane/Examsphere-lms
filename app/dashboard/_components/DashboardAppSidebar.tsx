@@ -135,6 +135,7 @@ const data = {
 
 import { authClient } from "@/lib/auth-client";
 import { IconSchool } from "@tabler/icons-react";
+import { TeachOnKidokoolCTA } from "./TeachOnKidokoolCTA";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   /**
@@ -142,19 +143,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
    * Author: Sanket
    */
   const { data: session } = authClient.useSession();
-  const role = session?.user?.role;
+  const role = (session?.user as any)?.role;
 
   // Create a copy of the secondary nav items
   const secondaryNav = [...data.navSecondary];
 
   // Add Teacher link based on role
   // If teacher -> Go to Teacher Dashboard
-  // If student -> Go to Teacher Registration
-  secondaryNav.unshift({
-    title: role === "teacher" ? "Instructor Dashboard" : "Teach on Kidokool",
-    url: role === "teacher" ? "/teacher" : "/register/teacher",
-    icon: IconSchool,
-  });
+  if (role === "teacher") {
+    secondaryNav.unshift({
+      title: "Instructor Dashboard",
+      url: "/teacher",
+      icon: IconSchool,
+    });
+  }
+  // If student -> Render distinctive CTA separately (not in standard list)
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -175,6 +178,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
+        
+        {/* Teach on Kidokool CTA - Only for non-teachers */}
+        {role !== "teacher" && (
+            <div className="px-2 mt-4 mb-2">
+                <SidebarMenu>
+                    <TeachOnKidokoolCTA />
+                </SidebarMenu>
+            </div>
+        )}
+
         <NavSecondary items={secondaryNav} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

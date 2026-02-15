@@ -11,6 +11,7 @@ import { School, TimerIcon, DollarSign, Star, Users, Play, ArrowRight } from "lu
 import Image from "next/image";
 import Link from "next/link";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 
 interface iAppProps {
   data: PublicCourseType;
@@ -20,6 +21,7 @@ interface iAppProps {
 import { motion } from "framer-motion";
 
 export function PublicCourseCard({ data, userCountry }: iAppProps) {
+  const { rates } = useCurrency();
   const thumbnailUrl = useConstructUrl(data.fileKey || "");
 
   // Randomize some visuals for demo purposes if data missing
@@ -151,7 +153,7 @@ export function PublicCourseCard({ data, userCountry }: iAppProps) {
             {(data as any).isEnrolled ? (
               <span className="text-emerald-600 text-sm">Owned</span>
             ) : (
-              formatPriceSimple(data.price || 0, userCountry)
+              formatPriceSimple(data.price || 0, userCountry, rates)
             )}
           </span>
         </div>

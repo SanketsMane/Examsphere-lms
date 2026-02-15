@@ -47,6 +47,7 @@ export const viewport = {
 };
 
 import { getSiteSettings } from "@/app/actions/settings";
+import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 
 export const dynamic = "force-dynamic";
 
@@ -86,9 +87,11 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <main className="min-h-screen pb-16 lg:pb-0">
-            {children}
-          </main>
+          <CurrencyProvider initialRates={settings?.currencyRates as Record<string, number>}>
+            <main className="min-h-screen pb-16 lg:pb-0">
+              {children}
+            </main>
+          </CurrencyProvider>
           <MobileBottomNavigation />
           <Toaster closeButton position="bottom-center" />
         </ThemeProvider>

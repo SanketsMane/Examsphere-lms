@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
 import { getCurrencyData, convertPrice } from "@/lib/currency";
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 
 interface Course {
   id: string;
@@ -69,13 +70,12 @@ export function ResponsiveCourseCard({
   onFavorite,
   onShare
 }: ResponsiveCourseCardProps) {
+  const { formatPrice: formatPriceDynamic } = useCurrency();
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
 
   const displayPrice = (price: number) => {
-    const currency = getCurrencyData(country);
-    const convertedAmount = convertPrice(price, country);
-    return formatPrice(convertedAmount, currency.code);
+    return formatPriceDynamic(price, country);
   };
 
   const renderStars = (rating: number) => {

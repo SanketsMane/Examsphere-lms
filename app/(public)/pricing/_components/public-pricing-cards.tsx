@@ -8,6 +8,7 @@ import Link from "next/link";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 import { useState, useEffect } from "react";
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 
 interface PublicPricingCardsProps {
     plans: SubscriptionPlan[];
@@ -16,6 +17,7 @@ interface PublicPricingCardsProps {
 
 export function PublicPricingCards({ plans, role = "TEACHER" }: PublicPricingCardsProps) {
     const isTeacher = role === "TEACHER";
+    const { rates } = useCurrency();
     const [userCountry, setUserCountry] = useState<string>("India");
 
     useEffect(() => {
@@ -42,7 +44,7 @@ export function PublicPricingCards({ plans, role = "TEACHER" }: PublicPricingCar
                         <CardDescription>{plan.description}</CardDescription>
                         <div className="mt-4">
                             <span className="text-4xl font-bold">
-                                {formatPriceSimple(plan.price, userCountry)}
+                                {formatPriceSimple(plan.price, userCountry, rates)}
                             </span>
                             <span className="text-muted-foreground text-lg">/{plan.interval}</span>
                         </div>

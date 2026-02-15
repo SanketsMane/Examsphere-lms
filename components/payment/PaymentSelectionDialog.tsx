@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 
 interface PaymentSelectionDialogProps {
     open: boolean;
@@ -39,6 +40,7 @@ export function PaymentSelectionDialog({
     const [loading, setLoading] = useState(false);
     const [loadingBalance, setLoadingBalance] = useState(true);
     const [userCountry, setUserCountry] = useState<string>("India");
+    const { rates } = useCurrency();
 
     // Fetch wallet balance and user country
     useEffect(() => {
@@ -102,7 +104,7 @@ export function PaymentSelectionDialog({
                     <div className="bg-muted p-4 rounded-lg">
                         <div className="flex justify-between items-center">
                             <span className="text-sm text-muted-foreground">Total Amount</span>
-                            <span className="text-2xl font-bold">{formatPriceSimple(amount, userCountry)}</span>
+                            <span className="text-2xl font-bold">{formatPriceSimple(amount, userCountry, rates)}</span>
                         </div>
                     </div>
 
@@ -138,7 +140,7 @@ export function PaymentSelectionDialog({
                                                 <p className="text-sm text-muted-foreground">Loading balance...</p>
                                             ) : (
                                                 <p className="text-sm text-muted-foreground">
-                                                    Available: {formatPriceSimple(walletBalance || 0, userCountry)}
+                                                    Available: {formatPriceSimple(walletBalance || 0, userCountry, rates)}
                                                 </p>
                                             )}
                                     </div>
@@ -152,7 +154,7 @@ export function PaymentSelectionDialog({
                         <Alert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
                             <AlertDescription>
-                                Insufficient wallet balance. You need {formatPriceSimple(amount - (walletBalance || 0), userCountry)} more.
+                                Insufficient wallet balance. You need {formatPriceSimple(amount - (walletBalance || 0), userCountry, rates)} more.
                                 <Button
                                     variant="link"
                                     className="p-0 h-auto ml-1"
@@ -178,7 +180,7 @@ export function PaymentSelectionDialog({
                             </>
                         ) : (
                             <>
-                                {paymentMethod === "razorpay" ? "Proceed to Checkout" : `Pay ${formatPriceSimple(amount, userCountry)} from Wallet`}
+                                {paymentMethod === "razorpay" ? "Proceed to Checkout" : `Pay ${formatPriceSimple(amount, userCountry, rates)} from Wallet`}
                             </>
                         )}
                     </Button>

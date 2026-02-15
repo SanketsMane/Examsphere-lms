@@ -12,6 +12,7 @@ import { SiteSettings } from "@prisma/client";
 import { FileUpload } from "@/components/ui/file-upload";
 import { FooterLinksEditor } from "./footer-links-editor";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
+import { CurrencySettings } from "./CurrencySettings";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -299,6 +300,12 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Currency Exchange Rates - Author: Sanket */}
+                <CurrencySettings initialRates={(settings as any)?.currencyRates} />
+
+                {/* Currency Exchange Rates - Author: Sanket */}
+                <CurrencySettings initialRates={(settings as any)?.currencyRates} />
 
                 {/* Footer Links */}
                 <FooterLinksEditor initialData={(settings as any)?.footerLinks} />
