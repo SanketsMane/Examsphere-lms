@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const querySchema = z.object({
   date: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)), // ISO or YYYY-MM-DD
   timezone: z.string().optional().default("UTC"),
-  duration: z.coerce.number().optional().default(60), // Slot duration in minutes
+  duration: z.coerce.number().optional().default(60).refine(n => n > 0, "Duration must be positive"), // Slot duration in minutes
 });
 
 export async function GET(
@@ -49,7 +49,7 @@ export async function GET(
       },
     });
 
-    if (!availability) {
+    if (!availability || !availability.startTime || !availability.endTime) {
       return NextResponse.json({ slots: [] });
     }
 
@@ -58,9 +58,7 @@ export async function GET(
       where: {
         teacherId,
         status: {
-            notIn: ["cancelled", "completed"] // Filter out cancelled/completed if needed, but usually 'scheduled' blocks time. 
-            // Actually 'completed' blocks time too for the past. 
-            // 'cancelled' might free up time.
+            notIn: ["cancelled"] 
         }, 
         scheduledAt: {
           gte: dayStart,
@@ -74,6 +72,10 @@ export async function GET(
     const [startHour, startMinute] = availability.startTime.split(":").map(Number);
     const [endHour, endMinute] = availability.endTime.split(":").map(Number);
 
+    if (isNaN(startHour) || isNaN(endHour)) {
+        return NextResponse.json({ slots: [], warning: "Invalid availability times" });
+    }
+
     let currentSlot = new Date(targetDate);
     currentSlot.setHours(startHour, startMinute, 0, 0);
 
@@ -81,17 +83,16 @@ export async function GET(
     shiftEnd.setHours(endHour, endMinute, 0, 0);
 
     const availableSlots = [];
+    let iterations = 0;
+    const MAX_ITERATIONS = 100; // Safety cap - Author: Sanket
 
     // Loop through the day in 'duration' increments
-    while (isBefore(addMinutes(currentSlot, duration), shiftEnd) || currentSlot.getTime() === shiftEnd.getTime()) {
+    while (iterations < MAX_ITERATIONS && (isBefore(addMinutes(currentSlot, duration), shiftEnd) || currentSlot.getTime() === shiftEnd.getTime())) {
+      iterations++;
       const slotEnd = addMinutes(currentSlot, duration);
 
-      // Check if slot is in the past (allow a buffer, e.g. 1 hour from now)
-      if (isBefore(currentSlot, addMinutes(new Date(), 30))) { // 30 min buffer
-         currentSlot = addMinutes(currentSlot, 30); // Move by 30 mins or duration? Usually fixed slots.
-         // Let's increment by duration (e.g. 60 mins)
-         // But if availability is 9-5, we usually want 9:00, 10:00, etc.
-         // If we skip, we skip to next slot.
+      // Check if slot is in the past (allow a buffer, e.g. 30 min from now)
+      if (isBefore(currentSlot, addMinutes(new Date(), 30))) { 
          currentSlot = slotEnd; 
          continue;
       }
@@ -116,9 +117,6 @@ export async function GET(
       }
 
       // Increment
-      // If we want fixed intervals (e.g. every hour), increment by duration.
-      // If we want flexible, we might increment by 30 mins. 
-      // Let's assume hourly slots for now or matched to duration.
       currentSlot = slotEnd;
     }
 

@@ -22,3 +22,7 @@
 [2026-02-14T15:22:06.189Z]  ✅ BetterAuth Success 200
 [2026-02-15T08:56:39.481Z] Incoming Request: POST /api/auth/sign-in/email | Original Origin: null | Derived Origin: http://192.168.1.37:3000 | Host: 192.168.1.37:3000
 [2026-02-15T08:56:46.758Z]  ✅ BetterAuth Success 200
+[2026-02-21T16:17:29.555Z] Incoming Request: POST /api/auth/email-otp/send-verification-otp | Original Origin: http://localhost:3000 | Derived Origin: http://localhost:3000 | Host: localhost:3000
+[2026-02-21T16:17:35.132Z]  ✅ BetterAuth Success 200
+[2026-02-21T16:18:20.509Z] Incoming Request: POST /api/auth/sign-in/email-otp | Original Origin: http://localhost:3000 | Derived Origin: http://localhost:3000 | Host: localhost:3000
+[2026-02-21T16:18:26.046Z]  ✅ BetterAuth Success 200
