@@ -33,6 +33,8 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [timeSlot, setTimeSlot] = useState<string | undefined>();
     const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingSlots, setIsFetchingSlots] = useState(false);
+    const [fetchedSlots, setFetchedSlots] = useState<{ id: string; time: string; label: string }[]>([]);
     const { openCheckout } = useRazorpay();
     const router = useRouter();
     const [imgSrc, setImgSrc] = useState(teacher.image);
@@ -48,26 +50,60 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
         fetchUser();
     }, []);
 
-    const timeSlots = [
-        "09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "04:00 PM", "06:00 PM"
-    ];
+    // Fetch slots when date changes
+    useEffect(() => {
+        const fetchSlots = async () => {
+            if (!date) return;
+            
+            setIsFetchingSlots(true);
+            setTimeSlot(undefined); // Reset selection
+            try {
+                // Determine timezone (browser default for now, or use teacher's preference if passed)
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const dateStr = format(date, 'yyyy-MM-dd');
+                
+                const res = await fetch(`/api/public/teachers/${teacher.id}/availability?date=${dateStr}&timezone=${timezone}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setFetchedSlots(data.slots || []);
+                }
+            } catch (e) {
+                console.error("Failed to fetch slots", e);
+                toast.error("Could not load availability");
+            } finally {
+                setIsFetchingSlots(false);
+            }
+        }
+        
+        fetchSlots();
+    }, [date, teacher.id]);
 
     const handlePayment = async () => {
         if (!date || !timeSlot) return;
 
         setIsLoading(true);
         try {
-            // Parse Time Slot to get Hours/Minutes
-            const [time, period] = timeSlot.split(' ');
-            let [hours, minutes] = time.split(':').map(Number);
-            if (period === 'PM' && hours !== 12) hours += 12;
-            if (period === 'AM' && hours === 12) hours = 0;
-
-            const bookingDate = new Date(date);
-            bookingDate.setHours(hours, minutes, 0, 0);
+            // Find the selected slot object to get the ISO string if available, 
+            // otherwise parse the label/time string.
+            // Our API returns slots with 'id' as ISO string.
+            const selectedSlotObj = fetchedSlots.find(s => s.time === timeSlot || s.label === timeSlot);
             
-            // Send ISO String to ensure backend parses it correctly
-            const dateTimeStr = bookingDate.toISOString();
+            let dateTimeStr: string;
+            
+            if (selectedSlotObj && selectedSlotObj.id.includes('T')) {
+                 dateTimeStr = selectedSlotObj.id;
+            } else {
+                 // Fallback parsing (should not happen with new API)
+                 // Parse Time Slot to get Hours/Minutes
+                const [time, period] = timeSlot.split(' ');
+                let [hours, minutes] = time.split(':').map(Number);
+                if (period === 'PM' && hours !== 12) hours += 12;
+                if (period === 'AM' && hours === 12) hours = 0;
+    
+                const bookingDate = new Date(date);
+                bookingDate.setHours(hours, minutes, 0, 0);
+                dateTimeStr = bookingDate.toISOString();
+            }
 
             const response = await fetch("/api/checkout/session", {
                 method: "POST",
@@ -177,19 +213,30 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                             <Label className="font-bold flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-primary" /> Select Time (IST)
                             </Label>
-                            <RadioGroup onValueChange={setTimeSlot} className="grid grid-cols-3 gap-2">
-                                {timeSlots.map((time) => (
-                                    <div key={time}>
-                                        <RadioGroupItem value={time} id={time} className="peer sr-only" />
-                                        <Label
-                                            htmlFor={time}
-                                            className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-2 hover:bg-primary/5 hover:border-primary/50 cursor-pointer transition-all text-xs font-medium text-center peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-white shadow-sm"
-                                        >
-                                            {time}
-                                        </Label>
-                                    </div>
-                                ))}
-                            </RadioGroup>
+                            
+                            {isFetchingSlots ? (
+                                <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading slots...
+                                </div>
+                            ) : fetchedSlots.length > 0 ? (
+                                <RadioGroup onValueChange={setTimeSlot} className="grid grid-cols-3 gap-2">
+                                    {fetchedSlots.map((slot) => (
+                                        <div key={slot.id}>
+                                            <RadioGroupItem value={slot.time} id={slot.id} className="peer sr-only" />
+                                            <Label
+                                                htmlFor={slot.id}
+                                                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-2 hover:bg-primary/5 hover:border-primary/50 cursor-pointer transition-all text-xs font-medium text-center peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-white shadow-sm"
+                                            >
+                                                {slot.label}
+                                            </Label>
+                                        </div>
+                                    ))}
+                                </RadioGroup>
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground text-sm bg-muted/20 rounded-lg border border-dashed">
+                                    No slots available for this date.
+                                </div>
+                            )}
                         </div>
 
                         {/* Summary & Feedback */}
@@ -207,7 +254,7 @@ export function QuickBookDrawer({ teacher, trigger, open, onOpenChange }: QuickB
                                 <div className="bg-white dark:bg-card p-2 rounded-md border flex flex-col items-center justify-center text-center">
                                     <span className="text-[10px] text-muted-foreground uppercase font-bold">Time</span>
                                     <span className="text-sm font-semibold text-primary">
-                                        {timeSlot || "---"}
+                                        {fetchedSlots.find(s => s.time === timeSlot)?.label || timeSlot || "---"}
                                     </span>
                                 </div>
                             </div>

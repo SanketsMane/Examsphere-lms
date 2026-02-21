@@ -26,6 +26,7 @@ import { FeaturedCourses } from "@/components/marketing/FeaturedCourses";
 import { StatsBar } from "@/components/marketing/StatsBar";
 import { VibeCard } from "@/components/marketing/vibe-card";
 import { BroadcastBanner } from "@/components/marketing/BroadcastBanner";
+import { UpcomingGroupClasses } from "@/components/marketing/UpcomingGroupClasses";
 import { getFeaturedCourses } from "../data/courses/get-featured-courses";
 import { getTopCategories } from "../data/marketing/get-marketing-data";
 
@@ -148,6 +149,8 @@ export default async function Home() {
 
       {/* ... Features ... */}
       <FeaturesGrid />
+
+      <UpcomingGroupClasses />
 
       <FeaturedCourses courses={featuredCourses} />
 

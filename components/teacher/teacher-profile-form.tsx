@@ -190,10 +190,16 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
             <FormItem>
               <FormLabel>Areas of Expertise</FormLabel>
               <div className="space-y-2">
-                <div className="flex gap-2">
-                  <Select value={expertiseInput} onValueChange={setExpertiseInput}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select an area of expertise" />
+                <div className="flex flex-col md:flex-row gap-2">
+                   {/* Quick Select */}
+                  <Select onValueChange={(val) => {
+                      if (val && !watchedExpertise.includes(val)) {
+                           form.setValue("expertise", [...watchedExpertise, val]);
+                           toast.success(`Added ${val}`);
+                      }
+                  }}>
+                    <SelectTrigger className="w-full md:w-[240px]">
+                      <SelectValue placeholder="Select popular topic..." />
                     </SelectTrigger>
                     <SelectContent>
                       {expertiseAreas.map((area) => (
@@ -203,11 +209,31 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button type="button" onClick={addExpertise} size="icon" variant="outline">
-                    <Plus className="h-4 w-4" />
-                  </Button>
+
+                  {/* Custom Input */}
+                  <div className="flex-1 flex gap-2">
+                      <Input
+                        placeholder="Or type any custom expertise..."
+                        value={expertiseInput}
+                        onChange={(e) => setExpertiseInput(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addExpertise())}
+                        disabled={watchedExpertise.length >= 10}
+                      />
+                      <Button 
+                        type="button" 
+                        onClick={addExpertise} 
+                        size="icon" 
+                        variant="outline"
+                        disabled={watchedExpertise.length >= 10}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="text-xs text-muted-foreground mt-1">
+                    {watchedExpertise.length}/10 selected
+                </div>
+                <div className="flex flex-wrap gap-2 pt-2">
                   {watchedExpertise.map((item) => (
                     <Badge key={item} variant="secondary" className="text-sm">
                       {item}

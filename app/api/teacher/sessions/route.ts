@@ -30,7 +30,53 @@ const createSessionSchema = z.object({
   path: ["price"],
 });
 
-// ... (GET function remains same)
+// GET - Fetch teacher sessions
+export async function GET(req: NextRequest) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const teacherProfile = await prisma.teacherProfile.findUnique({
+      where: { userId: session.user.id }
+    });
+
+    if (!teacherProfile) {
+      return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status');
+
+    const sessions = await prisma.liveSession.findMany({
+      where: {
+        teacherId: teacherProfile.id,
+        ...(status && { status: status as any })
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true
+          }
+        }
+      },
+      orderBy: {
+        scheduledAt: 'desc'
+      }
+    });
+
+    return NextResponse.json({ sessions });
+  } catch (error) {
+    console.error("Error fetching sessions:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 
 // POST - Create a new session
 export async function POST(req: NextRequest) {

@@ -26,6 +26,7 @@ import {
   IconWallet,
   IconTicket,
   IconSparkles,
+  IconBook,
 } from "@tabler/icons-react";
 import Logo from "@/public/logo.png";
 
@@ -127,6 +128,11 @@ const data = {
       title: "Category",
       url: "/admin/categories",
       icon: IconFolder,
+    },
+    {
+      title: "Subjects",
+      url: "/admin/subjects",
+      icon: IconBook,
     },
     {
       title: "CMS Pages",

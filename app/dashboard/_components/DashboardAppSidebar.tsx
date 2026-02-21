@@ -145,8 +145,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = authClient.useSession();
   const role = (session?.user as any)?.role;
 
-  // Create a copy of the secondary nav items
-  const secondaryNav = [...data.navSecondary];
+  // Create a copy of the secondary nav items with explicit type to allow 'highlight'
+  const secondaryNav: { title: string; url: string; icon: any; highlight?: boolean }[] = [...data.navSecondary];
 
   // Add Teacher link based on role
   // If teacher -> Go to Teacher Dashboard
@@ -155,6 +155,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Instructor Dashboard",
       url: "/teacher",
       icon: IconSchool,
+      highlight: true,
     });
   }
   // If student -> Render distinctive CTA separately (not in standard list)

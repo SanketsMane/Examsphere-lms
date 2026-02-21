@@ -42,11 +42,11 @@ export default async function TeacherSettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" defaultValue={user.name} />
+              <Input id="name" defaultValue={user.name || ""} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue={user.email} disabled />
+              <Input id="email" type="email" defaultValue={user.email || ""} disabled />
             </div>
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
@@ -116,10 +116,7 @@ export default async function TeacherSettingsPage() {
               <Switch />
             </div>
             <Separator />
-            <div className="space-y-2">
-              <Label>Maximum Students per Session</Label>
-              <Input type="number" defaultValue="30" />
-            </div>
+
           </CardContent>
         </Card>
 

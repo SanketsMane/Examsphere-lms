@@ -44,7 +44,7 @@ const RECURRENCE_TYPES = [
     { value: "WEEKLY", label: "Weekly" },
 ];
 
-export function CreateTemplateForm({ onSuccess }: { onSuccess: () => void }) {
+export function CreateTemplateForm({ onSuccess, subjects = [] }: { onSuccess: () => void, subjects?: { id: string, name: string }[] }) {
     const [loading, setLoading] = useState(false);
 
     const form = useForm<TemplateFormData>({
@@ -102,7 +102,11 @@ export function CreateTemplateForm({ onSuccess }: { onSuccess: () => void }) {
                                         <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                        {subjects.length > 0 ? (
+                                            subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)
+                                        ) : (
+                                            SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
+                                        )}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />

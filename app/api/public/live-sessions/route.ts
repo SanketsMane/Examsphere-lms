@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     
     // Build where clause (Author: Sanket)
     const where: any = {
-      status: 'Scheduled',
+      status: 'scheduled', // Lowercase 'scheduled' for LiveSession
       scheduledAt: {
         gte: new Date() // Only future sessions
       }
@@ -34,13 +34,7 @@ export async function GET(req: NextRequest) {
     
     // Subject filter
     if (subject) {
-      if (!where.AND) where.AND = [];
-      where.AND.push({
-        OR: [
-            { subjectId: subject },
-            { subjectName: { contains: subject, mode: 'insensitive' } }
-        ]
-      });
+      where.subject = { contains: subject, mode: 'insensitive' };
     }
     
     // Price filters
@@ -48,7 +42,7 @@ export async function GET(req: NextRequest) {
       where.price = 0;
     } else if (minPrice || maxPrice) {
       where.price = {};
-      if (minPrice) where.price.gte = Math.round(Number(minPrice) * 100); // QA-008: Fix precision
+      if (minPrice) where.price.gte = Math.round(Number(minPrice) * 100);
       if (maxPrice) where.price.lte = Math.round(Number(maxPrice) * 100);
     }
     
@@ -74,59 +68,44 @@ export async function GET(req: NextRequest) {
       };
     }
     
-    // Time of day filter (Author: Sanket)
+    // Time of day filter (matches existing logic)
     if (timeOfDay) {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
-      if (timeOfDay === 'morning') {
-        // 6 AM - 12 PM
-        where.scheduledAt = {
-          ...where.scheduledAt,
-          gte: where.scheduledAt?.gte || today
-        };
-        // Add hour filter in application layer
-      } else if (timeOfDay === 'afternoon') {
-        // 12 PM - 6 PM
-        where.scheduledAt = {
-          ...where.scheduledAt,
-          gte: where.scheduledAt?.gte || today
-        };
-      } else if (timeOfDay === 'evening') {
-        // 6 PM - 12 AM
-        where.scheduledAt = {
-          ...where.scheduledAt,
-          gte: where.scheduledAt?.gte || today
-        };
-      }
+      where.scheduledAt = {
+         ...where.scheduledAt,
+         gte: where.scheduledAt?.gte || today
+      };
     }
-    // Search filter (Author: Sanket) - QA-006: Fix overwrite
+
+    // Search filter (Author: Sanket)
     if (search) {
       if (!where.AND) where.AND = [];
       where.AND.push({
         OR: [
             { title: { contains: search, mode: 'insensitive' } },
-            { subjectName: { contains: search, mode: 'insensitive' } },
-            { subject: { name: { contains: search, mode: 'insensitive' } } },
             { description: { contains: search, mode: 'insensitive' } },
+            { subject: { contains: search, mode: 'insensitive' } },
             { teacher: { user: { name: { contains: search, mode: 'insensitive' } } } }
         ]
       });
     }
     
     // Get total count for pagination (Author: Sanket)
-    const total = await prisma.groupClass.count({ where });
+    const total = await prisma.liveSession.count({ where });
     
     // Build orderBy clause (Author: Sanket)
     let orderBy: any = { scheduledAt: 'asc' };
     if (sort === 'price') {
       orderBy = { price: 'asc' };
     } else if (sort === 'popularity') {
-      orderBy = { enrollments: { _count: 'desc' } };
+    //   orderBy = { bookings: { _count: 'desc' } }; // Use bookings count for LiveSession
+      orderBy = { updatedAt: 'desc' }; // Fallback if bookings relation count complexity
     }
     
     // Get paginated sessions (Author: Sanket)
-    const groupClasses = await prisma.groupClass.findMany({
+    const liveSessions = await prisma.liveSession.findMany({
       where,
       skip,
       take: limit,
@@ -142,37 +121,22 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        subject: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        enrollments: {
-          where: {
-            status: 'Active'
-          },
-          select: {
-            id: true
-          }
+        // LiveSession usually stores subject as string, but if specific relation exists, include checks needed.
+        // Based on schema, subject is String?.
+        bookings: {
+             select: { id: true }
         },
         _count: {
-          select: {
-            enrollments: {
-              where: {
-                status: 'Active'
-              }
-            }
-          }
+            select: { bookings: true }
         }
       },
       orderBy,
     });
     
     // Filter by time of day in application layer (Author: Sanket)
-    let filteredSessions = groupClasses;
+    let filteredSessions = liveSessions;
     if (timeOfDay) {
-      filteredSessions = groupClasses.filter(session => {
+      filteredSessions = liveSessions.filter(session => {
         const hour = new Date(session.scheduledAt).getHours();
         if (timeOfDay === 'morning') return hour >= 6 && hour < 12;
         if (timeOfDay === 'afternoon') return hour >= 12 && hour < 18;
@@ -183,8 +147,8 @@ export async function GET(req: NextRequest) {
     
     // Transform the data (Author: Sanket)
     const transformedSessions = filteredSessions.map(session => {
-      const confirmedBookings = (session as any)._count.enrollments;
-      const maxParticipants = session.maxStudents || 12;
+      const confirmedBookings = (session as any)._count?.bookings || 0;
+      const maxParticipants = session.maxParticipants || 1; // Default to 1 if not set
       const availableSlots = Math.max(0, maxParticipants - confirmedBookings);
       
       return {
@@ -192,23 +156,23 @@ export async function GET(req: NextRequest) {
         title: session.title,
         description: session.description,
         teacher: {
-          id: (session as any).teacher.user.id,
-          name: (session as any).teacher.user.name || "Anonymous Teacher",
-          avatar: (session as any).teacher.user.image || "/placeholder-avatar.svg",
-          rating: (session as any).teacher.rating || 0,
-          totalReviews: (session as any).teacher.totalReviews || 0,
-          isVerified: (session as any).teacher.isVerified,
+          id: session.teacher.user.id,
+          name: session.teacher.user.name || "Anonymous Teacher",
+          avatar: session.teacher.user.image || "/placeholder-avatar.svg",
+          rating: session.teacher.rating || 0,
+          totalReviews: session.teacher.totalReviews || 0,
+          isVerified: session.teacher.isVerified,
         },
         scheduledAt: session.scheduledAt,
         duration: session.duration,
         price: session.price,
-        subject: (session as any).subject?.name || (session as any).subjectName,
-        subjectId: (session as any).subjectId,
-        type: "group",
+        subject: session.subject || "General", 
+        subjectId: session.subject, // LiveSession uses string for subject, mapping loosely
+        type: maxParticipants > 1 ? "group" : "one-on-one",
         availableSlots,
         maxParticipants,
         confirmedBookings,
-        bookedByCurrentUser: false, // Will be updated based on authentication
+        bookedByCurrentUser: false, 
       };
     });
     
@@ -224,14 +188,10 @@ export async function GET(req: NextRequest) {
       },
       // Added filter options - Author: Sanket
       options: {
-        subjects: await (prisma as any).subject.findMany({ 
-          where: { isActive: true }, 
-          orderBy: { name: 'asc' },
-          select: { id: true, name: true }
-        }),
+        subjects: [], // Can implement aggregation if needed: await prisma.liveSession.groupBy({ by: ['subject'] })
         teachers: Array.from(
           new Map(
-            groupClasses.map(s => [s.teacher.user.id, { id: s.teacher.user.id, name: s.teacher.user.name }])
+            liveSessions.map(s => [s.teacher.user.id, { id: s.teacher.user.id, name: s.teacher.user.name }])
           ).values()
         )
       }

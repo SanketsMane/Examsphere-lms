@@ -91,7 +91,7 @@ export const courseSchema = z.object({
 // Teacher Profile Schema
 export const teacherProfileSchema = z.object({
   bio: z.string().min(10, { message: "Bio must be at least 10 characters" }).max(1000, { message: "Bio must be less than 1000 characters" }),
-  expertise: z.array(z.string()).min(1, { message: "At least one expertise area is required" }).max(5, { message: "Maximum 5 expertise areas allowed" }),
+  expertise: z.array(z.string()).min(1, { message: "At least one expertise area is required" }).max(10, { message: "Maximum 10 expertise areas allowed" }),
   languages: z.array(z.string()).min(1, { message: "At least one language is required" }),
   hourlyRate: z.coerce.number().int({ message: "Hourly rate must be a whole number" }).min(5, { message: "Hourly rate must be at least $5" }).optional(),
   experience: z.coerce.number().int({ message: "Experience must be a whole number" }).min(0, { message: "Years of experience must be 0 or greater" }).optional(),

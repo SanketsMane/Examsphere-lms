@@ -133,6 +133,12 @@ const teacherData = {
   ],
   navSecondary: [
     {
+      title: "Student Dashboard",
+      url: "/dashboard",
+      icon: IconDashboard,
+      highlight: true,
+    },
+    {
       title: "Settings",
       url: "/teacher/settings",
       icon: IconSettings,

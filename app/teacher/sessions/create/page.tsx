@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/db";
 import { requireTeacher } from "@/app/data/auth/require-roles";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateSessionForm } from "../_components/CreateSessionForm";
@@ -9,6 +10,11 @@ export const dynamic = "force-dynamic";
 
 export default async function CreateSessionPage() {
   await requireTeacher();
+
+  const subjects = await prisma.subject.findMany({
+    where: { isActive: true },
+    orderBy: { name: 'asc' }
+  });
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-10">
@@ -43,7 +49,7 @@ export default async function CreateSessionPage() {
 
       {/* Form Implementation */}
       <div className="bg-background/50 backdrop-blur-sm rounded-3xl">
-        <CreateSessionForm />
+        <CreateSessionForm subjects={subjects} />
       </div>
     </div>
   );

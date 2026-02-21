@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/db";
 import { requireTeacher } from "@/app/data/auth/require-roles";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,11 @@ export const dynamic = "force-dynamic";
 
 export default async function TeacherSessionsPage() {
   await requireTeacher();
+  
+  const subjects = await prisma.subject.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' }
+  });
 
   return (
     <div className="space-y-6">
@@ -133,7 +139,7 @@ export default async function TeacherSessionsPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="upcoming" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="upcoming" className="flex items-center gap-2">
                 <Video className="h-4 w-4" />
                 Upcoming
@@ -165,15 +171,15 @@ export default async function TeacherSessionsPage() {
             </TabsContent>
 
             <TabsContent value="completed">
-              <SessionsList status="Completed" />
+              <SessionsList status="completed" />
             </TabsContent>
 
             <TabsContent value="cancelled">
-              <SessionsList status="Cancelled" />
+              <SessionsList status="cancelled" />
             </TabsContent>
 
             <TabsContent value="templates">
-              <SessionTemplatesManager />
+              <SessionTemplatesManager subjects={subjects as any} />
             </TabsContent>
           </Tabs>
         </CardContent>

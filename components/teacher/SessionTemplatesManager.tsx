@@ -21,7 +21,7 @@ import { authClient } from "@/lib/auth-client"; // Added for localization - Auth
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-export function SessionTemplatesManager() {
+export function SessionTemplatesManager({ subjects = [] }: { subjects?: any[] }) {
     const [templates, setTemplates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [applying, setApplying] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export function SessionTemplatesManager() {
                         <CreateTemplateForm onSuccess={() => {
                             setIsCreateDialogOpen(false);
                             loadTemplates();
-                        }} />
+                        }} subjects={subjects} />
                     </DialogContent>
                 </Dialog>
             </div>

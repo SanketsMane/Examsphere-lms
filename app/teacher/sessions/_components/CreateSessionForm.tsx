@@ -76,12 +76,6 @@ const sessionSchema = z.object({
 
 type SessionFormData = z.infer<typeof sessionSchema>;
 
-const SUBJECTS = [
-  "Mathematics", "Physics", "Chemistry", "Biology", "Computer Science",
-  "Programming", "Web Development", "Data Science", "English",
-  "Business", "Marketing", "Design", "Music", "Art", "Other"
-];
-
 const DURATIONS = [
   { value: 30, label: "30 Minutes (Quick)" },
   { value: 45, label: "45 Minutes (Standard)" },
@@ -101,7 +95,7 @@ const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
   };
 });
 
-export function CreateSessionForm() {
+export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, name: string }[] }) {
   const router = useRouter();
   const [userCountry, setUserCountry] = useState<string>("India");
 
@@ -159,36 +153,98 @@ export function CreateSessionForm() {
       setLoading(true);
 
       let scheduledAt: Date | undefined;
+      // If specific date, combine date and time
       if (data.sessionType === "specific" && data.scheduledDate && data.scheduledTime) {
         const [hours, minutes] = data.scheduledTime.split(':').map(Number);
         scheduledAt = new Date(data.scheduledDate);
         scheduledAt.setHours(hours, minutes, 0, 0);
+        
+        // --- CREATE SPECIFIC LIVE SESSION ---
+        const response = await fetch('/api/teacher/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: data.title,
+            description: data.description,
+            subject: data.subject,
+            scheduledAt: scheduledAt.toISOString(),
+            duration: data.duration,
+            price: Math.round(data.price * 100), // Convert to cents
+            timezone: data.timezone,
+            isAvailableSlot: false, // Specific sessions are not "available slots" in this context
+            isFreeTrialEligible: data.isFreeTrialEligible
+          })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to create session');
+        }
+
+        const result = await response.json();
+        toast.success('Session created successfully!');
+        router.push('/teacher/sessions');
+
+      } else if (data.sessionType === "available") {
+        // --- CREATE SESSION TEMPLATE (RECURRING) ---
+        // For "available" type, we create a template that can be applied to slots
+        // We need to import this action dynamically or move it to top if this file allows
+        const { createSessionTemplate } = await import("@/app/actions/session-templates");
+        
+        const result = await createSessionTemplate({
+            title: data.title,
+            description: data.description,
+            subject: data.subject,
+            duration: data.duration,
+            price: Math.round(data.price * 100), // Convert to cents
+            recurrenceType: "NONE", // Default to simple template for now, or assume Weekly if we had UI for it
+            startTime: data.scheduledTime || "10:00", // Default or user restricted? The UI hides time for "available"
+            // The current UI for "available" hides date/time input. 
+            // We should probably redirect them to "Availability" settings or 
+            // create a generic template. 
+            // Let's create a generic template with no specific time.
+        });
+
+        // WAIT: The UI for "available" says: "This session will be automatically offered... based on your Teaching Calendar"
+        // This implies we should be creating a "Service" or "Session Type" definition, not a scheduled session.
+        // In this system, `SessionTemplate` seems to be that definition.
+        // However, `createSessionTemplate` requires `startTime` in the schema/action we saw earlier?
+        // Let's check `app/actions/session-templates.ts` again. It requires `startTime`.
+        // But the "Available" UI hides the time input (lines 358-416).
+        // If we want to support "Available", we should probably enforce creating a template 
+        // OR ask for a default time if the template action requires it.
+        
+        // Actually, looking at the previous code (lines 416-429), it shows an info box:
+        // "This session will be automatically offered... based on ... Teaching Calendar."
+        
+        // If the backend `SessionTemplate` *requires* a start time, we might be blocked.
+        // Let's look at `createSessionTemplate` signature again.
+        // Yes: `startTime: string;` is required in the arguments.
+        
+        // HACK/FIX: We'll generate a dummy template with a placeholder time, 
+        // or we need to ask the user for "Default Time" even for recurring availability?
+        // Or maybe we treat "Available" as "Create a Template" and redirect them?
+        
+        // Better approach for now: Treat it as a template creation with a default time, 
+        // letting them edit it later.
+        
+        const templateResult = await createSessionTemplate({
+            title: data.title,
+            description: data.description,
+            subject: data.subject,
+            duration: data.duration,
+            price: Math.round(data.price * 100),
+            recurrenceType: "NONE",
+            startTime: "09:00", // Placeholder default
+        });
+
+        if (templateResult.success) {
+            toast.success('Session Template created! Apply it to your calendar.');
+            router.push('/teacher/sessions?tab=templates');
+        } else {
+            throw new Error(templateResult.error || "Failed to create template");
+        }
       }
-
-      const response = await fetch('/api/teacher/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description,
-          subject: data.subject,
-          scheduledAt: scheduledAt?.toISOString(),
-          duration: data.duration,
-          price: Math.round(data.price * 100), // Convert to cents
-          timezone: data.timezone,
-          isAvailableSlot: data.sessionType === "available",
-          isFreeTrialEligible: data.isFreeTrialEligible
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create session');
-      }
-
-      const result = await response.json();
-      toast.success('Session created successfully!');
-      router.push('/teacher/sessions');
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -241,9 +297,9 @@ export function CreateSessionForm() {
                       <SelectValue placeholder="Select a subject" />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-gray-200 dark:border-gray-800 shadow-2xl">
-                      {SUBJECTS.map((subject) => (
-                        <SelectItem key={subject} value={subject} className="rounded-xl my-1 focus:bg-blue-50 dark:focus:bg-blue-900/30">
-                          {subject}
+                      {subjects.map(s => (
+                        <SelectItem key={s.id} value={s.name} className="rounded-xl my-1 focus:bg-blue-50 dark:focus:bg-blue-900/30">
+                          {s.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

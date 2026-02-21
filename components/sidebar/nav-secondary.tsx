@@ -22,6 +22,7 @@ export function NavSecondary({
     title: string
     url: string
     icon: Icon
+    highlight?: boolean
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const pathname = usePathname()
@@ -37,7 +38,8 @@ export function NavSecondary({
                   href={item.url}
                   className={cn(
                     "flex items-center gap-2",
-                    pathname === item.url && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                    pathname === item.url && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+                    item.highlight && "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-sm"
                   )}
                 >
                   <item.icon className={cn(pathname === item.url && "text-white")} />

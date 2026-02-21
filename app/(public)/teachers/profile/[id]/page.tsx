@@ -142,6 +142,94 @@ export default async function TeacherProfilePage({ params }: Props) {
                     </div>
 
                 </div>
+
+                {/* Upcoming Live Sessions Section */}
+                <div className="md:col-span-3 mt-8">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Upcoming Live Sessions</h2>
+                    
+                    {/* Fetch sessions for this teacher */}
+                    {await (async () => {
+                        const upcomingSessions = await prisma.liveSession.findMany({
+                            where: {
+                                teacherId: teacher.id,
+                                status: 'scheduled',
+                                scheduledAt: {
+                                    gte: new Date()
+                                }
+                            },
+                            orderBy: {
+                                scheduledAt: 'asc'
+                            },
+                            take: 3
+                        });
+
+                        if (upcomingSessions.length === 0) {
+                            return (
+                                <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 text-center">
+                                    <p className="text-slate-500 dark:text-slate-400">No upcoming sessions scheduled at the moment.</p>
+                                    <p className="text-sm text-slate-400 mt-2">Check back later or request a specific time!</p>
+                                </div>
+                            );
+                        }
+
+                        // We need to import SessionCard here or create a simple version if imports are tricky in async block.
+                        // Since this is a server component, we can layout the cards directly or use a client component wrapper.
+                        // Let's use a server-friendly rendering of the session card style.
+                        
+                        return (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {upcomingSessions.map(session => (
+                                    <Link href={`/live-sessions/${session.id}`} key={session.id} className="group">
+                                        <div className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all group-hover:border-blue-200 dark:group-hover:border-blue-900">
+                                            <div className="relative h-48 bg-slate-100 dark:bg-slate-900">
+                                                {/* Placeholder Image or specific session image if available */}
+                                                <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+                                                    <IconVideo className="w-12 h-12" />
+                                                </div>
+                                                <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/50 backdrop-blur px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                                                    Live
+                                                </div>
+                                                <div className="absolute bottom-4 left-4 bg-black/60 text-white px-3 py-1 rounded-lg text-sm font-medium flex items-center gap-2 backdrop-blur-sm">
+                                                    <IconCalendar className="w-4 h-4" />
+                                                    {new Date(session.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • {new Date(session.scheduledAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                            <div className="p-5 space-y-4">
+                                                <div className="space-y-1">
+                                                    <h3 className="font-bold text-lg text-slate-900 dark:text-white line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                                        {session.title}
+                                                    </h3>
+                                                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 min-h-[2.5em]">
+                                                        {session.description || "Join this interactive live session to learn and grow."}
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+                                                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                                                        <IconClock className="w-4 h-4" />
+                                                        <span>{session.duration} min</span>
+                                                    </div>
+                                                    <div className="font-bold text-lg text-slate-900 dark:text-white">
+                                                        {session.price === 0 ? (
+                                                            <span className="text-green-600">Free</span>
+                                                        ) : (
+                                                            // Simple formatting since we don't have helper here easily without importing
+                                                            `$${(session.price / 100).toFixed(2)}` 
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                
+                                                <Button className="w-full bg-slate-900 text-white hover:bg-blue-600 dark:bg-white dark:text-slate-900 dark:hover:bg-blue-100 rounded-xl font-bold">
+                                                    Book Now
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        );
+                    })()}
+                </div>
             </div>
         </div>
     );
