@@ -53,7 +53,7 @@ export async function createGroupClass(data: {
                 maxStudents: maxStudents,
                 isAdvertised: data.isAdvertised || false,
                 isFreeTrialEligible: data.isFreeTrialEligible || false,
-                subject: data.subjectId ? ({ connect: { id: data.subjectId } } as any) : undefined, // Relation connector - Author: Sanket
+                subjectId: data.subjectId,
                 bannerUrl: data.bannerUrl,
                 status: "Scheduled"
             }
