@@ -21,8 +21,8 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const query = querySchema.safeParse({
       date: searchParams.get("date"),
-      timezone: searchParams.get("timezone"),
-      duration: searchParams.get("duration"),
+      timezone: searchParams.get("timezone") || undefined,
+      duration: searchParams.get("duration") || undefined,
     });
 
     if (!query.success) {
