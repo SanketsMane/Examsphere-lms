@@ -16,11 +16,16 @@ export const getS3Client = () => {
     });
   }
 
-  // Author: Sanket - Debug logging to verify region
+  // Author: Sanket - Debug logging to verify region and endpoint
   console.log("S3Client - Using Region:", env.AWS_REGION);
+  if (env.AWS_ENDPOINT_URL_S3) {
+    console.log("S3Client - Using Custom Endpoint:", env.AWS_ENDPOINT_URL_S3);
+  }
 
   return new S3Client({
     region: env.AWS_REGION,
+    endpoint: env.AWS_ENDPOINT_URL_S3 || undefined,
+    forcePathStyle: !!env.AWS_ENDPOINT_URL_S3, // Required for MinIO/LocalStack
     credentials: {
       accessKeyId: env.AWS_ACCESS_KEY_ID,
       secretAccessKey: env.AWS_SECRET_ACCESS_KEY,

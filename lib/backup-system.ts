@@ -191,10 +191,11 @@ export class BackupManager {
     const dbBackupPath = path.join(backupDir, 'database.sql');
     
     try {
-      // PostgreSQL backup
+      // MySQL backup - Refactored for MySQL - Author: Sanket
       const dbUrl = process.env.DATABASE_URL;
       if (dbUrl) {
-        execSync(`pg_dump "${dbUrl}" > "${dbBackupPath}"`, { stdio: 'inherit' });
+        // Parse mysql://user:pass@host:port/db URL if needed, or use the URL directly if supported by the client
+        execSync(`mysqldump "${dbUrl}" > "${dbBackupPath}"`, { stdio: 'inherit' });
       }
     } catch (error) {
       console.error('[Backup] Database backup failed:', error);
@@ -459,9 +460,10 @@ export class BackupManager {
     const dbBackupPath = path.join(backupDir, 'database.sql');
     
     try {
+      // MySQL restore - Refactored for MySQL - Author: Sanket
       const dbUrl = process.env.DATABASE_URL;
       if (dbUrl) {
-        execSync(`psql "${dbUrl}" < "${dbBackupPath}"`, { stdio: 'inherit' });
+        execSync(`mysql "${dbUrl}" < "${dbBackupPath}"`, { stdio: 'inherit' });
       }
     } catch (error) {
       console.error('[Recovery] Database restore failed:', error);

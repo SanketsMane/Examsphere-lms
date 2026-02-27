@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -107,7 +107,7 @@ model AiMessage {
   conversationId String
   role           String // "user" or "assistant"
   content        String
-  attachments    String[] // URLs to uploaded files
+  attachments    Json // URLs to uploaded files - Refactored for MySQL - Author: Sanket
   createdAt      DateTime       @default(now())
   conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -258,9 +258,9 @@ model Course {
   status           CourseStatus           @default(Draft)
   rejectionReason  String?
   language         String?
-  tags             String[]
+  tags             Json // Refactored for MySQL - Author: Sanket
   prerequisites    String?
-  learningOutcomes String[]
+  learningOutcomes Json // Refactored for MySQL - Author: Sanket
   isFeatured       Boolean                @default(false)
   discountPrice    Int?
   discountExpiry   DateTime?
@@ -364,8 +364,8 @@ model TeacherProfile {
   id                  String                @id @default(uuid())
   userId              String                @unique
   bio                 String?
-  expertise           String[]
-  languages           String[]
+  expertise           Json // Refactored for MySQL - Author: Sanket
+  languages           Json // Refactored for MySQL - Author: Sanket
   hourlyRate          Int?
   isVerified          Boolean               @default(false)
   isApproved          Boolean               @default(false)
@@ -375,8 +375,8 @@ model TeacherProfile {
   rating              Float?
   totalReviews        Int                   @default(0)
   totalStudents       Int                   @default(0)
-  qualifications      String[]
-  certifications      String[]
+  qualifications      Json // Refactored for MySQL - Author: Sanket
+  certifications      Json // Refactored for MySQL - Author: Sanket
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   experience          Int?
@@ -646,7 +646,7 @@ model GroupClass {
   price       Int
   status      ClassStatus       @default(Scheduled)
   meetingUrl  String?
-  materials   String[]
+  materials   Json // Refactored for MySQL - Author: Sanket
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   teacher     TeacherProfile    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
@@ -953,15 +953,15 @@ model Testimonial {
 model UserPreferences {
   id               String           @id @default(cuid())
   userId           String           @unique
-  categories       String[]
-  difficulty       String[]
+  categories       Json // Refactored for MySQL - Author: Sanket
+  difficulty       Json // Refactored for MySQL - Author: Sanket
   priceRangeMin    Float?           @default(0)
   priceRangeMax    Float?           @default(1000)
   learningStyle    LearningStyle    @default(Visual)
   timeAvailability TimeAvailability @default(Medium)
-  goals            String[]
-  topics           String[]
-  languages        String[]
+  goals            Json // Refactored for MySQL - Author: Sanket
+  topics           Json // Refactored for MySQL - Author: Sanket
+  languages        Json // Refactored for MySQL - Author: Sanket
   notifications    Boolean          @default(true)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -994,8 +994,8 @@ model CourseRecommendation {
   userId     String
   courseId   String
   confidence Float
-  reasons    String[]
-  tags       String[]
+  reasons    Json // Refactored for MySQL - Author: Sanket
+  tags       Json // Refactored for MySQL - Author: Sanket
   algorithm  String
   viewed     Boolean  @default(false)
   clicked    Boolean  @default(false)
@@ -1020,7 +1020,7 @@ model LearningPath {
   estimatedDuration Int?
   courses           Json
   prerequisites     Json?
-  tags              String[]
+  tags              Json // Refactored for MySQL - Author: Sanket
   isPublic          Boolean                  @default(true)
   createdById       String
   createdAt         DateTime                 @default(now())
@@ -1355,9 +1355,9 @@ model TeacherVerification {
   identityDocumentType     String?
   identityDocumentUrl      String?
   identityVerifiedAt       DateTime?
-  qualificationDocuments   String[]
+  qualificationDocuments   Json // Refactored for MySQL - Author: Sanket
   qualificationsVerifiedAt DateTime?
-  experienceDocuments      String[]
+  experienceDocuments      Json // Refactored for MySQL - Author: Sanket
   experienceYears          Int?
   experienceVerifiedAt     DateTime?
   bankAccountName          String?
@@ -1490,7 +1490,7 @@ model SubscriptionPlan {
   description   String?
   price         Float
   interval      String             @default("month") // month, year
-  features      String[] // List of feature descriptions
+  features      Json // List of feature descriptions - Refactored for MySQL - Author: Sanket
   role          UserRole   @default(STUDENT)
   razorpayPlanId String?
   metadata      Json?      // Store feature limits (e.g. maxStudents, commissionRate)
@@ -1833,7 +1833,7 @@ model Coupon {
   code         String        @unique
   type         CouponType
   value        Int // Amount or percentage
-  applicableOn String[] // ["DEMO", "30MIN", "60MIN", "GROUP", "CRASH", "FULL"]
+  applicableOn Json // ["DEMO", "30MIN", "60MIN", "GROUP", "CRASH", "FULL"] - Refactored for MySQL - Author: Sanket
   teacherId    String? // Null means global
   expiryDate   DateTime
   usageLimit   Int           @default(100)
