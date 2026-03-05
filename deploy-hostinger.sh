@@ -8,7 +8,7 @@ set -e  # Exit on error
 # Configuration
 VPS_IP="147.93.29.199"
 VPS_USER="root"
-VPS_PASS="Bksun@1708@@"
+VPS_PASS="NrH7rW5ZY@iirGk"
 APP_NAME="kidokool-lms"
 REMOTE_DIR="/root/kidokool-lms"
 

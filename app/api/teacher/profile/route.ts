@@ -98,6 +98,8 @@ export async function POST(req: NextRequest) {
         const newProfile = await tx.teacherProfile.create({
           data: {
             ...validatedData,
+            qualifications: validatedData.qualifications || [], // Default for MySQL JSON - Author: Sanket
+            certifications: validatedData.certifications || [], // Default for MySQL JSON - Author: Sanket
             userId: session.user.id,
           },
           include: {

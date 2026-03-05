@@ -72,6 +72,8 @@ export async function POST(req: NextRequest) {
           isVerified: false, // Requires admin approval
           isApproved: false, // Requires admin approval
           timezone: "UTC", // Default, can be updated later
+          qualifications: [], // Ensure JSON field has a default array - Author: Sanket
+          certifications: [], // Ensure JSON field has a default array - Author: Sanket
         }
       });
     }
