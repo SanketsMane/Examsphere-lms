@@ -23,6 +23,9 @@ export async function CreateCourse(
     await prisma.course.create({
       data: {
         ...validation.data,
+        fileKey: validation.data.fileKey || "",
+        tags: [],
+        learningOutcomes: [],
         userId: session.user.id,
       },
     });

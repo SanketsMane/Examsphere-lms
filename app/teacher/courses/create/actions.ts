@@ -39,6 +39,9 @@ export async function CreateCourse(
         const course = await prisma.course.create({
             data: {
                 ...validation.data,
+                fileKey: validation.data.fileKey || "",
+                tags: [],
+                learningOutcomes: [],
                 description: validation.data.description ? DOMPurify.sanitize(validation.data.description) : validation.data.description,
                 user: {
                     connect: {
