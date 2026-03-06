@@ -56,7 +56,7 @@ export function BroadcastBanner({ broadcasts = [], className }: BroadcastBannerP
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
         <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl pointer-events-none animate-pulse delay-1000"></div>
 
-      <Marquee pauseOnHover className="[--duration:40s] py-2.5">
+      <Marquee pauseOnHover repeat={10} className="[--duration:20s] py-2.5">
         {broadcasts.map((item, i) => {
           const Icon = getIcon(item.type);
           const color = getColor(item.type);
