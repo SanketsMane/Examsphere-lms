@@ -98,10 +98,21 @@ export async function POST(request: Request) {
       expiresIn: 360, // URL expires in 6 minutes
     });
 
+    // Author: Sanket - Construct the public URL based on endpoint
+    let publicUrl = "";
+    if (env.AWS_ENDPOINT_URL_S3) {
+      // For MinIO/Custom endpoints, usually {endpoint}/{bucket}/{key}
+      publicUrl = `${env.AWS_ENDPOINT_URL_S3}/${env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}/${uniqueKey}`;
+    } else {
+      // Standard AWS URL
+      publicUrl = `https://${env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.s3.${env.AWS_REGION || 'eu-north-1'}.amazonaws.com/${uniqueKey}`;
+    }
+
     const response = {
       presignedUrl,
       key: uniqueKey,
-      contentType, // Return this so client uses exact same value
+      publicUrl, // Added for client to use directly - Author: Sanket
+      contentType, 
     };
 
     return NextResponse.json(response);

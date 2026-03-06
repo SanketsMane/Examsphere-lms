@@ -46,50 +46,63 @@ interface FileUploadProps {
 
         setIsUploading(true);
         try {
-            // Step 1: Get presigned URL from API
-            const presignResponse = await fetch("/api/s3/upload", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    fileName: file.name,
-                    contentType: file.type,
-                    size: file.size,
-                    isImage: file.type.startsWith("image/"),
-                }),
-            });
+            // Check if we should use proxy (if endpoint is http and site is https)
+            const isSecure = window.location.protocol === "https:";
+            const s3Endpoint = process.env.NEXT_PUBLIC_S3_LOCAL_ENDPOINT || "";
+            const useProxy = isSecure && s3Endpoint.startsWith("http://");
 
-            if (!presignResponse.ok) {
-                const error = await presignResponse.json();
-                throw new Error(error.error || "Failed to get upload URL");
-            }
+            if (useProxy) {
+                const formData = new FormData();
+                formData.append("file", file);
 
-            const { presignedUrl, key, contentType } = await presignResponse.json();
-
-            // Step 2: Upload directly to S3 using presigned URL
-            // IMPORTANT: Use the contentType from API response to match presigned URL signature
-            const uploadResponse = await fetch(presignedUrl, {
-                method: "PUT",
-                body: file,
-                headers: {
-                    "Content-Type": contentType, // Use exact contentType from API
-                },
-            });
-
-            if (!uploadResponse.ok) {
-                // Log the actual S3 error for debugging
-                const errorText = await uploadResponse.text();
-                console.error("S3 Upload Error:", {
-                    status: uploadResponse.status,
-                    statusText: uploadResponse.statusText,
-                    body: errorText,
-                    headers: Object.fromEntries(uploadResponse.headers.entries())
+                const proxyResponse = await fetch("/api/upload/proxy", {
+                    method: "POST",
+                    body: formData,
                 });
-                throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
-            }
 
-            // Construct the S3 URL from the key
-            const s3Url = `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.s3.${process.env.NEXT_PUBLIC_AWS_REGION || 'eu-north-1'}.amazonaws.com/${key}`;
-            onChange(s3Url);
+                if (!proxyResponse.ok) {
+                    const error = await proxyResponse.json();
+                    throw new Error(error.error || "Proxy upload failed");
+                }
+
+                const { url } = await proxyResponse.json();
+                onChange(url);
+            } else {
+                // Step 1: Get presigned URL from API
+                const presignResponse = await fetch("/api/s3/upload", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        contentType: file.type,
+                        size: file.size,
+                        isImage: file.type.startsWith("image/"),
+                    }),
+                });
+
+                if (!presignResponse.ok) {
+                    const error = await presignResponse.json();
+                    throw new Error(error.error || "Failed to get upload URL");
+                }
+
+                const { presignedUrl, publicUrl, contentType } = await presignResponse.json();
+
+                // Step 2: Upload directly to S3 using presigned URL
+                const uploadResponse = await fetch(presignedUrl, {
+                    method: "PUT",
+                    body: file,
+                    headers: {
+                        "Content-Type": contentType,
+                    },
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text();
+                    throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
+                }
+
+                onChange(publicUrl);
+            }
             toast.success("File uploaded successfully");
         } catch (error: any) {
             console.error("Upload error:", error);

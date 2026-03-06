@@ -124,7 +124,7 @@ export function LessonForm({ chapterId, data, courseId }: iAppProps) {
                 name="thumbnailKey"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Thumbnail image</FormLabel>
+                    <FormLabel>Upload photo</FormLabel>
                     <FormControl>
                       <Uploader
                         fileTypeAccepted="image"

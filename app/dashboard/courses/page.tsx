@@ -7,6 +7,7 @@ import { BookOpen, Clock, BarChart3, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { CertificateButton } from "./_components/CertificateButton";
+import { constructS3Url } from "@/lib/s3-helper";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +89,7 @@ export default async function DashboardCoursesPage() {
               <CardHeader className="p-0">
                 <div className="aspect-video relative">
                   <Image
-                    src={course.fileKey}
+                    src={constructS3Url(course.fileKey)}
                     alt={course.title}
                     fill
                     className="object-cover"

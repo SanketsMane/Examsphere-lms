@@ -228,7 +228,7 @@ export function CreateCourseForm({ categories }: CreateCourseFormProps) {
                                 name="fileKey"
                                 render={({ field }) => (
                                     <FormItem className="w-full">
-                                        <FormLabel>Thumbnail image</FormLabel>
+                                        <FormLabel>Upload photo</FormLabel>
                                         <FormControl>
                                             <Uploader
                                                 fileTypeAccepted="image"

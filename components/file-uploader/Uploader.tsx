@@ -54,53 +54,80 @@ export function Uploader({ onChange, value, fileTypeAccepted }: iAppProps) {
         progress: 0,
       }));
 
-      // Author: Sanket - Real S3 upload using presigned URLs
+      // Author: Sanket - Real S3 upload using presigned URLs or Proxy for insecure endpoints
       try {
-        // Step 1: Get presigned URL from our API
-        setFileState((prev) => ({ ...prev, progress: 10 }));
+        const isSecure = window.location.protocol === "https:";
+        const s3Endpoint = process.env.NEXT_PUBLIC_S3_LOCAL_ENDPOINT || "";
+        const useProxy = isSecure && s3Endpoint.startsWith("http://");
 
-        const presignResponse = await fetch("/api/s3/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileName: file.name,
-            contentType: file.type,
-            size: file.size,
-            isImage: fileTypeAccepted === "image",
-          }),
-        });
+        if (useProxy) {
+          const formData = new FormData();
+          formData.append("file", file);
 
-        if (!presignResponse.ok) {
-          const error = await presignResponse.json();
-          throw new Error(error.error || "Failed to get upload URL");
+          const proxyResponse = await fetch("/api/upload/proxy", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!proxyResponse.ok) {
+            const error = await proxyResponse.json();
+            throw new Error(error.error || "Proxy upload failed");
+          }
+
+          const { key } = await proxyResponse.json();
+          setFileState((prev) => ({
+            ...prev,
+            progress: 100,
+            uploading: false,
+            key: key,
+          }));
+          onChange?.(key);
+        } else {
+          // Step 1: Get presigned URL from our API
+          setFileState((prev) => ({ ...prev, progress: 10 }));
+
+          const presignResponse = await fetch("/api/s3/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileName: file.name,
+              contentType: file.type,
+              size: file.size,
+              isImage: fileTypeAccepted === "image",
+            }),
+          });
+
+          if (!presignResponse.ok) {
+            const error = await presignResponse.json();
+            throw new Error(error.error || "Failed to get upload URL");
+          }
+
+          const { presignedUrl, key, contentType } = await presignResponse.json();
+          setFileState((prev) => ({ ...prev, progress: 20 }));
+
+          // Step 2: Upload file directly to S3 using presigned URL
+          const uploadResponse = await fetch(presignedUrl, {
+            method: "PUT",
+            body: file,
+            headers: {
+              "Content-Type": contentType,
+            },
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(`S3 upload failed with status ${uploadResponse.status}`);
+          }
+
+          setFileState((prev) => ({
+            ...prev,
+            progress: 100,
+            uploading: false,
+            key: key,
+          }));
+
+          // Return the S3 key (not the full URL) to maintain consistency
+          onChange?.(key);
         }
-
-        const { presignedUrl, key, contentType } = await presignResponse.json();
-        setFileState((prev) => ({ ...prev, progress: 20 }));
-
-        // Step 2: Upload file directly to S3 using presigned URL
-        // IMPORTANT: Use exact contentType from API to match signature
-        const uploadResponse = await fetch(presignedUrl, {
-          method: "PUT",
-          body: file,
-          headers: {
-            "Content-Type": contentType,
-          },
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error(`S3 upload failed with status ${uploadResponse.status}`);
-        }
-
-        setFileState((prev) => ({
-          ...prev,
-          progress: 100,
-          uploading: false,
-          key: key,
-        }));
-
-        // Return the S3 key (not the full URL) to maintain consistency
-        onChange?.(key);
         toast.success("File uploaded successfully");
       } catch (error) {
         console.error("Upload error:", error);

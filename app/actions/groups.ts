@@ -55,7 +55,8 @@ export async function createGroupClass(data: {
                 isFreeTrialEligible: data.isFreeTrialEligible || false,
                 subjectId: data.subjectId,
                 bannerUrl: data.bannerUrl,
-                status: "Scheduled"
+                status: "Scheduled",
+                materials: [] // Author: Sanket - Initialize required JSON field for MySQL/Prisma
             }
         });
 

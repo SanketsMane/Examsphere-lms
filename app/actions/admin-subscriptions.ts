@@ -24,6 +24,7 @@ export async function createSubscriptionPlan(data: {
             data: {
                 ...data,
                 features: data.features.filter(f => f.trim() !== ""),
+                metadata: data.metadata || {}, // Ensure metadata is initialized for MySQL - Author: Sanket
             }
         });
         revalidatePath("/admin/subscriptions");

@@ -304,9 +304,6 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                 {/* Currency Exchange Rates - Author: Sanket */}
                 <CurrencySettings initialRates={(settings as any)?.currencyRates} />
 
-                {/* Currency Exchange Rates - Author: Sanket */}
-                <CurrencySettings initialRates={(settings as any)?.currencyRates} />
-
                 {/* Footer Links */}
                 <FooterLinksEditor initialData={(settings as any)?.footerLinks} />
 

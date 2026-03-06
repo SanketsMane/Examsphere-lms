@@ -25,33 +25,56 @@ import { headers } from "next/headers";
 export const dynamic = "force-dynamic";
 
 async function getSession(id: string) {
-  const session = await db.groupClass.findUnique({
+  // First try GroupClass
+  const groupSession = await db.groupClass.findUnique({
     where: { id },
     include: {
       teacher: {
         include: {
           user: {
-            select: {
-              name: true,
-              image: true,
-              email: true
-            }
+            select: { name: true, image: true, email: true }
           }
         }
       },
       enrollments: {
-        where: {
-          status: 'Active'
-        }
+        where: { status: 'Active' }
       }
     }
   });
 
-  if (!session) {
-    notFound();
+  if (groupSession) {
+    return { ...groupSession, type: 'GroupClass' as const };
   }
 
-  return session;
+  // Fallback to LiveSession
+  const liveSession = await db.liveSession.findUnique({
+    where: { id },
+    include: {
+      teacher: {
+        include: {
+          user: {
+            select: { name: true, image: true, email: true }
+          }
+        }
+      },
+      bookings: {
+        where: { status: 'confirmed' }
+      }
+    }
+  });
+
+  if (liveSession) {
+    // Normalize properties for the UI
+    return {
+      ...liveSession,
+      type: 'LiveSession' as const,
+      maxStudents: liveSession.maxParticipants,
+      enrollments: liveSession.bookings, // Alias
+      status: liveSession.status.charAt(0).toUpperCase() + liveSession.status.slice(1), 
+    };
+  }
+
+  notFound();
 }
 
 export default async function SessionDetailPage(props: {
@@ -73,13 +96,23 @@ export default async function SessionDetailPage(props: {
   // Check if user already booked
   let existingBooking = null;
   if (sessionAuth?.user) {
-    existingBooking = await db.groupEnrollment.findFirst({
-      where: {
-        classId: session.id,
-        studentId: sessionAuth.user.id,
-        status: { in: ['Active', 'Pending'] }
-      }
-    });
+    if ((session as any).type === 'GroupClass') {
+      existingBooking = await db.groupEnrollment.findFirst({
+        where: {
+          classId: session.id,
+          studentId: sessionAuth.user.id,
+          status: { in: ['Active', 'Pending'] }
+        }
+      });
+    } else {
+      existingBooking = await db.sessionBooking.findFirst({
+        where: {
+          sessionId: session.id,
+          studentId: sessionAuth.user.id,
+          status: { in: ['confirmed', 'pending'] }
+        }
+      });
+    }
   }
 
   return (
@@ -219,9 +252,9 @@ export default async function SessionDetailPage(props: {
                     {session.teacher.bio && (
                       <p className="text-muted-foreground">{session.teacher.bio}</p>
                     )}
-                    {session.teacher.expertise && session.teacher.expertise.length > 0 && (
+                    {session.teacher.expertise && Array.isArray(session.teacher.expertise) && session.teacher.expertise.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {session.teacher.expertise.map((skill: string) => (
+                        {(session.teacher.expertise as string[]).map((skill: string) => (
                           <Badge key={skill} variant="outline" className="text-xs">
                             {skill}
                           </Badge>

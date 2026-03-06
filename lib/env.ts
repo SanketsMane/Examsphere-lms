@@ -32,6 +32,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES: z.string().min(1),
     NEXT_PUBLIC_AWS_REGION: z.string().min(1),
+    NEXT_PUBLIC_S3_LOCAL_ENDPOINT: z.string().optional(),
   },
 
   // For Next.js >= 13.4.4, you only need to destructure client variables:
@@ -39,5 +40,6 @@ export const env = createEnv({
     NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES:
       process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES,
     NEXT_PUBLIC_AWS_REGION: process.env.NEXT_PUBLIC_AWS_REGION,
+    NEXT_PUBLIC_S3_LOCAL_ENDPOINT: process.env.NEXT_PUBLIC_S3_LOCAL_ENDPOINT,
   },
 });

@@ -24,6 +24,7 @@ import { toast } from "sonner";
 interface BookingPageClientProps {
   session: {
     id: string;
+    type: 'GroupClass' | 'LiveSession';
     title: string;
     description: string | null;
     subject: string | null;
@@ -106,8 +107,12 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
     try {
       setLoading(true);
 
+      const endpoint = session.type === 'GroupClass' 
+        ? `/api/groups/${session.id}/checkout`
+        : `/api/sessions/${session.id}/checkout`;
+
       // Create checkout session
-      const response = await fetch(`/api/groups/${session.id}/checkout`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -140,7 +145,7 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
         onSuccess: (paymentId) => {
             toast.success("Booking confirmed! Redirecting...");
             setTimeout(() => {
-                window.location.href = "/dashboard/sessions?booking=success";
+                window.location.href = session.type === 'GroupClass' ? "/dashboard/groups?booking=success" : "/dashboard/sessions?booking=success";
             }, 2000);
         },
         onError: (err) => {
@@ -158,16 +163,30 @@ export function BookingPageClient({ session }: BookingPageClientProps) {
 
   const handleWalletPayment = async () => {
       try {
-          // Call Server Action
-          const result = await joinGroupClass(session.id, "wallet", appliedCoupon?.code) as any;
+          if (session.type === 'GroupClass') {
+              // Call Server Action
+              const result = await joinGroupClass(session.id, "wallet", appliedCoupon?.code) as any;
 
-          if (result.success) {
+              if (result.success) {
+                  toast.success("Joined successfully via Wallet!");
+                  setTimeout(() => {
+                      window.location.href = "/dashboard/groups?booking=success";
+                  }, 1500);
+              } else {
+                  throw new Error(result.error || "Wallet payment failed");
+              }
+          } else {
+              // Call API endpoint
+              const res = await fetch(`/api/sessions/${session.id}/book-wallet`, {
+                  method: "POST"
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || "Wallet payment failed");
+              
               toast.success("Joined successfully via Wallet!");
               setTimeout(() => {
-                  window.location.href = "/dashboard/groups?booking=success";
+                  window.location.href = "/dashboard/sessions?booking=success";
               }, 1500);
-          } else {
-              throw new Error(result.error || "Wallet payment failed");
           }
           setShowPaymentDialog(false);
       } catch (error: any) {

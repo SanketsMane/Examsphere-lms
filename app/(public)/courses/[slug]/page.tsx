@@ -22,6 +22,7 @@ import { CoursePurchaseButton } from "./_components/CoursePurchaseButton";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 import { CourseDescription } from "./_components/CourseDescription";
+import { constructS3Url } from "@/lib/s3-helper";
 
 export default async function CourseDetailsPage({
     params,
@@ -80,7 +81,7 @@ export default async function CourseDetailsPage({
                 {course.fileKey && (
                     <div className="absolute inset-0 z-0">
                         <Image
-                            src={`https://utfs.io/f/${course.fileKey}`}
+                            src={constructS3Url(course.fileKey)}
                             alt={course.title}
                             fill
                             className="object-cover opacity-20 blur-sm scale-110"
@@ -198,7 +199,7 @@ export default async function CourseDetailsPage({
                     <div className="sticky top-24 bg-card border rounded-xl shadow-lg overflow-hidden">
                         <div className="aspect-video relative bg-slate-900">
                             {course.fileKey ? (
-                                <Image src={`https://utfs.io/f/${course.fileKey}`} alt={course.title} fill className="object-cover" />
+                                <Image src={constructS3Url(course.fileKey)} alt={course.title} fill className="object-cover" />
                             ) : (
                                 <div className="flex items-center justify-center h-full text-slate-500">
                                     <BookOpen className="h-12 w-12" />

@@ -26,7 +26,9 @@ export async function saveBankDetails(data: {
         create: {
             teacherId: teacher.id,
             ...data,
-            status: "Pending" // author: Sanket
+            status: "Pending",
+            qualificationDocuments: [], // Author: Sanket - Initialize required JSON field
+            experienceDocuments: [],    // Author: Sanket - Initialize required JSON field
         },
         update: {
             ...data,
@@ -87,13 +89,13 @@ export async function saveVerificationDocument(type: 'identity' | 'qualification
 
         // Let's fetch current to append
         const current = await prisma.teacherVerification.findUnique({ where: { teacherId: teacher.id } });
-        const currentDocs = current?.qualificationDocuments || [];
+        const currentDocs = (current?.qualificationDocuments as string[]) || [];
         updateData.qualificationDocuments = [...currentDocs, ...urlList];
         updateData.qualificationsVerifiedAt = null;
     } else if (type === 'experience') {
         const urlList = Array.isArray(urls) ? urls : [urls];
         const current = await prisma.teacherVerification.findUnique({ where: { teacherId: teacher.id } });
-        const currentDocs = current?.experienceDocuments || [];
+        const currentDocs = (current?.experienceDocuments as string[]) || [];
         updateData.experienceDocuments = [...currentDocs, ...urlList];
         updateData.experienceVerifiedAt = null;
     }
@@ -103,7 +105,9 @@ export async function saveVerificationDocument(type: 'identity' | 'qualification
         create: {
             teacherId: teacher.id,
             ...updateData,
-            status: "Pending" // author: Sanket
+            status: "Pending",
+            qualificationDocuments: [], // Author: Sanket - Initialize required JSON field
+            experienceDocuments: [],    // Author: Sanket - Initialize required JSON field
         },
         update: {
             ...updateData,
@@ -164,12 +168,12 @@ export async function submitVerification() {
         ? verification.identityDocumentUrl.map(formatLink).join("<br>")
         : formatLink(verification.identityDocumentUrl as string);
 
-    const qualHtml = verification.qualificationDocuments && verification.qualificationDocuments.length > 0
-        ? verification.qualificationDocuments.map(formatLink).join("<br>")
+    const qualHtml = (verification.qualificationDocuments && (verification.qualificationDocuments as string[]).length > 0)
+        ? (verification.qualificationDocuments as string[]).map(formatLink).join("<br>")
         : "<em>No documents provided</em>";
 
-    const expHtml = verification.experienceDocuments && verification.experienceDocuments.length > 0
-        ? verification.experienceDocuments.map(formatLink).join("<br>")
+    const expHtml = (verification.experienceDocuments && (verification.experienceDocuments as string[]).length > 0)
+        ? (verification.experienceDocuments as string[]).map(formatLink).join("<br>")
         : "<em>No documents provided</em>";
 
 
@@ -228,9 +232,11 @@ export async function removeVerificationDocument(type: 'qualification' | 'experi
     const updateData: any = {};
 
     if (type === 'qualification') {
-        updateData.qualificationDocuments = verification.qualificationDocuments.filter(u => u !== urlToRemove);
+        const docs = (verification.qualificationDocuments as string[]) || [];
+        updateData.qualificationDocuments = docs.filter(u => u !== urlToRemove);
     } else if (type === 'experience') {
-        updateData.experienceDocuments = verification.experienceDocuments.filter(u => u !== urlToRemove);
+        const docs = (verification.experienceDocuments as string[]) || [];
+        updateData.experienceDocuments = docs.filter(u => u !== urlToRemove);
     }
 
     await prisma.teacherVerification.update({

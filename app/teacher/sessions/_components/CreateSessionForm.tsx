@@ -296,7 +296,7 @@ export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, 
                     <SelectTrigger className="h-14 bg-gray-50/50 dark:bg-gray-800/20 border-gray-200 dark:border-gray-800 rounded-2xl font-medium focus:ring-blue-500/30">
                       <SelectValue placeholder="Select a subject" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-gray-200 dark:border-gray-800 shadow-2xl">
+                    <SelectContent className="rounded-2xl border-gray-200 dark:border-gray-800 shadow-2xl bg-white dark:bg-gray-950">
                       {subjects.map(s => (
                         <SelectItem key={s.id} value={s.name} className="rounded-xl my-1 focus:bg-blue-50 dark:focus:bg-blue-900/30">
                           {s.name}
@@ -456,7 +456,7 @@ export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, 
                         <SelectValue placeholder="Select time" />
                       </div>
                     </SelectTrigger>
-                    <SelectContent className="max-h-60 rounded-2xl shadow-2xl border-gray-200 dark:border-gray-800">
+                    <SelectContent className="max-h-60 rounded-2xl shadow-2xl border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
                       {TIME_SLOTS.map((slot) => (
                         <SelectItem key={slot.value} value={slot.value} className="rounded-xl my-1 focus:bg-purple-50 dark:focus:bg-purple-900/30">
                           {slot.label}

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
+import { constructS3Url } from "@/lib/s3-helper";
 
 interface Resource {
     id: string;
@@ -99,7 +100,7 @@ export function ResourceList({ resources }: ResourceListProps) {
                             <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
                                     <Button variant="ghost" size="icon" asChild>
-                                        <a href={resource.fileUrl.startsWith('http') ? resource.fileUrl : `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.fly.storage.tigris.dev/${resource.fileUrl}`} target="_blank" rel="noopener noreferrer">
+                                        <a href={constructS3Url(resource.fileUrl)} target="_blank" rel="noopener noreferrer">
                                             <ExternalLink className="h-4 w-4" />
                                         </a>
                                     </Button>

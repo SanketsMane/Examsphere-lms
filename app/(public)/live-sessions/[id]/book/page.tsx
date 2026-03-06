@@ -7,34 +7,55 @@ import { BookingPageClient } from "./_components/BookingPageClient";
 export const dynamic = "force-dynamic";
 
 async function getSession(id: string) {
-  const session = await db.groupClass.findUnique({
+  // First try GroupClass
+  const groupSession = await db.groupClass.findUnique({
     where: { id },
     include: {
       teacher: {
         include: {
-          user: {
-            select: {
-              name: true,
-              image: true
-            }
-          }
+          user: { select: { name: true, image: true } }
         }
       },
       _count: {
         select: {
-          enrollments: {
-            where: { status: 'Active' }
-          }
+          enrollments: { where: { status: 'Active' } }
         }
       }
     }
   });
 
-  if (!session) {
-    notFound();
+  if (groupSession) {
+    return { ...groupSession, type: 'GroupClass' as const };
   }
 
-  return session;
+  // Fallback to LiveSession
+  const liveSession = await db.liveSession.findUnique({
+    where: { id },
+    include: {
+      teacher: {
+        include: {
+          user: { select: { name: true, image: true } }
+        }
+      },
+      _count: {
+        select: {
+          bookings: { where: { status: 'confirmed' } }
+        }
+      }
+    }
+  });
+
+  if (liveSession) {
+    return {
+      ...liveSession,
+      type: 'LiveSession' as const,
+      maxStudents: liveSession.maxParticipants,
+      _count: { enrollments: liveSession._count.bookings }, // Normalize
+      status: liveSession.status.charAt(0).toUpperCase() + liveSession.status.slice(1)
+    };
+  }
+
+  notFound();
 }
 
 export default async function BookSessionPage(props: {
@@ -57,16 +78,27 @@ export default async function BookSessionPage(props: {
   }
 
   // Check if already booked
-  const existingBooking = await db.groupEnrollment.findFirst({
-    where: {
-      classId: session.id,
-      studentId: sessionAuth.user.id,
-      status: { in: ['Active', 'Pending'] }
-    }
-  });
+  let existingBooking = null;
+  if (session.type === 'GroupClass') {
+    existingBooking = await db.groupEnrollment.findFirst({
+      where: {
+        classId: session.id,
+        studentId: sessionAuth.user.id,
+        status: { in: ['Active', 'Pending'] }
+      }
+    });
+  } else {
+    existingBooking = await db.sessionBooking.findFirst({
+      where: {
+        sessionId: session.id,
+        studentId: sessionAuth.user.id,
+        status: { in: ['confirmed', 'pending'] }
+      }
+    });
+  }
 
   if (existingBooking) {
-    redirect(`/dashboard/groups`);
+    redirect(session.type === 'GroupClass' ? `/dashboard/groups` : `/dashboard/sessions`);
   }
 
   // Check if session is full

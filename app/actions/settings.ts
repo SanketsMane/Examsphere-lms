@@ -97,12 +97,12 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
                     instagram,
                     linkedin,
                     youtube,
-                    footerLinks: JSON.parse(formData.get("footerLinks") as string || "{}"),
+                    footerLinks: formData.get("footerLinks") ? JSON.parse(formData.get("footerLinks") as string) : (existing.footerLinks || {}),
                     maxGroupClassSize,
-                    razorpayKeyId,
-                    razorpayKeySecret,
-                    razorpayWebhookSecret: formData.get("razorpayWebhookSecret") as string,
-                    currencyRates: JSON.parse(formData.get("currencyRates") as string || "{}"), // Author: Sanket
+                    razorpayKeyId: razorpayKeyId || existing.razorpayKeyId, // Keep existing if not provided - Author: Sanket
+                    razorpayKeySecret: razorpayKeySecret || existing.razorpayKeySecret, // Keep existing if not provided - Author: Sanket
+                    razorpayWebhookSecret: formData.get("razorpayWebhookSecret") as string || existing.razorpayWebhookSecret,
+                    currencyRates: formData.get("currencyRates") ? JSON.parse(formData.get("currencyRates") as string) : (existing.currencyRates || {}), // Author: Sanket
                 } as any,
             });
         } else {

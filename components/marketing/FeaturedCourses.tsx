@@ -8,6 +8,7 @@ import Link from "next/link";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
 import { useCurrency } from "@/components/providers/CurrencyProvider";
+import { constructS3Url } from "@/lib/s3-helper";
 
 // Helper type for the data structure we receive
 interface FeaturedCourse {
@@ -92,9 +93,7 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
                             const durationStr = `${hours}h ${minutes > 0 ? `${minutes}m` : ''}`;
 
                             // Image: use fileKey if it looks like a URL, else fallback
-                            const imageUrl = course.fileKey && course.fileKey.startsWith('http')
-                                ? course.fileKey
-                                : '/placeholder-course.jpg'; // Need a real placeholder or just use the random ones from before if missing? 
+                            const imageUrl = constructS3Url(course.fileKey || '/placeholder-course.jpg'); 
                             // Ideally seed data has valid URLs.
 
                             const instructorName = course.user.name || "Instructor";

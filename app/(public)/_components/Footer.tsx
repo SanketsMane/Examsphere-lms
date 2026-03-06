@@ -47,7 +47,15 @@ import { getSiteSettings } from "@/app/data/settings/get-site-settings";
 
 export async function Footer() {
   const settings = await getSiteSettings();
-  const footerLinks = settings?.footerLinks ? (settings.footerLinks as any) : defaultFooterLinks;
+  const footerLinksData = settings?.footerLinks ? (settings.footerLinks as any) : defaultFooterLinks;
+  
+  // Ensure we have fallback arrays for all categories to prevent crashes - Author: Sanket
+  const footerLinks = {
+    learn: footerLinksData?.learn || defaultFooterLinks.learn,
+    teach: footerLinksData?.teach || defaultFooterLinks.teach,
+    support: footerLinksData?.support || defaultFooterLinks.support,
+    company: footerLinksData?.company || defaultFooterLinks.company,
+  };
   
   // Construct proper logo URL from S3 key if needed
   const logoSrc = settings?.logo && settings.logo.trim() !== ""

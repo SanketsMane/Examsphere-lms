@@ -20,6 +20,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { FileUpload } from "@/components/ui/file-upload";
 
 interface CreateGroupFormProps {
     subjects: { id: string, name: string }[];
@@ -43,6 +44,8 @@ export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
 
     const currencyConfig = getCurrencyConfig(userCountry);
 
+    const [bannerUrl, setBannerUrl] = useState<string>("");
+
     async function onSubmit(formData: FormData) {
         setLoading(true);
 
@@ -53,8 +56,7 @@ export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
         const price = Number(formData.get("price"));
         const maxStudents = Number(formData.get("maxStudents"));
         const isAdvertised = formData.get("isAdvertised") === "on";
-        const isFreeTrialEligible = formData.get("isFreeTrialEligible") === "on";  // Free trial option - Author: Sanket
-        const bannerUrl = formData.get("bannerUrl") as string;
+        const isFreeTrialEligible = formData.get("isFreeTrialEligible") === "on";
 
         if (maxStudents > 12) {
             toast.error("Error", { description: "Maximum students allowed is 12" });
@@ -71,8 +73,8 @@ export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
                 price,
                 maxStudents,
                 isAdvertised,
-                isFreeTrialEligible,  // Include free trial flag - Author: Sanket
-                subjectId, // Save selected subject ID - Author: Sanket
+                isFreeTrialEligible,
+                subjectId,
                 bannerUrl
             });
 
@@ -170,10 +172,12 @@ export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
                     </p>
                 </div>
             </div>
-
             <div className="space-y-2">
-                <Label htmlFor="bannerUrl">Banner Image URL (Optional)</Label>
-                <Input id="bannerUrl" name="bannerUrl" placeholder="https://..." />
+                <FileUpload 
+                    value={bannerUrl} 
+                    onChange={setBannerUrl} 
+                    label="Banner Image" 
+                />
             </div>
 
             <Button type="submit" disabled={loading}>

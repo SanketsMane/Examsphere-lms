@@ -165,6 +165,10 @@ export async function approveTeacher(teacherId: string) {
                 userId: teacherId,
                 isApproved: true,
                 isVerified: true,
+                expertise: [],
+                languages: [],
+                qualifications: [],
+                certifications: []
             },
             update: {
                 isApproved: true,
@@ -208,6 +212,10 @@ export async function rejectTeacher(teacherUserId: string, reason: string) {
             create: {
                 userId: teacherUserId,
                 isApproved: false,
+                expertise: [],
+                languages: [],
+                qualifications: [],
+                certifications: []
             },
             update: {
                 isApproved: false

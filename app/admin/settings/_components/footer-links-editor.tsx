@@ -52,10 +52,17 @@ export function FooterLinksEditor({ initialData }: { initialData?: any }) {
 
     // If initialData is null/empty, use defaults
     useEffect(() => {
-        if (!initialData || Object.keys(initialData).length === 0) {
+        try {
+            if (!initialData || Object.keys(initialData).length === 0) {
+                setLinks(defaultLinks);
+            } else {
+                // Ensure all keys exist to prevent rendering errors - Author: Sanket
+                const merged = { ...defaultLinks, ...initialData };
+                setLinks(merged);
+            }
+        } catch (e) {
+            console.error("Failed to parse footer links:", e);
             setLinks(defaultLinks);
-        } else {
-            setLinks(initialData);
         }
     }, [initialData]);
 

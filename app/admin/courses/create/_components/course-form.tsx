@@ -211,7 +211,7 @@ export function CourseForm({ categories }: CourseFormProps) {
                                 name="fileKey"
                                 render={({ field }) => (
                                     <FormItem className="w-full">
-                                        <FormLabel>Thumbnail Name (File Key)</FormLabel>
+                                        <FormLabel>Upload photo</FormLabel>
                                         <FormControl>
                                             <Input placeholder="thumbnail-key.jpg" {...field} value={field.value as string} />
                                         </FormControl>

@@ -7,6 +7,7 @@ import { saveVerificationDocument } from "@/app/actions/teacher-verification";
 import { useRouter } from "next/navigation";
 import { FileIcon, Trash2, Loader2, LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { constructS3Url } from "@/lib/s3-helper";
 
 interface DocumentUploadProps {
     label: string;
@@ -96,7 +97,7 @@ export function DocumentUpload({
                         Let's just show them for now. If we need remove, we need that action.
                     */}
                             <Button variant="ghost" size="sm" asChild>
-                                <a href={`https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.fly.storage.tigris.dev/${url}`} target="_blank" rel="noreferrer">
+                                <a href={constructS3Url(url)} target="_blank" rel="noreferrer">
                                     <LinkIcon className="h-4 w-4" />
                                 </a>
                             </Button>

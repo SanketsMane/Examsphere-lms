@@ -74,26 +74,26 @@ async function StudentAnalytics({ userId }: { userId: string }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Courses Enrolled"
-          value={analytics.stats.enrollmentCount.toString()}
+          value={(analytics.stats?.enrollmentCount ?? 0).toString()}
           icon={<BookOpen className="h-4 w-4" />}
           change="+12% from last month"
           changeType="positive"
         />
         <MetricCard
           title="Completed Courses"
-          value={analytics.stats.completedCourses.toString()}
+          value={(analytics.stats?.completedCourses ?? 0).toString()}
           icon={<Award className="h-4 w-4" />}
-          subtitle={`${analytics.stats.completionRate}% completion rate`}
+          subtitle={`${analytics.stats?.completionRate ?? 0}% completion rate`}
         />
         <MetricCard
           title="Live Sessions"
-          value={analytics.stats.totalSessionsBooked.toString()}
+          value={(analytics.stats?.totalSessionsBooked ?? 0).toString()}
           icon={<Video className="h-4 w-4" />}
-          subtitle={`${analytics.stats.completedSessions} completed`}
+          subtitle={`${analytics.stats?.completedSessions ?? 0} completed`}
         />
         <MetricCard
           title="Lessons Completed"
-          value={analytics.stats.totalLessonsCompleted.toString()}
+          value={(analytics.stats?.totalLessonsCompleted ?? 0).toString()}
           icon={<Target className="h-4 w-4" />}
           change="+23% from last month"
           changeType="positive"
@@ -238,27 +238,27 @@ async function TeacherAnalytics() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
             title="Total Students"
-            value={analytics.stats.studentsCount.toString()}
+            value={(analytics.stats?.studentsCount ?? 0).toString()}
             icon={<Users className="h-4 w-4" />}
             change="+15% from last month"
             changeType="positive"
           />
           <MetricCard
             title="Total Earnings"
-            value={`$${(analytics.stats.totalEarnings / 100).toFixed(2)}`}
+            value={`$${((analytics.stats?.totalEarnings ?? 0) / 100).toFixed(2)}`}
             icon={<DollarSign className="h-4 w-4" />}
             change="+28% from last month"
             changeType="positive"
           />
           <MetricCard
             title="Courses Created"
-            value={analytics.stats.coursesCreated.toString()}
+            value={(analytics.stats?.coursesCreated ?? 0).toString()}
             icon={<BookOpen className="h-4 w-4" />}
-            subtitle={`${analytics.stats.totalEnrollments} total enrollments`}
+            subtitle={`${analytics.stats?.totalEnrollments ?? 0} total enrollments`}
           />
           <MetricCard
             title="Average Rating"
-            value={analytics.stats.averageRating.toFixed(1)}
+            value={(analytics.stats?.averageRating ?? 0).toFixed(1)}
             icon={<Award className="h-4 w-4" />}
             subtitle="from student reviews"
           />
