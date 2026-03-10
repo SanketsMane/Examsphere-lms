@@ -1,24 +1,50 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { IconSchool, IconCheck, IconX, IconClock } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { IconSchool } from "@tabler/icons-react";
 import { prisma as db } from "@/lib/db";
 import { TeacherActions } from "./_components/teacher-actions";
 import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeachersPage() {
+export default async function TeachersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   await requireAdmin();
+  const { page } = await searchParams;
+  const currentPage = Number(page) || 1;
+  const pageSize = 10;
+  const skip = (currentPage - 1) * pageSize;
 
-  const teachers = await db.user.findMany({
-    where: { role: 'teacher' },
-    include: {
-      teacherProfile: true,
-    },
-    orderBy: { createdAt: 'desc' },
+  const [teachers, totalTeachers, activeCount, pendingCount] = await Promise.all([
+    db.user.findMany({
+      where: { role: 'teacher' },
+      include: {
+        teacherProfile: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+    }),
+    db.user.count({ where: { role: 'teacher' } }),
+    db.teacherProfile.count({ where: { isApproved: true } }),
+    db.teacherProfile.count({ where: { isApproved: false } }),
+  ]);
+
+  const monthAgo = new Date();
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  const newThisMonth = await db.user.count({
+    where: {
+      role: 'teacher',
+      createdAt: { gte: monthAgo }
+    }
   });
-  const activeTeachers = teachers.filter((t: any) => t.teacherProfile?.isApproved);
-  const pendingTeachers = teachers.filter((t: any) => !t.teacherProfile?.isApproved);
+
+  const totalPages = Math.ceil(totalTeachers / pageSize);
 
   return (
     <div className="space-y-6">
@@ -36,7 +62,7 @@ export default async function TeachersPage() {
             <CardTitle className="text-sm font-medium">Active Teachers</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeTeachers.length}</div>
+            <div className="text-2xl font-bold">{activeCount}</div>
           </CardContent>
         </Card>
         <Card>
@@ -44,7 +70,7 @@ export default async function TeachersPage() {
             <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingTeachers.length}</div>
+            <div className="text-2xl font-bold">{pendingCount}</div>
           </CardContent>
         </Card>
         <Card>
@@ -52,11 +78,7 @@ export default async function TeachersPage() {
             <CardTitle className="text-sm font-medium">This Month</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{teachers.filter((t: any) => {
-              const monthAgo = new Date();
-              monthAgo.setMonth(monthAgo.getMonth() - 1);
-              return new Date(t.createdAt) > monthAgo;
-            }).length}</div>
+            <div className="text-2xl font-bold">+{newThisMonth}</div>
           </CardContent>
         </Card>
       </div>
@@ -93,6 +115,20 @@ export default async function TeachersPage() {
               <p className="text-center text-muted-foreground py-8">No teachers found</p>
             )}
           </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
+                <Link href={currentPage <= 1 ? "#" : `/admin/teachers?page=${currentPage - 1}`} className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}>Previous</Link>
+              </Button>
+              <div className="text-sm font-medium">
+                Page {currentPage} of {totalPages}
+              </div>
+              <Button variant="outline" size="sm" asChild disabled={currentPage >= totalPages}>
+                <Link href={currentPage >= totalPages ? "#" : `/admin/teachers?page=${currentPage + 1}`} className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}>Next</Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

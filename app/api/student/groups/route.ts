@@ -42,7 +42,8 @@ export async function GET() {
         class: {
           scheduledAt: "asc"
         }
-      }
+      },
+      take: 100, // Enforce pagination bounds natively
     });
 
     const transformed = enrollments.map(e => ({

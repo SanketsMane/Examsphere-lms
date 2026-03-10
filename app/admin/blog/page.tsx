@@ -11,13 +11,28 @@ import { format } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminBlogPage() {
+export default async function AdminBlogPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ page?: string }>;
+}) {
     await requireAdmin();
+    const { page } = await searchParams;
+    const currentPage = Number(page) || 1;
+    const pageSize = 10;
+    const skip = (currentPage - 1) * pageSize;
 
-    const posts = await prisma.blogPost.findMany({
-        orderBy: { createdAt: "desc" },
-        include: { author: { select: { name: true } } }
-    });
+    const [posts, totalPosts] = await Promise.all([
+        prisma.blogPost.findMany({
+            orderBy: { createdAt: "desc" },
+            include: { author: { select: { name: true } } },
+            skip,
+            take: pageSize,
+        }),
+        prisma.blogPost.count(),
+    ]);
+
+    const totalPages = Math.ceil(totalPosts / pageSize);
 
     return (
         <div className="space-y-6">
@@ -93,6 +108,36 @@ export default async function AdminBlogPage() {
                             )}
                         </TableBody>
                     </Table>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 mt-8">
+                            <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
+                                <Link 
+                                    href={{
+                                        pathname: "/admin/blog",
+                                        query: { page: currentPage - 1 }
+                                    }} 
+                                    className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                                >
+                                    Previous
+                                </Link>
+                            </Button>
+                            <div className="text-sm font-medium">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <Button variant="outline" size="sm" asChild disabled={currentPage >= totalPages}>
+                                <Link 
+                                    href={{
+                                        pathname: "/admin/blog",
+                                        query: { page: currentPage + 1 }
+                                    }} 
+                                    className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                                >
+                                    Next
+                                </Link>
+                            </Button>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

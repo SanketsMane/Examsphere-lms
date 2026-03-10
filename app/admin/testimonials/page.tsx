@@ -8,14 +8,32 @@ import { DeleteTestimonialButton } from "./_components/delete-testimonial-button
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
 
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+
 export const dynamic = "force-dynamic";
 
-export default async function AdminTestimonialsPage() {
+export default async function AdminTestimonialsPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ page?: string }>;
+}) {
     await requireAdmin();
+    const { page } = await searchParams;
+    const currentPage = Number(page) || 1;
+    const pageSize = 10;
+    const skip = (currentPage - 1) * pageSize;
 
-    const testimonials = await prisma.testimonial.findMany({
-        orderBy: { createdAt: "desc" }
-    });
+    const [testimonials, totalTestimonials] = await Promise.all([
+        prisma.testimonial.findMany({
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: pageSize,
+        }),
+        prisma.testimonial.count(),
+    ]);
+
+    const totalPages = Math.ceil(totalTestimonials / pageSize);
 
     return (
         <div className="space-y-6">
@@ -88,6 +106,36 @@ export default async function AdminTestimonialsPage() {
                             )}
                         </TableBody>
                     </Table>
+                    
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 mt-8">
+                            <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
+                                <Link 
+                                    href={{
+                                        pathname: "/admin/testimonials",
+                                        query: { page: currentPage - 1 }
+                                    }} 
+                                    className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                                >
+                                    Previous
+                                </Link>
+                            </Button>
+                            <div className="text-sm font-medium">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <Button variant="outline" size="sm" asChild disabled={currentPage >= totalPages}>
+                                <Link 
+                                    href={{
+                                        pathname: "/admin/testimonials",
+                                        query: { page: currentPage + 1 }
+                                    }} 
+                                    className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                                >
+                                    Next
+                                </Link>
+                            </Button>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

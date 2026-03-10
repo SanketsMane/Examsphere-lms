@@ -33,6 +33,7 @@ export async function GET(
         }
       },
       orderBy: { createdAt: "desc" },
+      take: 100, // Pagination lock to prevent scrape attacks
     });
 
     return NextResponse.json(reviews);

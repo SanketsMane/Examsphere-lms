@@ -17,15 +17,32 @@ import { CouponStats } from "./_components/coupon-stats";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminCouponsPage() {
-  const coupons = await prisma.coupon.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
+export default async function AdminCouponsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page } = await searchParams;
+  const currentPage = Number(page) || 1;
+  const pageSize = 10;
+  const skip = (currentPage - 1) * pageSize;
+
+  const [coupons, totalCoupons, activeCount] = await Promise.all([
+    prisma.coupon.findMany({
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+      include: {
         _count: {
-            select: { usage: true }
+          select: { usage: true }
         }
-    }
-  });
+      }
+    }),
+    prisma.coupon.count(),
+    prisma.coupon.count({ where: { isActive: true } }),
+  ]);
+
+  const totalPages = Math.ceil(totalCoupons / pageSize);
 
   return (
     <div className="space-y-6 p-6">
@@ -42,7 +59,7 @@ export default async function AdminCouponsPage() {
         </Button>
       </div>
 
-      <CouponStats total={coupons.length} active={coupons.filter(c => c.isActive).length} />
+      <CouponStats total={totalCoupons} active={activeCount} />
 
       <div className="border rounded-lg">
         <Table>
@@ -65,7 +82,9 @@ export default async function AdminCouponsPage() {
                   {coupon.type === "PERCENTAGE" ? `${coupon.value}%` : `$${coupon.value}`}
                 </TableCell>
                 <TableCell className="capitalize text-xs text-muted-foreground">
-                    {coupon.applicableOn.length > 0 ? coupon.applicableOn.join(", ") : "Global"}
+                    {Array.isArray(coupon.applicableOn) && coupon.applicableOn.length > 0 
+                      ? (coupon.applicableOn as string[]).join(", ") 
+                      : "Global"}
                 </TableCell>
                 <TableCell>
                   {coupon._count.usage} / {coupon.usageLimit}
@@ -109,6 +128,36 @@ export default async function AdminCouponsPage() {
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-8">
+          <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
+            <Link 
+              href={{
+                pathname: "/admin/coupons",
+                query: { page: currentPage - 1 }
+              }} 
+              className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+            >
+              Previous
+            </Link>
+          </Button>
+          <div className="text-sm font-medium">
+            Page {currentPage} of {totalPages}
+          </div>
+          <Button variant="outline" size="sm" asChild disabled={currentPage >= totalPages}>
+            <Link 
+              href={{
+                pathname: "/admin/coupons",
+                query: { page: currentPage + 1 }
+              }} 
+              className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+            >
+              Next
+            </Link>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,7 +14,16 @@ import { formatPrice } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
-export default async function PaymentsPage() {
+export default async function PaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page } = await searchParams;
+  const currentPage = Number(page) || 1;
+  const pageSize = 10;
+  const skip = (currentPage - 1) * pageSize;
+
   await requireAdmin();
 
   const enrollments = await db.enrollment.findMany({
@@ -23,12 +32,25 @@ export default async function PaymentsPage() {
       Course: true,
     },
     orderBy: { createdAt: 'desc' },
-    take: 50,
+    skip,
+    take: pageSize,
   });
 
-  const totalRevenue = enrollments
-    .filter((e: any) => e.status === 'Active')
-    .reduce((sum: number, e: any) => sum + e.amount, 0);
+  // Calculate total revenue from all active enrollments - Author: Sanket
+  const revenueData = await db.enrollment.aggregate({
+    where: { status: 'Active' },
+    _sum: {
+      amount: true
+    }
+  });
+  const totalRevenue = revenueData._sum.amount || 0;
+
+  // Get true counts for all statuses - Author: Sanket
+  const stats = {
+    total: await db.enrollment.count(),
+    active: await db.enrollment.count({ where: { status: 'Active' } }),
+    pending: await db.enrollment.count({ where: { status: 'Pending' } }),
+  };
 
   return (
     <div className="space-y-6">
@@ -76,7 +98,7 @@ export default async function PaymentsPage() {
             <CardTitle className="text-sm font-medium">Transactions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{enrollments.length}</div>
+            <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
         <Card>
@@ -84,7 +106,7 @@ export default async function PaymentsPage() {
             <CardTitle className="text-sm font-medium">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{enrollments.filter((e: any) => e.status === 'Active').length}</div>
+            <div className="text-2xl font-bold">{stats.active}</div>
           </CardContent>
         </Card>
         <Card>
@@ -92,7 +114,7 @@ export default async function PaymentsPage() {
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{enrollments.filter((e: any) => e.status === 'Pending').length}</div>
+            <div className="text-2xl font-bold">{stats.pending}</div>
           </CardContent>
         </Card>
       </div>
@@ -104,7 +126,7 @@ export default async function PaymentsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {enrollments.map((enrollment: any) => (
+            {enrollments.map((enrollment) => (
               <div key={enrollment.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex-1">
                   <p className="font-medium">{enrollment.Course.title}</p>
@@ -126,6 +148,20 @@ export default async function PaymentsPage() {
               <p className="text-center text-muted-foreground py-8">No transactions found</p>
             )}
           </div>
+          
+          {Math.ceil(stats.total / pageSize) > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
+                <Link href={currentPage <= 1 ? "#" : `/admin/payments?page=${currentPage - 1}`} className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}>Previous</Link>
+              </Button>
+              <div className="text-sm font-medium">
+                Page {currentPage} of {Math.ceil(stats.total / pageSize)}
+              </div>
+              <Button variant="outline" size="sm" asChild disabled={currentPage >= Math.ceil(stats.total / pageSize)}>
+                <Link href={currentPage >= Math.ceil(stats.total / pageSize) ? "#" : `/admin/payments?page=${currentPage + 1}`} className={currentPage >= Math.ceil(stats.total / pageSize) ? "pointer-events-none opacity-50" : ""}>Next</Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

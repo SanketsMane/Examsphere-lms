@@ -80,6 +80,11 @@ const nextConfig: NextConfig = {
       {
           protocol: "https",
           hostname: "i.pravatar.cc",
+      },
+      {
+          protocol: "http",
+          hostname: "147.93.29.199",
+          port: "9000",
       }
     ],
   },

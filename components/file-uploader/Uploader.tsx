@@ -125,7 +125,7 @@ export function Uploader({ onChange, value, fileTypeAccepted }: iAppProps) {
             key: key,
           }));
 
-          // Return the S3 key (not the full URL) to maintain consistency
+          // Return the S3 key (not the full URL) to maintain consistency - Author: Sanket
           onChange?.(key);
         }
         toast.success("File uploaded successfully");

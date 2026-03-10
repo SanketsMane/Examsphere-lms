@@ -67,7 +67,8 @@ export async function GET(req: NextRequest) {
       },
       orderBy: {
         scheduledAt: 'desc'
-      }
+      },
+      take: 500, // Prevent OOM crashes on veteran accounts
     });
 
     return NextResponse.json({ sessions });

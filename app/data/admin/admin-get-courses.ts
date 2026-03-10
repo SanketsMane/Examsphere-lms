@@ -3,7 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { requireTeacherOrAdmin } from "../auth/require-roles";
 
-export async function adminGetCourses() {
+export async function adminGetCourses(page: number = 1, pageSize: number = 10) {
   // await new Promise((resolve) => setTimeout(resolve, 2000));
 
   const session = await requireTeacherOrAdmin();
@@ -13,25 +13,32 @@ export async function adminGetCourses() {
     ? { userId: session.user.id }
     : {};
 
-  const data = await prisma.course.findMany({
-    where: whereCondition,
-    orderBy: {
-      createdAt: "desc",
-    },
-    select: {
-      id: true,
-      title: true,
-      smallDescription: true,
-      duration: true,
-      level: true,
-      status: true,
-      price: true,
-      fileKey: true,
-      slug: true,
-    },
-  });
+  const skip = (page - 1) * pageSize;
 
-  return data;
+  const [data, totalCount] = await Promise.all([
+    prisma.course.findMany({
+      where: whereCondition,
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip,
+      take: pageSize,
+      select: {
+        id: true,
+        title: true,
+        smallDescription: true,
+        duration: true,
+        level: true,
+        status: true,
+        price: true,
+        fileKey: true,
+        slug: true,
+      },
+    }),
+    prisma.course.count({ where: whereCondition })
+  ]);
+
+  return { data, totalCount };
 }
 
-export type AdminCourseType = Awaited<ReturnType<typeof adminGetCourses>>[0];
+export type AdminCourseType = Awaited<ReturnType<typeof adminGetCourses>>['data'][0];

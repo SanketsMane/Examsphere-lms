@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { UploadCloud, X, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
+import { constructS3Url } from "@/lib/s3-helper";
 
 interface FileUploadProps {
     value?: string;
@@ -65,8 +66,8 @@ interface FileUploadProps {
                     throw new Error(error.error || "Proxy upload failed");
                 }
 
-                const { url } = await proxyResponse.json();
-                onChange(url);
+                const { key } = await proxyResponse.json();
+                onChange(key);
             } else {
                 // Step 1: Get presigned URL from API
                 const presignResponse = await fetch("/api/s3/upload", {
@@ -85,7 +86,7 @@ interface FileUploadProps {
                     throw new Error(error.error || "Failed to get upload URL");
                 }
 
-                const { presignedUrl, publicUrl, contentType } = await presignResponse.json();
+                const { presignedUrl, key, contentType } = await presignResponse.json();
 
                 // Step 2: Upload directly to S3 using presigned URL
                 const uploadResponse = await fetch(presignedUrl, {
@@ -101,7 +102,8 @@ interface FileUploadProps {
                     throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
                 }
 
-                onChange(publicUrl);
+                // Return the key (SSOT) - Author: Sanket
+                onChange(key);
             }
             toast.success("File uploaded successfully");
         } catch (error: any) {
@@ -117,12 +119,12 @@ interface FileUploadProps {
             <Label>{label}</Label>
             {value ? (
                 <div className="relative w-32 h-32 overflow-hidden rounded-md border">
-                    {/* Check if video or image for preview */}
+                    {/* Check if video or image for preview - Author: Sanket */}
                     {value.match(/\.(mp4|webm|ogg)$/i) ? (
-                         <video src={value} className="object-cover w-full h-full" controls />
+                         <video src={constructS3Url(value)} className="object-cover w-full h-full" controls />
                     ) : (
                         <Image
-                            src={value}
+                            src={constructS3Url(value)}
                             alt="Upload"
                             fill
                             className="object-contain"

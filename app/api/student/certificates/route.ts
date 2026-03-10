@@ -23,7 +23,8 @@ export async function GET() {
       },
       orderBy: {
         issuedAt: "desc"
-      }
+      },
+      take: 100, // Protect API runtime boundaries
     });
 
     return NextResponse.json({

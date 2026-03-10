@@ -9,19 +9,52 @@ import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Ch
 
 export const dynamic = "force-dynamic";
 
-export default async function StudentsPage() {
+export default async function StudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page } = await searchParams;
+  const currentPage = Number(page) || 1;
+  const pageSize = 10;
+  const skip = (currentPage - 1) * pageSize;
+
   await requireAdmin();
 
   const students = await db.user.findMany({
     where: { role: 'student' },
     include: {
-      enrollment: {
-        include: {
-          Course: true,
-        },
-      },
+      _count: {
+        select: { enrollment: true }
+      }
     },
     orderBy: { createdAt: 'desc' },
+    skip,
+    take: pageSize,
+  });
+
+  const totalStudents = await db.user.count({ where: { role: 'student' } });
+  
+  // Calculate students who enrolled in something in the last 30 days - Author: Sanket
+  const monthAgo = new Date();
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  
+  const activeThisMonth = await db.user.count({
+    where: {
+      role: 'student',
+      enrollment: {
+        some: {
+          createdAt: { gte: monthAgo }
+        }
+      }
+    }
+  });
+
+  const newThisMonth = await db.user.count({
+    where: {
+      role: 'student',
+      createdAt: { gte: monthAgo }
+    }
   });
 
   return (
@@ -40,7 +73,7 @@ export default async function StudentsPage() {
             <CardTitle className="text-sm font-medium">Total Students</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{students.length}</div>
+            <div className="text-2xl font-bold">{totalStudents}</div>
           </CardContent>
         </Card>
         <Card>
@@ -48,7 +81,7 @@ export default async function StudentsPage() {
             <CardTitle className="text-sm font-medium">Active This Month</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{students.length}</div>
+            <div className="text-2xl font-bold">{activeThisMonth}</div>
           </CardContent>
         </Card>
         <Card>
@@ -56,11 +89,7 @@ export default async function StudentsPage() {
             <CardTitle className="text-sm font-medium">New This Month</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{students.filter(s => {
-              const monthAgo = new Date();
-              monthAgo.setMonth(monthAgo.getMonth() - 1);
-              return new Date(s.createdAt) > monthAgo;
-            }).length}</div>
+            <div className="text-2xl font-bold">+{newThisMonth}</div>
           </CardContent>
         </Card>
       </div>
@@ -80,7 +109,7 @@ export default async function StudentsPage() {
                   <div className="flex items-center gap-4 mt-2">
                     <span className="text-sm text-muted-foreground flex items-center gap-1">
                       <IconBook className="h-4 w-4" />
-                      {student.enrollment.length} courses enrolled
+                      {student._count.enrollment} courses enrolled
                     </span>
                   </div>
                 </div>
@@ -97,6 +126,20 @@ export default async function StudentsPage() {
               <p className="text-center text-muted-foreground py-8">No students found</p>
             )}
           </div>
+          
+          {Math.ceil(totalStudents / pageSize) > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
+                <Link href={currentPage <= 1 ? "#" : `/admin/students?page=${currentPage - 1}`} className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}>Previous</Link>
+              </Button>
+              <div className="text-sm font-medium">
+                Page {currentPage} of {Math.ceil(totalStudents / pageSize)}
+              </div>
+              <Button variant="outline" size="sm" asChild disabled={currentPage >= Math.ceil(totalStudents / pageSize)}>
+                <Link href={currentPage >= Math.ceil(totalStudents / pageSize) ? "#" : `/admin/students?page=${currentPage + 1}`} className={currentPage >= Math.ceil(totalStudents / pageSize) ? "pointer-events-none opacity-50" : ""}>Next</Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

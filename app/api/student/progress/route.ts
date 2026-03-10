@@ -31,7 +31,8 @@ export async function GET() {
         const goals = await prisma.learningGoal.findMany({
             where: { studentId: userId },
             include: { milestones: true },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            take: 100,
         });
 
         // Fetch recent session history for chart (last 30 days)
@@ -48,14 +49,16 @@ export async function GET() {
                 scheduledAt: true,
                 duration: true
             },
-            orderBy: { scheduledAt: 'asc' }
+            orderBy: { scheduledAt: 'asc' },
+            take: 100,
         });
 
         // Fetch achievements
         const userAchievements = await prisma.userAchievement.findMany({
             where: { userId },
             include: { achievement: true },
-            orderBy: { unlockedAt: 'desc' }
+            orderBy: { unlockedAt: 'desc' },
+            take: 100,
         });
 
         return NextResponse.json({

@@ -13,23 +13,22 @@ export function constructS3Url(key: string): string {
         return key;
     }
 
-    // Construct URL based on environment
+    // Construct URL based on environment - Author: Sanket
     const bucket = env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES;
     
-    // If we have a custom endpoint (like MinIO), use it - Refactored for MinIO - Author: Sanket
+    // If we have a custom endpoint (MinIO), use it correctly
     if (env.AWS_ENDPOINT_URL_S3) {
-        // Return endpoint/bucket/key (ensure endpoint doesn't have trailing slash)
         const baseUrl = env.AWS_ENDPOINT_URL_S3.endsWith('/') 
             ? env.AWS_ENDPOINT_URL_S3.slice(0, -1) 
             : env.AWS_ENDPOINT_URL_S3;
         
-        // Use the IP address directly as the hostname for public access if configured that way
+        // MinIO usually expects {endpoint}/{bucket}/{key}
         return `${baseUrl}/${bucket}/${key}`;
     }
 
     // Default AWS S3 URL structure
-    const region = env.NEXT_PUBLIC_AWS_REGION || "ap-southeast-2";
-    return `https://s3.${region}.amazonaws.com/${bucket}/${key}`;
+    const region = env.AWS_REGION || "us-east-1";
+    return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 }
 
 /**

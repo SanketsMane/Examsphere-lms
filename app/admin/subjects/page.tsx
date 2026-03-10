@@ -5,26 +5,37 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BookOpen } from "lucide-react";
 import { SubjectDialog } from "./_components/subject-dialog";
 import { DeleteSubjectButton } from "./_components/delete-subject-button";
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
-async function getSubjects() {
-    const subjects = await prisma.subject.findMany({
-        include: {
-            _count: {
-                select: { groupClasses: true }
-            }
-        },
-        orderBy: { name: "asc" }
-    });
-    return subjects;
-}
-
-export default async function AdminSubjectsPage() {
+export default async function AdminSubjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
     await requireAdmin();
+    const { page } = await searchParams;
+    const currentPage = Number(page) || 1;
+    const pageSize = 10;
+    const skip = (currentPage - 1) * pageSize;
 
-    const subjects = await getSubjects();
+    const [subjects, totalSubjects] = await Promise.all([
+        prisma.subject.findMany({
+            include: {
+                _count: {
+                    select: { groupClasses: true }
+                }
+            },
+            orderBy: { name: "asc" },
+            skip,
+            take: pageSize,
+        }),
+        prisma.subject.count(),
+    ]);
+
+    const totalPages = Math.ceil(totalSubjects / pageSize);
 
     return (
         <div className="space-y-6">
@@ -86,6 +97,36 @@ export default async function AdminSubjectsPage() {
                             )}
                         </TableBody>
                     </Table>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 mt-8">
+                            <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
+                                <Link 
+                                    href={{
+                                        pathname: "/admin/subjects",
+                                        query: { page: currentPage - 1 }
+                                    }} 
+                                    className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                                >
+                                    Previous
+                                </Link>
+                            </Button>
+                            <div className="text-sm font-medium">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <Button variant="outline" size="sm" asChild disabled={currentPage >= totalPages}>
+                                <Link 
+                                    href={{
+                                        pathname: "/admin/subjects",
+                                        query: { page: currentPage + 1 }
+                                    }} 
+                                    className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                                >
+                                    Next
+                                </Link>
+                            </Button>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

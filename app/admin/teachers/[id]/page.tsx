@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
+import { formatPrice } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -121,7 +122,7 @@ export default async function TeacherDetailsPage({ params }: { params: Promise<{
                                                 <p className="font-medium">{course.title}</p>
                                                 <div className="flex gap-2 text-xs text-muted-foreground mt-1">
                                                     <Badge variant="outline">{course.status === "Published" ? "Published" : "Draft"}</Badge>
-                                                    <span>${course.price}</span>
+                                                    <span>{formatPrice(course.price)}</span>
                                                     <span>{course._count.enrollment} students</span>
                                                 </div>
                                             </div>

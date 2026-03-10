@@ -6,6 +6,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
+import { constructS3Url } from "@/lib/s3-helper";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
         console.log("S3 Upload - Using Region:", env.AWS_REGION);
         console.log("S3 Upload - Bucket:", env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES);
 
-        const formData = await request.formData();
+        const formData = await request.formData() as any;
         const file = formData.get("file") as File;
 
         if (!file) {
@@ -72,8 +73,8 @@ export async function POST(request: Request) {
             throw s3Error;
         });
 
-        // Author: Sanket - Construct AWS S3 URL
-        const url = `https://${env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES}.s3.${env.AWS_REGION}.amazonaws.com/${uniqueKey}`;
+        // Author: Sanket - Use unified URL construction from helper
+        const url = constructS3Url(uniqueKey);
 
         return NextResponse.json({
             key: uniqueKey,

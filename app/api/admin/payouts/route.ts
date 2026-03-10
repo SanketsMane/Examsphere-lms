@@ -40,7 +40,8 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         createdAt: 'desc'
-      }
+      },
+      take: 500, // Prevent OOM by loading only the most recent chunks
     });
 
     return NextResponse.json({

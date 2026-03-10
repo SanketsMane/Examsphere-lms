@@ -9,6 +9,7 @@ import { UserActions } from "./_components/user-actions";
 import { AddUserDialog } from "./_components/add-user-dialog";
 import { BulkImportDialog } from "./_components/bulk-import-dialog";
 import { BulkExportDialog } from "./_components/bulk-export-dialog";
+import Link from "next/link";
 
 import { UserFilters } from "./_components/user-filters";
 
@@ -17,31 +18,39 @@ export const dynamic = "force-dynamic";
 export default async function UsersManagementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string; search?: string }>;
+  searchParams: Promise<{ role?: string; search?: string; page?: string }>;
 }) {
   await requireAdmin();
   const params = await searchParams;
   const role = params.role;
   const search = params.search;
+  const currentPage = Number(params.page) || 1;
+  const pageSize = 10;
+  const skip = (currentPage - 1) * pageSize;
+
+  const where = {
+    AND: [
+      role ? { role } : {},
+      search ? {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } as any },
+          { email: { contains: search, mode: 'insensitive' } as any },
+        ]
+      } : {},
+    ]
+  };
 
   const users = await db.user.findMany({
-    where: {
-      AND: [
-        role ? { role } : {},
-        search ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-          ]
-        } : {},
-      ]
-    },
-    take: 50,
+    where,
+    skip,
+    take: pageSize,
     include: {
       teacherProfile: true,
     },
     orderBy: { createdAt: 'desc' },
   });
+
+  const totalFilteredUsers = await db.user.count({ where });
 
   const stats = {
     total: await db.user.count(),
@@ -156,6 +165,36 @@ export default async function UsersManagementPage({
               </div>
             )}
           </div>
+          
+          {Math.ceil(totalFilteredUsers / pageSize) > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
+                <Link 
+                  href={{
+                    pathname: "/admin/users",
+                    query: { ...params, page: currentPage - 1 }
+                  }} 
+                  className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                >
+                  Previous
+                </Link>
+              </Button>
+              <div className="text-sm font-medium">
+                Page {currentPage} of {Math.ceil(totalFilteredUsers / pageSize)}
+              </div>
+              <Button variant="outline" size="sm" asChild disabled={currentPage >= Math.ceil(totalFilteredUsers / pageSize)}>
+                <Link 
+                  href={{
+                    pathname: "/admin/users",
+                    query: { ...params, page: currentPage + 1 }
+                  }} 
+                  className={currentPage >= Math.ceil(totalFilteredUsers / pageSize) ? "pointer-events-none opacity-50" : ""}
+                >
+                  Next
+                </Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
