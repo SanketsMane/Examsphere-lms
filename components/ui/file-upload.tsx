@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ interface FileUploadProps {
 
     export function FileUpload({ value, onChange, label = "Upload Image", disabled, onFileSelect }: FileUploadProps) {
     const [isUploading, setIsUploading] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     // Author: Sanket - Use S3 presigned URLs for direct upload (no server proxy)
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,8 +118,10 @@ interface FileUploadProps {
     return (
         <div className="space-y-2">
             <Label>{label}</Label>
-            {value ? (
-                <div className="relative w-32 h-32 overflow-hidden rounded-md border">
+
+            {/* Author: Sanket - Always show both preview AND upload button so users can replace without deleting */}
+            {value && (
+                <div className="relative w-32 h-24 overflow-hidden rounded-md border">
                     {/* Check if video or image for preview - Author: Sanket */}
                     {value.match(/\.(mp4|webm|ogg)$/i) ? (
                          <video src={constructS3Url(value)} className="object-cover w-full h-full" controls />
@@ -134,39 +137,41 @@ interface FileUploadProps {
                         type="button"
                         variant="destructive"
                         size="icon"
-                        className="absolute right-2 top-2 h-6 w-6"
+                        className="absolute right-1 top-1 h-5 w-5"
                         onClick={() => onChange("")}
                         disabled={disabled}
                     >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                     </Button>
-                </div>
-            ) : (
-                <div className="flex items-center gap-4">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        disabled={disabled || isUploading}
-                        className="w-full max-w-[200px]"
-                        onClick={() => document.getElementById("file-upload")?.click()}
-                    >
-                        {isUploading ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <UploadCloud className="mr-2 h-4 w-4" />
-                        )}
-                        {isUploading ? "Uploading..." : label || "Select File"}
-                    </Button>
-                    <Input
-                        id="file-upload"
-                        type="file"
-                        accept="image/*,video/*,application/pdf"
-                        className="hidden"
-                        onChange={handleUpload}
-                        disabled={disabled || isUploading}
-                    />
                 </div>
             )}
+
+            {/* Upload / Replace button is always visible - Author: Sanket */}
+            <div className="flex items-center gap-4">
+                <Button
+                    type="button"
+                    variant="outline"
+                    disabled={disabled || isUploading}
+                    className="w-full max-w-[200px]"
+                    onClick={() => inputRef.current?.click()}
+                >
+                    {isUploading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <UploadCloud className="mr-2 h-4 w-4" />
+                    )}
+                    {isUploading ? "Uploading..." : value ? `Replace ${label}` : (label || "Select File")}
+                </Button>
+                {/* Native input ensures useRef attaches directly to the DOM node - Author: Sanket */}
+                <input
+                    ref={inputRef}
+                    type="file"
+                    accept="image/*,video/*,application/pdf"
+                    className="hidden"
+                    onChange={handleUpload}
+                    disabled={disabled || isUploading}
+                />
+            </div>
         </div>
     );
 }

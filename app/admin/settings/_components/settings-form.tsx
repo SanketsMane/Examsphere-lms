@@ -110,9 +110,10 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                                 const img = new Image();
                                                 img.src = URL.createObjectURL(file);
                                                 img.onload = () => {
-                                                    if (img.width > 512 || img.height > 512) {
-                                                        toast.error(`Image too large! Max 512x512px. Uploaded: ${img.width}x${img.height}px.`);
-                                                        reject(new Error("Image dimensions exceed 512x512px limit"));
+                                                    // Increased limit to 2048px for wide logos - Author: Sanket
+                                                    if (img.width > 2048) {
+                                                        toast.error(`Image too wide! Max 2048px. Uploaded: ${img.width}px.`);
+                                                        reject(new Error("Image width exceeds 2048px limit"));
                                                     } else {
                                                         resolve(file);
                                                     }
@@ -121,7 +122,7 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                             });
                                         }}
                                     />
-                                    <p className="text-xs text-muted-foreground">Transparent PNG recommended. Max 512x512px.</p>
+                                    <p className="text-xs text-muted-foreground">Transparent PNG recommended. Max width 2048px.</p>
                                 </div>
                                 <div className="space-y-4 pt-2">
                                     <div className="flex items-center justify-between">
