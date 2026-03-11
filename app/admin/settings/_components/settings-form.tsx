@@ -105,24 +105,8 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                         value={logoUrl}
                                         onChange={setLogoUrl}
                                         label="Upload Site Logo"
-                                        onFileSelect={async (file) => {
-                                            return new Promise((resolve, reject) => {
-                                                const img = new Image();
-                                                img.src = URL.createObjectURL(file);
-                                                img.onload = () => {
-                                                    // Increased limit to 2048px for wide logos - Author: Sanket
-                                                    if (img.width > 2048) {
-                                                        toast.error(`Image too wide! Max 2048px. Uploaded: ${img.width}px.`);
-                                                        reject(new Error("Image width exceeds 2048px limit"));
-                                                    } else {
-                                                        resolve(file);
-                                                    }
-                                                };
-                                                img.onerror = () => reject(new Error("Invalid image file"));
-                                            });
-                                        }}
                                     />
-                                    <p className="text-xs text-muted-foreground">Transparent PNG recommended. Max width 2048px.</p>
+                                    <p className="text-xs text-muted-foreground">Transparent PNG recommended. Wide logos supported.</p>
                                 </div>
                                 <div className="space-y-4 pt-2">
                                     <div className="flex items-center justify-between">
