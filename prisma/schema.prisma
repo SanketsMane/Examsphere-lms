@@ -901,8 +901,8 @@ model SiteSettings {
   id                String   @id @default(uuid())
   siteName          String
   siteUrl           String
-  logo              String? @db.MediumText
-  favicon           String? @db.MediumText
+  logo              String? @db.LongText
+  favicon           String? @db.LongText
   contactEmail      String?
   contactPhone      String?
   contactAddress    String?
