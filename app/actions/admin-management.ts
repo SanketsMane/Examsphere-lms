@@ -51,6 +51,24 @@ export async function updateUserRole(userId: string, role: string) {
             where: { id: userId },
             data: { role },
         });
+
+        // Initialize TeacherProfile if promoted to teacher and profile doesn't exist
+        if (role?.toLowerCase() === 'teacher') {
+            await prisma.teacherProfile.upsert({
+                where: { userId },
+                create: {
+                    userId,
+                    isApproved: false,
+                    isVerified: false,
+                    expertise: [],
+                    languages: [],
+                    qualifications: [],
+                    certifications: []
+                },
+                update: {} // Don't overwrite existing profile data on role toggle
+            });
+        }
+
         revalidatePath("/admin/users");
         return { success: true, message: "User role updated successfully" };
     } catch (error) {
@@ -68,6 +86,8 @@ export async function updateUserAndTeacherProfile(userId: string, data: {
         bio?: string;
         expertise?: string[];
         languages?: string[];
+        qualifications?: string[];
+        certifications?: string[];
         hourlyRate?: number | null;
         experience?: number | null;
         isVerified?: boolean;
@@ -95,6 +115,10 @@ export async function updateUserAndTeacherProfile(userId: string, data: {
                 create: {
                     userId,
                     ...data.teacherProfile,
+                    expertise: data.teacherProfile.expertise || [],
+                    languages: data.teacherProfile.languages || [],
+                    qualifications: data.teacherProfile.qualifications || [],
+                    certifications: data.teacherProfile.certifications || [],
                 },
                 update: {
                     ...data.teacherProfile,
@@ -147,11 +171,11 @@ export async function deleteCourse(courseId: string) {
 
 // --- Teacher Management ---
 
-export async function approveTeacher(teacherId: string) {
+export async function approveTeacher(teacherUserId: string) {
     try {
         await requireAdmin();
         const user = await prisma.user.findUnique({
-             where: { id: teacherId }
+             where: { id: teacherUserId }
         });
 
         if (!user) {
@@ -160,9 +184,9 @@ export async function approveTeacher(teacherId: string) {
 
         // Update Teacher Profile (Upsert to handle missing profiles for imported users)
         await prisma.teacherProfile.upsert({
-            where: { userId: teacherId },
+            where: { userId: teacherUserId },
             create: {
-                userId: teacherId,
+                userId: teacherUserId,
                 isApproved: true,
                 isVerified: true,
                 expertise: [],
@@ -190,7 +214,7 @@ export async function approveTeacher(teacherId: string) {
         revalidatePath("/admin/teachers");
         return { success: true, message: "Teacher approved & email sent" };
     } catch (error: any) {
-        logger.error("Failed to approve teacher", error as Error, teacherId);
+        logger.error("Failed to approve teacher", error as Error, teacherUserId);
         return { success: false, message: error.message || "Failed to approve teacher" };
     }
 }
@@ -230,6 +254,8 @@ export async function rejectTeacher(teacherUserId: string, reason: string) {
                 status: 'Rejected',
                 rejectionReason: reason,
                 rejectedAt: new Date(),
+                qualificationDocuments: [], // Added missing required field - Author: Sanket
+                experienceDocuments: [],    // Added missing required field - Author: Sanket
             },
             update: {
                 status: 'Rejected',

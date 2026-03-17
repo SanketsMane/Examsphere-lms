@@ -94,20 +94,20 @@ export function PackagesList({
                                 )}
 
                                 <CardHeader className="pb-2">
-                                    <div className="flex justify-between items-start gap-4">
-                                        <CardTitle className="text-xl font-bold leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 min-h-[3.5rem]">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4">
+                                        <CardTitle className="text-lg sm:text-xl font-bold leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 break-all sm:break-words flex-1">
                                             {pkg.title}
                                         </CardTitle>
-                                        <div className="text-right shrink-0">
-                                            <div className="text-2xl font-black text-blue-600 dark:text-blue-400 leading-tight">
+                                        <div className="text-left sm:text-right shrink-0 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                                            <div className="text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-400 leading-tight">
                                                 {currency.symbol}{Math.round(priceInLocal)}
                                             </div>
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Per Participant</span>
+                                            <span className="text-[10px] text-blue-600/70 dark:text-blue-400/70 font-bold uppercase tracking-tighter block">Per Participant</span>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <div className="relative w-6 h-6 rounded-full overflow-hidden ring-2 ring-slate-100 dark:ring-slate-800">
+                                    <div className="flex items-center gap-2 mt-3">
+                                        <div className="relative w-7 h-7 rounded-full overflow-hidden ring-2 ring-slate-100 dark:ring-slate-800 shrink-0">
                                             <Image 
                                                 src={pkg.teacher.user.image || `https://ui-avatars.com/api/?name=${pkg.teacher.user.name}`}
                                                 alt={pkg.teacher.user.name}
@@ -115,33 +115,33 @@ export function PackagesList({
                                                 className="object-cover"
                                             />
                                         </div>
-                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">
                                             {pkg.teacher.user.name}
                                         </span>
                                     </div>
                                 </CardHeader>
 
                                 <CardContent className="flex-1 space-y-4">
-                                    <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 h-10">
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 min-h-[2.5rem] break-all sm:break-words">
                                         {pkg.description || "Learn fundamental concepts in this interactive group session."}
                                     </p>
                                     
-                                    <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                            <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                                            {formatDate(pkg.scheduledAt)}
+                                    <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 overflow-hidden">
+                                            <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-500 shrink-0" />
+                                            <span className="truncate">{formatDate(pkg.scheduledAt)}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                            <Clock className="h-3.5 w-3.5 text-blue-500" />
-                                            {pkg.duration} mins
+                                        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 overflow-hidden">
+                                            <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-500 shrink-0" />
+                                            <span className="truncate">{pkg.duration} mins</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                            <Users className="h-3.5 w-3.5 text-blue-500" />
-                                            {seatsEnrolled}/{pkg.maxStudents || 12} Students
+                                        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 overflow-hidden">
+                                            <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-500 shrink-0" />
+                                            <span className="truncate">{seatsEnrolled}/{pkg.maxStudents || 12} Students</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                            <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-                                            {pkg.subject || "General"}
+                                        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 overflow-hidden">
+                                            <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-500 shrink-0" />
+                                            <span className="truncate">{pkg.subject || "General"}</span>
                                         </div>
                                     </div>
                                 </CardContent>

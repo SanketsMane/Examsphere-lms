@@ -42,9 +42,9 @@ export function Navbar({ settings }: { settings?: any }) {
   const { data: session, isPending } = authClient.useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Construct proper logo URL from S3 key if needed
+  // Construct proper logo URL — handles data URIs, http URLs, and S3 keys
   const logoSrc = settings?.logo && settings.logo.trim() !== ""
-    ? (settings.logo.startsWith('http') ? settings.logo : constructS3Url(settings.logo))
+    ? constructS3Url(settings.logo)
     : "/logo.png";
   const siteName = settings?.siteName?.trim() || "";
   const logoSize = settings?.logoSize || 100;
@@ -61,11 +61,11 @@ export function Navbar({ settings }: { settings?: any }) {
                     height: `${Math.max(24, Math.min(56, (56 * logoSize) / 100))}px` 
                 }}
             >
-                <Image 
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
                     src={logoSrc} 
                     alt={siteName || "Logo"} 
-                    fill 
-                    className="object-contain" 
+                    className="w-full h-full object-contain" 
                 />
             </div>
           {siteName && (

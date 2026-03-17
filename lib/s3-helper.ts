@@ -8,8 +8,8 @@ import { env } from "@/lib/env";
 export function constructS3Url(key: string): string {
     if (!key) return "";
 
-    // If already a full URL, return as-is
-    if (key.startsWith("http://") || key.startsWith("https://")) {
+    // If already a full URL or base64 data URI, return as-is
+    if (key.startsWith("http://") || key.startsWith("https://") || key.startsWith("data:")) {
         return key;
     }
 

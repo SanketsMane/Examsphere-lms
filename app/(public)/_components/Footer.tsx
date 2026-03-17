@@ -57,9 +57,9 @@ export async function Footer() {
     company: footerLinksData?.company || defaultFooterLinks.company,
   };
   
-  // Construct proper logo URL from S3 key if needed
+  // Construct proper logo URL — handles data URIs, http URLs, and S3 keys
   const logoSrc = settings?.logo && settings.logo.trim() !== ""
-    ? (settings.logo.startsWith('http') ? settings.logo : constructS3Url(settings.logo))
+    ? constructS3Url(settings.logo)
     : "/logo.png";
 
   return (
@@ -73,11 +73,11 @@ export async function Footer() {
           <div className="lg:col-span-2 space-y-6">
             <Link href="/" className="flex items-center gap-2">
               <div className="relative w-10 h-10">
-                  <Image 
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
                     src={logoSrc} 
                     alt={settings?.siteName || "KIDOKOOL"} 
-                    fill 
-                    className="object-contain" 
+                    className="w-full h-full object-contain" 
                   />
               </div>
               <span className="text-2xl font-bold text-white tracking-tight">{settings?.siteName || "KIDOKOOL"}</span>

@@ -48,6 +48,7 @@ export const viewport = {
 
 import { getSiteSettings } from "@/app/actions/settings";
 import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
+import { constructS3Url } from "@/lib/s3-helper";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const settings = await getSiteSettings();
-  const favicon = settings?.favicon || "/favicon.ico";
+  const favicon = settings?.favicon ? constructS3Url(settings.favicon) : "/favicon.ico";
   const siteName = settings?.siteName || "KIDOKOOL";
 
   return (

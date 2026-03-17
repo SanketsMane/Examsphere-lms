@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateSiteSettings } from "@/app/actions/settings";
 import { toast } from "sonner";
-import { Globe, Phone, Share2, CreditCard, Coins, Image as ImageIcon } from "lucide-react";
+import { Globe, Phone, Share2, CreditCard, Coins } from "lucide-react";
 import { SiteSettings } from "@prisma/client";
-import { FileUpload } from "@/components/ui/file-upload";
+import { SettingsImageUpload } from "@/components/ui/settings-image-upload";
 import { FooterLinksEditor } from "./footer-links-editor";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { CurrencySettings } from "./CurrencySettings";
@@ -32,6 +32,11 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
     const [logoSize, setLogoSize] = useState((settings as any)?.logoSize || 100);
 
     const [currencyCode, setCurrencyCode] = useState(settings?.currencyCode || "INR");
+
+    // Ensure logo/favicon DB columns are wide enough for base64 data URIs — runs once on first admin visit
+    useEffect(() => {
+        fetch("/api/admin/init-media-columns", { method: "POST" }).catch(() => {});
+    }, []);
 
     useEffect(() => {
         if (state?.success) {
@@ -73,27 +78,12 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                 <div className="space-y-2">
                                     <Label>Favicon</Label>
                                     <input type="hidden" name="favicon" value={faviconUrl} />
-                                    <FileUpload
+                                    <SettingsImageUpload
                                         value={faviconUrl}
                                         onChange={setFaviconUrl}
-                                        label="Upload Favicon"
-                                        onFileSelect={async (file) => {
-                                            return new Promise((resolve, reject) => {
-                                                const img = new Image();
-                                                img.src = URL.createObjectURL(file);
-                                                img.onload = () => {
-                                                    if (img.width > 128 || img.height > 128) {
-                                                        toast.error(`Favicon too large! Max 128x128px. Uploaded: ${img.width}x${img.height}px.`);
-                                                        reject(new Error("Image dimensions exceed 128x128px limit"));
-                                                    } else {
-                                                        resolve(file);
-                                                    }
-                                                };
-                                                img.onerror = () => reject(new Error("Invalid image file"));
-                                            });
-                                        }}
+                                        label="Favicon"
                                     />
-                                    <p className="text-xs text-muted-foreground">Recommended: 32x32px or 64x64px. Max: 128x128px.</p>
+                                    <p className="text-xs text-muted-foreground">Recommended: 32x32 or 64x64px ICO/PNG.</p>
                                 </div>
                             </div>
 
@@ -101,10 +91,10 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                 <div className="space-y-2">
                                     <Label>Logo</Label>
                                     <input type="hidden" name="logo" value={logoUrl} />
-                                    <FileUpload
+                                    <SettingsImageUpload
                                         value={logoUrl}
                                         onChange={setLogoUrl}
-                                        label="Upload Site Logo"
+                                        label="Logo"
                                     />
                                     <p className="text-xs text-muted-foreground">Transparent PNG recommended. Wide logos supported.</p>
                                 </div>
