@@ -42,11 +42,11 @@ export async function adminGetAnalyticsStats() {
     prisma.$queryRaw`
       SELECT 
         COALESCE(
-          (COUNT(CASE WHEN lp.completed = true THEN 1 END)::DECIMAL / 
-           NULLIF(COUNT(lp.id), 0)) * 100, 
+          (COUNT(CASE WHEN completed = 1 THEN 1 END) / 
+           NULLIF(COUNT(id), 0)) * 100, 
           0
         ) as completion_rate
-      FROM "LessonProgress" lp
+      FROM LessonProgress
     ` as Promise<{ completion_rate: number }[]>,
 
     // Recent activity (last 10 enrollments)
@@ -84,14 +84,14 @@ export async function adminGetAnalyticsStats() {
     // Monthly enrollment stats for the last 12 months
     prisma.$queryRaw`
       SELECT 
-        DATE_TRUNC('month', "createdAt") as month,
+        DATE_FORMAT(createdAt, '%Y-%m-01') as month,
         COUNT(*) as enrollments,
-        SUM("amount") as revenue
-      FROM "Enrollment"
-      WHERE "createdAt" >= NOW() - INTERVAL '12 months'
-      GROUP BY DATE_TRUNC('month', "createdAt")
+        SUM(amount) as revenue
+      FROM Enrollment
+      WHERE createdAt >= NOW() - INTERVAL 12 MONTH
+      GROUP BY month
       ORDER BY month ASC
-    ` as Promise<{ month: Date; enrollments: bigint; revenue: number }[]>
+    ` as Promise<{ month: string; enrollments: bigint; revenue: number }[]>
   ]);
 
   const completionRate = averageCompletionRate[0]?.completion_rate || 0;
@@ -117,7 +117,7 @@ export async function adminGetAnalyticsStats() {
       slug: course.slug,
     })),
     monthlyStats: monthlyStats.map(stat => ({
-      month: stat.month.toISOString().slice(0, 7), // YYYY-MM format
+      month: typeof stat.month === 'string' ? stat.month.slice(0, 7) : new Date(stat.month).toISOString().slice(0, 7), // YYYY-MM format
       enrollments: Number(stat.enrollments),
       revenue: Number(stat.revenue) || 0,
     })),
