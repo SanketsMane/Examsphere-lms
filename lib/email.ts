@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { prisma } from './db';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_5EgNBQNR_JuMgLBiodC7fYQh7vfitV6TT');
+const resendClient = () => new Resend(process.env.RESEND_API_KEY || 're_5EgNBQNR_JuMgLBiodC7fYQh7vfitV6TT');
 
 interface EmailData {
   to: string;
@@ -110,7 +110,7 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
     if (process.env.RESEND_API_KEY) {
       try {
         console.log('Attempting to send email via RESEND...');
-        const data = await resend.emails.send({
+        const data = await resendClient().emails.send({
           from: 'onboarding@resend.dev',
           to: emailData.to,
           subject: emailData.subject,
