@@ -257,7 +257,7 @@ export const authService = {
       */
      forgetPassword: async (email: string): Promise<ApiResponse<void>> => {
        try {
-         await api.post("/api/auth/forget-password", {
+         await api.post("/api/auth/request-password-reset", {
            email,
            redirectTo: "kidokool-lms://reset-password", // Deep link for mobile
          });
