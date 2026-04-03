@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { prisma } from './db';
 
-const resendClient = () => new Resend(process.env.RESEND_API_KEY || 're_5EgNBQNR_JuMgLBiodC7fYQh7vfitV6TT');
+const resendClient = () => new Resend(process.env.RESEND_API_KEY || 're_X8PzYDqF_LLQz5N8ToZ9naxuLBuU9uQtL');
 
 interface EmailData {
   to: string;
