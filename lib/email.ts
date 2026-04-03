@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { prisma } from './db';
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_5EgNBQNR_JuMgLBiodC7fYQh7vfitV6TT');
 
 interface EmailData {
   to: string;
@@ -32,6 +35,8 @@ async function getEmailProvider() {
   if (provider.type === 'gmail') {
     return nodemailer.createTransport({
       service: 'gmail',
+      logger: true,
+      debug: true,
       auth: {
         user: (config.user || '').trim(),
         pass: (config.pass || '').trim()
@@ -42,6 +47,8 @@ async function getEmailProvider() {
       host: (config.host || '').trim(),
       port: config.port,
       secure: config.secure,
+      logger: true,
+      debug: true,
       auth: {
         user: (config.user || '').trim(),
         pass: (config.pass || '').trim()
@@ -51,17 +58,16 @@ async function getEmailProvider() {
 }
 
 function getEnvTransporter() {
-  if (!process.env.EMAIL_USER) {
-    return null;
-  }
-
+  // HARDCODED GMAIL FOR BACKUP ONLY (EXPECTED TO FAIL ON SOME VPS)
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false,
+    secure: false, // STARTTLS
+    logger: true,
+    debug: true,
     auth: {
-      user: process.env.EMAIL_USER.trim(),
-      pass: (process.env.EMAIL_PASS || '').trim()
+      user: 'bksun170882@gmail.com',
+      pass: 'mwtinpysoylfarwj'
     }
   });
 }
@@ -88,7 +94,7 @@ export function replacePlaceholders(content: string, data: TemplateData): string
 }
 
 /**
- * Send email using the configured transporter from DB
+ * Send email using Resend (Primary) or SMTP (Fallback)
  * Author: Sanket
  */
 export async function sendEmail(emailData: EmailData): Promise<boolean> {
@@ -100,33 +106,61 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       return true;
     }
 
-    const mailOptions = {
-      from: emailData.from || (process.env.EMAIL_FROM || '').trim() || (process.env.EMAIL_USER || '').trim(),
-      to: emailData.to,
-      subject: emailData.subject,
-      html: emailData.html
-    };
-
-    const dbTransporter = await getEmailProvider();
-
-    if (dbTransporter) {
+    // PRIMARY: RESEND (Robust API Delivery)
+    if (process.env.RESEND_API_KEY) {
       try {
-        const info = await dbTransporter.sendMail(mailOptions);
-        console.log('Email sent successfully via DB provider:', info.messageId);
-        return true;
-      } catch (dbError: any) {
-        console.error('DB provider failed, trying env fallback:', dbError?.message || dbError);
+        console.log('Attempting to send email via RESEND...');
+        const data = await resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: emailData.to,
+          subject: emailData.subject,
+          html: emailData.html,
+        });
+
+        if (data.data?.id) {
+          console.log('Email sent successfully via RESEND!', data.data.id);
+          return true;
+        }
+        
+        console.warn('RESEND API returned no ID, falling back to SMTP...', data.error);
+      } catch (resendError: any) {
+        console.error('RESEND API failed, trying SMTP fallback:', resendError?.message || resendError);
       }
     }
 
+    // FALLBACK: DATABASE SMTP PROVIDER
+    const dbTransporter = await getEmailProvider();
+    if (dbTransporter) {
+      try {
+        const mailOptions = {
+          from: '"KIDOKOOL" <bksun170882@gmail.com>',
+          to: emailData.to,
+          subject: emailData.subject,
+          html: emailData.html
+        };
+        const info = await dbTransporter.sendMail(mailOptions);
+        console.log('Email sent successfully via DB SMTP provider:', info.messageId);
+        return true;
+      } catch (dbError: any) {
+        console.error('DB SMTP provider failed, trying ENV fallback:', dbError?.message || dbError);
+      }
+    }
+
+    // FINAL FALLBACK: ENV GMAIL (Most likely to fail)
     const envTransporter = getEnvTransporter();
     if (envTransporter) {
+      const mailOptions = {
+        from: '"KIDOKOOL" <bksun170882@gmail.com>',
+        to: emailData.to,
+        subject: emailData.subject,
+        html: emailData.html
+      };
       const info = await envTransporter.sendMail(mailOptions);
-      console.log('Email sent successfully via ENV provider:', info.messageId);
+      console.log('Email sent successfully via ENV SMTP provider:', info.messageId);
       return true;
     }
 
-    throw new Error('No valid email provider found (DB or ENV)');
+    throw new Error('No valid email provider found (RESEND, DB or ENV)');
   } catch (error: any) {
     console.error('Error sending email:', error);
     throw error; // Propagate the error to Better Auth
@@ -171,7 +205,7 @@ export async function sendTemplatedEmail(
             sessionId: data.sessionId as string,
             type: data.notificationType as string || templateSlug,
             status: success ? 'sent' : 'failed',
-            errorMessage: success ? null : 'Failed to deliver email through SMTP',
+            errorMessage: success ? null : 'Failed to deliver email through SMTP/API',
           }
         });
       } catch (logError) {
