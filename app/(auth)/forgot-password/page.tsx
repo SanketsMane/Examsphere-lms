@@ -21,21 +21,22 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      await (authClient as any).forgetPassword({
-        email,
-        redirectTo: "/reset-password",
-      }, {
-        onSuccess: () => {
-          setIsSent(true);
-          toast.success("Reset link sent to your email!");
-        },
-        onError: (ctx: any) => {
-          toast.error(ctx.error.message || "Failed to send reset link.");
-          setIsLoading(false);
-        }
+      const response = await fetch("/api/auth/request-password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, redirectTo: "/reset-password" })
       });
-    } catch (error) {
-      toast.error("An unexpected error occurred.");
+
+      if (response.ok) {
+        setIsSent(true);
+        toast.success("Reset link sent to your email!");
+      } else {
+        const errorData = await response.json().catch(() => ({ message: "Failed to send reset link" }));
+        toast.error(errorData.message || "Failed to send reset link.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An unexpected error occurred.");
+    } finally {
       setIsLoading(false);
     }
   };

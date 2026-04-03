@@ -12,11 +12,16 @@ if (!globalForAuthClient.__BETTER_AUTH_CLIENT_SINGLETON__) {
   console.log("[AuthClient Singleton] Initializing...");
   globalForAuthClient.__BETTER_AUTH_CLIENT_SINGLETON__ = createAuthClient({
     baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    plugins: [emailOTPClient(), adminClient(), phoneNumberClient()],
+    basePath: "/api/auth",
+    plugins: [
+      emailOTPClient(),
+      adminClient(),
+      phoneNumberClient()
+    ],
   });
 }
 
-export const authClient = globalForAuthClient.__BETTER_AUTH_CLIENT_SINGLETON__;
+export const authClient = globalForAuthClient.__BETTER_AUTH_CLIENT_SINGLETON__!;
 
 export const useAuth = () => {
   return authClient.useSession();
