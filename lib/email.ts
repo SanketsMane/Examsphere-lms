@@ -106,9 +106,8 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       return true;
     }
 
-    // PRIMARY: RESEND (Robust API Delivery)
-    if (process.env.RESEND_API_KEY) {
-      try {
+    // PRIMARY: RESEND (Force Enabled with verified fallback)
+    try {
         console.log('Attempting to send email via RESEND...');
         const data = await resendClient().emails.send({
           from: 'onboarding@resend.dev',
