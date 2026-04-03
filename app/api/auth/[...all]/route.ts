@@ -85,10 +85,13 @@ export const POST = async (req: NextRequest) => {
     // Force the Origin to match the server's own Host header.
     // This creates a "Same-Origin" state that satisfies Better Auth's strict check 
     // without needing to guess the baseURL mismatch.
-    const origin = req.headers.get("origin");
+    const origin = req.headers.get("origin") || "";
     const hostHeader = req.headers.get("host") || "localhost:3000";
-    const xProtocol = req.headers.get("x-forwarded-proto") || "http";
-    const derivedOrigin = `${xProtocol}://${hostHeader}`;
+    const xProtocol = req.headers.get("x-forwarded-proto") || (origin.startsWith("https") ? "https" : "http");
+    
+    // Force HTTPS in production environments if the origin says so
+    const effectiveProtocol = (xProtocol === "https" || origin.startsWith("https")) ? "https" : "http";
+    const derivedOrigin = `${effectiveProtocol}://${hostHeader}`;
     
     const modifiedHeaders = new Headers(req.headers);
     modifiedHeaders.set("origin", derivedOrigin);
