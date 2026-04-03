@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { UploadCloud, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { constructS3Url } from "@/lib/s3-helper";
+import { toast } from "sonner";
 
 interface SettingsImageUploadProps {
   value?: string;
@@ -11,19 +12,65 @@ interface SettingsImageUploadProps {
   label?: string;
 }
 
+// Compress image: resize to max 1200x1200, quality 0.8, returns base64
+async function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxSize = 1200;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize / width, maxSize / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Could not get canvas context"));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUri = canvas.toDataURL("image/webp", 0.8);
+      resolve(dataUri);
+    };
+    img.onerror = () => reject(new Error("Could not load image"));
+  });
+}
+
 export function SettingsImageUpload({ value, onChange, label = "Image" }: SettingsImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUri = ev.target?.result as string;
-      onChange(dataUri);
-    };
-    reader.readAsDataURL(file);
+    // Limit file size to 2MB before compression
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(`File too large. Max 2MB, got ${(file.size / 1024 / 1024).toFixed(1)}MB.`);
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      const compressedUri = await compressImage(file);
+      
+      // Warn if result is still large
+      if (compressedUri.length > 5 * 1024 * 1024) {
+        toast.warning("Image compressed but base64 is still large. Settings save may be slow.");
+      }
+      
+      onChange(compressedUri);
+      toast.success("Image uploaded and compressed");
+    } catch (error) {
+      toast.error(`Failed to process image: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
 
     // Reset input so the same file can be re-selected later
     e.target.value = "";

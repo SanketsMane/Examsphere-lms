@@ -2,7 +2,7 @@
 // Set env vars BEFORE importing lib/email
 process.env.EMAIL_SERVICE = "gmail";
 process.env.EMAIL_USER = "bksun170882@gmail.com";
-process.env.EMAIL_PASS = "gnzzipmrmhajejwc";
+process.env.EMAIL_PASS = "mwtinpysoylfarwj";
 process.env.EMAIL_FROM = "KIDOKOOL <bksun170882@gmail.com>";
 
 import { sendEmail } from '../lib/email';

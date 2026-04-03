@@ -50,6 +50,22 @@ async function getEmailProvider() {
   }
 }
 
+function getEnvTransporter() {
+  if (!process.env.EMAIL_HOST && !process.env.EMAIL_USER) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: (process.env.EMAIL_HOST || '').trim(),
+    port: parseInt((process.env.EMAIL_PORT || '587').trim()),
+    secure: (process.env.EMAIL_SECURE || 'false').trim() === 'true',
+    auth: {
+      user: (process.env.EMAIL_USER || '').trim(),
+      pass: (process.env.EMAIL_PASS || '').trim()
+    }
+  });
+}
+
 /**
  * Author: Sanket
  * Checks if the email system is globally enabled
@@ -84,41 +100,6 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       return true;
     }
 
-    const transporter = await getEmailProvider();
-
-    if (!transporter) {
-      // Fallback to env if no DB provider exists (for migration period or emergency)
-      if (!process.env.EMAIL_HOST && !process.env.EMAIL_USER) {
-        console.log('---------------------------------------------------');
-        console.log('EMAIL SENT (MOCKED - No DB Provider and No ENV):');
-        console.log('To:', emailData.to);
-        console.log('Subject:', emailData.subject);
-        console.log('---------------------------------------------------');
-        return true;
-      }
-
-      // Existing env fallback logic
-      const envTransporter = nodemailer.createTransport({
-        host: (process.env.EMAIL_HOST || '').trim(),
-        port: parseInt((process.env.EMAIL_PORT || '587').trim()),
-        secure: (process.env.EMAIL_SECURE || 'false').trim() === 'true',
-        auth: {
-          user: (process.env.EMAIL_USER || '').trim(),
-          pass: (process.env.EMAIL_PASS || '').trim()
-        }
-      });
-
-      const mailOptions = {
-        from: emailData.from || (process.env.EMAIL_FROM || '').trim() || (process.env.EMAIL_USER || '').trim(),
-        to: emailData.to,
-        subject: emailData.subject,
-        html: emailData.html
-      };
-
-      await envTransporter.sendMail(mailOptions);
-      return true;
-    }
-
     const mailOptions = {
       from: emailData.from || (process.env.EMAIL_FROM || '').trim() || (process.env.EMAIL_USER || '').trim(),
       to: emailData.to,
@@ -126,8 +107,30 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       html: emailData.html
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully via DB provider:', info.messageId);
+    const dbTransporter = await getEmailProvider();
+
+    if (dbTransporter) {
+      try {
+        const info = await dbTransporter.sendMail(mailOptions);
+        console.log('Email sent successfully via DB provider:', info.messageId);
+        return true;
+      } catch (dbError: any) {
+        console.error('DB provider failed, trying env fallback:', dbError?.message || dbError);
+      }
+    }
+
+    const envTransporter = getEnvTransporter();
+    if (envTransporter) {
+      const info = await envTransporter.sendMail(mailOptions);
+      console.log('Email sent successfully via ENV provider:', info.messageId);
+      return true;
+    }
+
+    console.log('---------------------------------------------------');
+    console.log('EMAIL SENT (MOCKED - No DB Provider and No ENV):');
+    console.log('To:', emailData.to);
+    console.log('Subject:', emailData.subject);
+    console.log('---------------------------------------------------');
     return true;
   } catch (error: any) {
     console.error('Error sending email:', error);
