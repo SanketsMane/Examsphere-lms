@@ -51,16 +51,16 @@ async function getEmailProvider() {
 }
 
 function getEnvTransporter() {
-  if (!process.env.EMAIL_HOST && !process.env.EMAIL_USER) {
+  if (!process.env.EMAIL_USER) {
     return null;
   }
 
   return nodemailer.createTransport({
-    host: (process.env.EMAIL_HOST || '').trim(),
-    port: parseInt((process.env.EMAIL_PORT || '587').trim()),
-    secure: (process.env.EMAIL_SECURE || 'false').trim() === 'true',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
-      user: (process.env.EMAIL_USER || '').trim(),
+      user: process.env.EMAIL_USER.trim(),
       pass: (process.env.EMAIL_PASS || '').trim()
     }
   });
@@ -126,15 +126,10 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       return true;
     }
 
-    console.log('---------------------------------------------------');
-    console.log('EMAIL SENT (MOCKED - No DB Provider and No ENV):');
-    console.log('To:', emailData.to);
-    console.log('Subject:', emailData.subject);
-    console.log('---------------------------------------------------');
-    return true;
+    throw new Error('No valid email provider found (DB or ENV)');
   } catch (error: any) {
     console.error('Error sending email:', error);
-    return false;
+    throw error; // Propagate the error to Better Auth
   }
 }
 
