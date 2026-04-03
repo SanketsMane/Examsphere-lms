@@ -100,22 +100,8 @@ export const POST = async (req: NextRequest) => {
     
     logToFile(`Incoming Request: ${req.method} ${pathname} | Original Origin: ${origin} | Derived Origin: ${derivedOrigin} | Host: ${hostHeader}`);
 
-    let securityCheck;
-    try {
-      securityCheck = await protect(targetReq);
-    } catch (error: any) {
-      logToFile(` ❌ securityCheck crashed: ${error.message}`);
-      securityCheck = { success: true };
-    }
-
-    if (!securityCheck.success) {
-      logToFile(` ❌ Security blocked request: ${securityCheck.error}`);
-      return Response.json({ 
-        message: securityCheck.error || "Security check failed", 
-        status: securityCheck.status || 403 
-      }, { status: securityCheck.status || 403 });
-    }
-
+    // Pass the original request with modified headers to the Better Auth handler.
+    // Better Auth will use the URL from the request to determine the correct route.
     const response = await authHandlers.POST(targetReq);
     
     if (response.status >= 400) {
