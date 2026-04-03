@@ -21,7 +21,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      await (authClient as any).forgotPassword({
+      await (authClient as any).forgetPassword({
         email,
         redirectTo: "/reset-password",
       }, {
