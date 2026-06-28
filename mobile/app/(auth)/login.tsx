@@ -131,7 +131,7 @@ export default function Login() {
           : await authService.verifyPhoneLogin(phoneNumber, otp);
         
         if (response.status === "success" && response.data) {
-          toast.success("Welcome to Kidokool!");
+          toast.success("Welcome to ExamSphere!");
           await setSession(response.data);
           router?.replace("/(student)");
         } else {
@@ -173,7 +173,7 @@ export default function Login() {
             />
             <View className="mt-4 items-center">
               <Typography variant="small" className="text-secondary font-bold uppercase tracking-widest mb-1">
-                Kidokool LMS
+                ExamSphere LMS
               </Typography>
               <Typography variant="h1" className="text-center">
                 {isRegistering ? "Create Account" : "Welcome Back"}

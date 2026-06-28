@@ -15,12 +15,12 @@ import Script from "next/script";
 // });
 
 export const metadata: Metadata = {
-  title: "KIDOKOOL - Professional Learning Management System",
+  title: "EXAMSPHERE - Professional Learning Management System",
   description: "World-class learning management platform with live tutoring, interactive courses, and comprehensive analytics",
   keywords: "LMS, learning management system, online courses, live tutoring, education platform",
-  authors: [{ name: "KIDOKOOL Team" }],
-  creator: "KIDOKOOL",
-  publisher: "KIDOKOOL",
+  authors: [{ name: "EXAMSPHERE Team" }],
+  creator: "EXAMSPHERE",
+  publisher: "EXAMSPHERE",
   robots: {
     index: true,
     follow: true,
@@ -28,14 +28,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://kidokool.com",
-    siteName: "KIDOKOOL",
-    title: "KIDOKOOL - Professional Learning Management System",
+    url: "https://examsphere.com",
+    siteName: "EXAMSPHERE",
+    title: "EXAMSPHERE - Professional Learning Management System",
     description: "World-class learning management platform with live tutoring, interactive courses, and comprehensive analytics",
   },
   twitter: {
     card: "summary_large_image",
-    title: "KIDOKOOL - Professional Learning Management System",
+    title: "EXAMSPHERE - Professional Learning Management System",
     description: "World-class learning management platform with live tutoring, interactive courses, and comprehensive analytics",
   },
 };
@@ -63,7 +63,7 @@ export default async function RootLayout({
 }>) {
   const settings = await getSiteSettings();
   const favicon = settings?.favicon ? constructS3Url(settings.favicon) : "/favicon.ico";
-  const siteName = settings?.siteName || "KIDOKOOL";
+  const siteName = settings?.siteName || "EXAMSPHERE";
 
   return (
     <html lang="en" suppressHydrationWarning>

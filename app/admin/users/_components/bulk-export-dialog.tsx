@@ -96,7 +96,7 @@ export function BulkExportDialog() {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Users");
             
-            const fileName = `kidokool_users_export_${format(new Date(), "yyyy-MM-dd_HH-mm")}.xlsx`;
+            const fileName = `examsphere_users_export_${format(new Date(), "yyyy-MM-dd_HH-mm")}.xlsx`;
             XLSX.writeFile(wb, fileName);
             
             toast.success(`Exported ${selectedUsers.length} users successfully`);

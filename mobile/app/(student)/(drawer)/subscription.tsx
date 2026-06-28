@@ -71,7 +71,7 @@ export default function SubscriptionScreen() {
         <View className="px-6 items-center">
           <Typography variant="h2" className="text-center mb-2">Upgrade your learning</Typography>
           <Typography variant="p" className="text-center text-muted-foreground px-10 mb-8">
-            Level up your language journey with Kidokool Premium features and mentors.
+            Level up your language journey with ExamSphere Premium features and mentors.
           </Typography>
 
           {/* Billing Toggle */}

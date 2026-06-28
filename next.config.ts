@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "kidokool-sanket-dev.s3.us-west-2.amazonaws.com",
+        hostname: "examsphere-sanket-dev.s3.us-west-2.amazonaws.com",
       },
       // Merged from next.config.js
       {

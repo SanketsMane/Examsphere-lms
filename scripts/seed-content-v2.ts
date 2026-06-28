@@ -15,7 +15,7 @@ async function main() {
         create: {
             id: "admin-user",
             name: "Admin User",
-            email: "admin@kidokool.com",
+            email: "admin@examsphere.com",
             role: "admin",
             emailVerified: true,
             createdAt: new Date(),
@@ -24,7 +24,7 @@ async function main() {
     });
 
     const teacher = await prisma.user.upsert({
-        where: { email: "teacher@kidokool.com" },
+        where: { email: "teacher@examsphere.com" },
         update: {
             gender: "Female",
             country: "United Kingdom",
@@ -32,7 +32,7 @@ async function main() {
         create: {
             id: "teacher-user",
             name: "Sarah Jenkins",
-            email: "teacher@kidokool.com",
+            email: "teacher@examsphere.com",
             image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop",
             role: "teacher",
             emailVerified: true,
@@ -44,7 +44,7 @@ async function main() {
     });
 
     const teacher2 = await prisma.user.upsert({
-        where: { email: "mike@kidokool.com" },
+        where: { email: "mike@examsphere.com" },
         update: {
             gender: "Male",
             country: "Singapore",
@@ -52,7 +52,7 @@ async function main() {
         create: {
             id: "teacher-mike",
             name: "Mike Chen",
-            email: "mike@kidokool.com",
+            email: "mike@examsphere.com",
             image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop",
             role: "teacher",
             emailVerified: true,

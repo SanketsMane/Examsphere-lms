@@ -10,7 +10,7 @@ async function main() {
         {
             name: "Alex Johnson",
             role: "Software Developer",
-            content: "Kidokool has transformed the way I learn. The courses are top-notch and the instructors are very knowledgeable.",
+            content: "ExamSphere has transformed the way I learn. The courses are top-notch and the instructors are very knowledgeable.",
             image: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=2574&auto=format&fit=crop",
             isFeatured: true,
             isActive: true,
@@ -18,7 +18,7 @@ async function main() {
         {
             name: "Sarah Williams",
             role: "Product Manager",
-            content: "I love the flexibility Kidokool offers. I can learn at my own pace and the community is very supportive.",
+            content: "I love the flexibility ExamSphere offers. I can learn at my own pace and the community is very supportive.",
             image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574&auto=format&fit=crop",
             isFeatured: true,
             isActive: true,

@@ -7,10 +7,10 @@ export default function AboutPage() {
     <div className="container mx-auto px-4 py-32 flex flex-col items-center justify-center text-center space-y-8">
       <div className="space-y-4">
         <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-          About KIDOKOOL
+          About EXAMSPHERE
         </h1>
         <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-autoLeading-relaxed">
-          KIDOKOOL is the world's leading online learning platform. Join millions of learners and instructors gathering to master new skills.
+          EXAMSPHERE is the world's leading online learning platform. Join millions of learners and instructors gathering to master new skills.
         </p>
       </div>
       

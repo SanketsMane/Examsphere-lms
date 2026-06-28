@@ -6,7 +6,7 @@ import * as FileSystem from "expo-file-system";
  * Sanket
  */
 
-const CACHE_PREFIX = "@kidokool_cache_";
+const CACHE_PREFIX = "@examsphere_cache_";
 const MEDIA_DIR = `${(FileSystem as any).documentDirectory}media/`;
 
 export const storage = {

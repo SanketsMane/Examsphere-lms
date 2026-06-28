@@ -49,7 +49,7 @@ const ONBOARDING_DATA = [
   {
     id: "4",
     title: "Achieve Your Goals",
-    description: "Join thousands of successful students who have transformed their careers with Kidokool LMS.",
+    description: "Join thousands of successful students who have transformed their careers with ExamSphere LMS.",
     image: require("../assets/onboarding/success.png"),
     color: "#f59e0b"
   }

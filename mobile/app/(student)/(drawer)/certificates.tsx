@@ -53,7 +53,7 @@ export default function CertificatesScreen() {
   const handleShare = async (cert: any) => {
     try {
       await Share.share({
-        message: `Check out my certificate for ${cert.title} on Kidokool!`,
+        message: `Check out my certificate for ${cert.title} on ExamSphere!`,
         url: cert.fileUrl // Standard for iOS
       });
     } catch (error) {

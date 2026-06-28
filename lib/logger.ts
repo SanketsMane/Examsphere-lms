@@ -1,5 +1,5 @@
 /**
- * KIDOKOOL Centralized Logger
+ * EXAMSPHERE Centralized Logger
  * Provides structured logging for errors, security events, and audit trails.
  * @author Sanket
  */

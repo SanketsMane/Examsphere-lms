@@ -36,7 +36,7 @@ export function BulkImportDialog() {
         ]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Users");
-        XLSX.writeFile(wb, "kidokool_sample_users.xlsx");
+        XLSX.writeFile(wb, "examsphere_sample_users.xlsx");
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

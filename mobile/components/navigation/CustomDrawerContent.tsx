@@ -123,7 +123,7 @@ export function CustomDrawerContent(props: any) {
             
             <View className="items-center mt-3 opacity-30 mb-1">
               <Typography className="text-[8px] font-bold tracking-widest uppercase">
-                  Kidokool LMS • v1.0.0 (Stable)
+                  ExamSphere LMS • v1.0.0 (Stable)
               </Typography>
             </View>
           </View>

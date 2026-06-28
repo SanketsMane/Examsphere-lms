@@ -60,7 +60,7 @@ export default async function Home() {
             marginBottom: '1.5rem',
             lineHeight: '1.1'
           }}>
-            Welcome to KIDOKOOL
+            Welcome to EXAMSPHERE
           </h1>
           
           <p style={{

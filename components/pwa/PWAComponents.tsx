@@ -50,7 +50,7 @@ export function PWAInstallPrompt() {
       setIsInstalled(true);
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
-      toast.success("KIDOKOOL installed successfully!");
+      toast.success("EXAMSPHERE installed successfully!");
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -165,7 +165,7 @@ export function PWAInstallPrompt() {
                 <Smartphone className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <CardTitle className="text-lg">Install KIDOKOOL</CardTitle>
+                <CardTitle className="text-lg">Install EXAMSPHERE</CardTitle>
                 <CardDescription className="text-sm">
                   Get the full app experience
                 </CardDescription>

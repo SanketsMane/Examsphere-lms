@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Kidokool LMS",
-    "slug": "kidokool-lms",
-    "scheme": "kidokool-lms",
+    "name": "ExamSphere LMS",
+    "slug": "examsphere-lms",
+    "scheme": "examsphere-lms",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kidokool.lms"
+      "bundleIdentifier": "com.examsphere.lms"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.kidokool.lms",
+      "package": "com.examsphere.lms",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },

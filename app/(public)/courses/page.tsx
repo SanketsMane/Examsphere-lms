@@ -16,7 +16,7 @@ import { Metadata } from "next";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Explore Premium Courses - KIDOKOOL",
+  title: "Explore Premium Courses - EXAMSPHERE",
   description: "Browse our extensive collection of expert-led courses in Programming, Design, Business, and more. Start learning today.",
 };
 

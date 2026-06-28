@@ -33,7 +33,7 @@ export default async function HelpPage() {
     },
     {
       question: "How do I contact support?",
-      answer: "You can reach our support team through the contact form below, or email us at support@kidokool.com. We typically respond within 24 hours."
+      answer: "You can reach our support team through the contact form below, or email us at support@examsphere.com. We typically respond within 24 hours."
     }
   ];
 
@@ -121,7 +121,7 @@ export default async function HelpPage() {
           <CardDescription>Contact our support team directly</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="mb-4">Email us at: <a href="mailto:support@kidokool.com" className="text-primary hover:underline">support@kidokool.com</a></p>
+          <p className="mb-4">Email us at: <a href="mailto:support@examsphere.com" className="text-primary hover:underline">support@examsphere.com</a></p>
           <p className="text-sm text-muted-foreground">We typically respond within 24 hours</p>
         </CardContent>
       </Card>

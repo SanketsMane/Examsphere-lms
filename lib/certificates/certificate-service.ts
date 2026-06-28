@@ -31,11 +31,11 @@ export async function generateCertificatePDF(data: {
     doc.setLineWidth(2);
     doc.rect(20, 20, width - 40, height - 40, 'S');
 
-    // 2. Kidokool Header
+    // 2. ExamSphere Header
     doc.setTextColor(20, 184, 166);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(30);
-    doc.text("KIDOKOOL LMS", width / 2, 100, { align: "center" });
+    doc.text("EXAMSPHERE LMS", width / 2, 100, { align: "center" });
 
     // Decorative line
     doc.setDrawColor(20, 184, 166);

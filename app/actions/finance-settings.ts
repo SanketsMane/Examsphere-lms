@@ -35,7 +35,7 @@ export async function updateFinanceSettings(prevState: any, formData: FormData) 
             // Should not happen if settings are initialized, but for safety:
             await (prisma.siteSettings as any).create({
                 data: {
-                    siteName: "Kidokool LMS",
+                    siteName: "ExamSphere LMS",
                     siteUrl: "",
                     commissionPercentage,
                     gstPercentage,

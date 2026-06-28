@@ -152,10 +152,10 @@ export default function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">K</span>
               </div>
-              Install KIDOKOOL
+              Install EXAMSPHERE
             </DialogTitle>
             <DialogDescription>
-              Add KIDOKOOL to your home screen for a better learning experience
+              Add EXAMSPHERE to your home screen for a better learning experience
             </DialogDescription>
           </DialogHeader>
           
@@ -186,7 +186,7 @@ export default function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
               </div>
               <div>
                 <p className="text-sm font-medium">Tap "Add"</p>
-                <p className="text-xs text-muted-foreground">KIDOKOOL will be added to your home screen</p>
+                <p className="text-xs text-muted-foreground">EXAMSPHERE will be added to your home screen</p>
               </div>
             </div>
           </div>
@@ -211,7 +211,7 @@ export default function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">K</span>
               </div>
-              Install KIDOKOOL
+              Install EXAMSPHERE
             </DialogTitle>
             <DialogDescription>
               Get the full app experience with offline access and push notifications
@@ -295,7 +295,7 @@ export default function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
                 <Smartphone className="h-5 w-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">Install KIDOKOOL</p>
+                <p className="font-medium text-sm">Install EXAMSPHERE</p>
                 <p className="text-xs text-muted-foreground">Get the app experience</p>
               </div>
               <div className="flex gap-1">

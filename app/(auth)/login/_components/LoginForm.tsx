@@ -244,7 +244,7 @@ export function LoginForm() {
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-blue-500" />
-                Why join KIDOKOOL?
+                Why join EXAMSPHERE?
               </h3>
               <div className="grid gap-3">
                 {features.map((feature, index) => (

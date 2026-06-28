@@ -1,4 +1,4 @@
-# 🎓# KIDOKOOL LMS Marketplace (Live)
+# 🎓# EXAMSPHERE LMS Marketplace (Live)
 
 > **A Modern Learning Management System & Course Marketplace**  
 > Built with Next.js 15, TypeScript, and cutting-edge technologies for seamless online education, course creation, and marketplace functionality.
@@ -13,7 +13,7 @@
 
 ## 🚀 Overview
 
-KIDOKOOL LMS Marketplace is a comprehensive learning management system that combines course creation, student management, and marketplace functionality. It provides a complete ecosystem for educators to create, sell, and manage online courses while offering students an engaging learning experience.
+EXAMSPHERE LMS Marketplace is a comprehensive learning management system that combines course creation, student management, and marketplace functionality. It provides a complete ecosystem for educators to create, sell, and manage online courses while offering students an engaging learning experience.
 
 ## ✨ Key Features
 
@@ -101,8 +101,8 @@ KIDOKOOL LMS Marketplace is a comprehensive learning management system that comb
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/SanketsMane/KIDOKOOL-LMS-Marketplace.git
-   cd KIDOKOOL-LMS-Marketplace
+   git clone https://github.com/SanketsMane/EXAMSPHERE-LMS-Marketplace.git
+   cd EXAMSPHERE-LMS-Marketplace
    ```
 
 2. **Install dependencies**
@@ -135,7 +135,7 @@ KIDOKOOL LMS Marketplace is a comprehensive learning management system that comb
 ## 📁 Project Structure
 
 ```
-KIDOKOOL/
+EXAMSPHERE/
 ├── app/                    # Next.js App Router
 │   ├── (auth)/            # Authentication pages
 │   ├── (public)/          # Public pages

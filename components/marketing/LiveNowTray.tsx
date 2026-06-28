@@ -30,7 +30,7 @@ export function LiveNowTray({ sessions }: LiveNowTrayProps) {
                         <div className="w-2 h-2 bg-white rounded-full" />
                         LIVE NOW
                     </div>
-                    <span className="text-sm text-gray-400 hidden md:inline">Happening right now on KIDOKOOL</span>
+                    <span className="text-sm text-gray-400 hidden md:inline">Happening right now on EXAMSPHERE</span>
                 </div>
 
                 <div className="flex items-center gap-4 overflow-x-auto no-scrollbar mask-gradient">

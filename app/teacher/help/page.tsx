@@ -162,7 +162,7 @@ export default async function TeacherHelpPage() {
           <CardDescription>Contact our teacher support team</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p>Email: <a href="mailto:teachers@kidokool.com" className="text-primary hover:underline">teachers@kidokool.com</a></p>
+          <p>Email: <a href="mailto:teachers@examsphere.com" className="text-primary hover:underline">teachers@examsphere.com</a></p>
           <p>Phone: +91 1800-123-4567 (Mon-Fri, 9 AM - 6 PM IST)</p>
           <p className="text-sm text-muted-foreground">Priority support for teachers - typically respond within 12 hours</p>
           <Button className="mt-2">

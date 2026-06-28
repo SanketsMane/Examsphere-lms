@@ -1,4 +1,4 @@
-// Performance Optimization Utilities for KIDOKOOL
+// Performance Optimization Utilities for EXAMSPHERE
 import { NextRequest, NextResponse } from "next/server";
 
 // Cache configurations
@@ -194,7 +194,7 @@ export class ResponseOptimizer {
     if (timing) {
       response.headers.set('X-Response-Time', `${timing.toFixed(2)}ms`);
     }
-    response.headers.set('X-Powered-By', 'KIDOKOOL');
+    response.headers.set('X-Powered-By', 'EXAMSPHERE');
     return response;
   }
 

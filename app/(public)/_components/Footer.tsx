@@ -76,11 +76,11 @@ export async function Footer() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={logoSrc} 
-                    alt={settings?.siteName || "KIDOKOOL"} 
+                    alt={settings?.siteName || "EXAMSPHERE"} 
                     className="w-full h-full object-contain" 
                   />
               </div>
-              <span className="text-2xl font-bold text-white tracking-tight">{settings?.siteName || "KIDOKOOL"}</span>
+              <span className="text-2xl font-bold text-white tracking-tight">{settings?.siteName || "EXAMSPHERE"}</span>
             </Link>
             <p className="text-slate-400 leading-relaxed max-w-sm">
               The world's leading online learning platform. Join millions of learners and instructors gathering to master new skills.
@@ -170,7 +170,7 @@ export async function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-slate-800 bg-[#060a15]">
         <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} KidoKool. All rights reserved. <span className="ml-2 text-slate-600">v1.0.1</span></p>
+          <p>© {new Date().getFullYear()} ExamSphere. All rights reserved. <span className="ml-2 text-slate-600">v1.0.1</span></p>
           <div className="flex items-center gap-6">
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>

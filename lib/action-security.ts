@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/db";
 
 /**
- * Security helpers for KIDOKOOL Server Actions
+ * Security helpers for EXAMSPHERE Server Actions
  * Author: Sanket
  */
 

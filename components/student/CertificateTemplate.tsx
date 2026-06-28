@@ -26,7 +26,7 @@ export const CertificateTemplate = React.forwardRef<HTMLDivElement, CertificateT
                 <div className="absolute inset-4 border-2 border-primary/20 pointer-events-none" />
                 
                 <div className="space-y-4">
-                    <h2 className="text-primary text-4xl font-bold tracking-widest uppercase">Kidokool LMS</h2>
+                    <h2 className="text-primary text-4xl font-bold tracking-widest uppercase">ExamSphere LMS</h2>
                     <div className="h-1 w-32 bg-primary mx-auto" />
                 </div>
 

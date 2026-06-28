@@ -3,7 +3,7 @@ import { getSubscriptionPlans } from "@/app/actions/subscriptions";
 import PricingPageClient from "./_components/PricingPageClient";
 
 export const metadata = {
-    title: "Pricing - Kidokool LMS",
+    title: "Pricing - ExamSphere LMS",
     description: "Simple, transparent pricing for teachers and students."
 };
 

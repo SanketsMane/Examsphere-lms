@@ -64,7 +64,7 @@ export const PermissionGate = ({ children }: { children: React.ReactNode }) => {
             
             <Typography variant="h3" weight="bold" className="text-center mb-2">Permissions Ready?</Typography>
             <Typography variant="p" className="text-center text-muted-foreground mb-8">
-              To provide the best learning experience, Kidokool needs access to a few features.
+              To provide the best learning experience, ExamSphere needs access to a few features.
             </Typography>
 
             <View className="w-full space-y-4 mb-10">

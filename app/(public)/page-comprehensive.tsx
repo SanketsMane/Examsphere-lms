@@ -65,7 +65,7 @@ const testimonials = [
     role: "Full-Stack Developer",
     image: "👩‍💻",
     rating: 5,
-    text: "KIDOKOOL transformed my career! The interactive coding sessions and real-world projects helped me land my dream job at a tech company."
+    text: "EXAMSPHERE transformed my career! The interactive coding sessions and real-world projects helped me land my dream job at a tech company."
   },
   {
     name: "Michael Chen",
@@ -216,7 +216,7 @@ export default async function Home() {
             margin: '0 auto 3rem auto',
             lineHeight: '1.6'
           }}>
-            Join KIDOKOOL, the world's most comprehensive learning platform. Learn from industry experts, 
+            Join EXAMSPHERE, the world's most comprehensive learning platform. Learn from industry experts, 
             get certified, and advance your career with hands-on projects and real-world experience.
           </p>
           
@@ -357,7 +357,7 @@ export default async function Home() {
               color: '#1f2937',
               marginBottom: '1rem'
             }}>
-              Why Choose KIDOKOOL?
+              Why Choose EXAMSPHERE?
             </h2>
             <p style={{
               fontSize: '1.2rem',
@@ -543,7 +543,7 @@ export default async function Home() {
               maxWidth: '600px',
               margin: '0 auto'
             }}>
-              Join thousands of successful learners who transformed their careers with KIDOKOOL.
+              Join thousands of successful learners who transformed their careers with EXAMSPHERE.
             </p>
           </div>
 
@@ -761,7 +761,7 @@ export default async function Home() {
             marginBottom: '3rem',
             lineHeight: '1.6'
           }}>
-            Join KIDOKOOL today and start your journey towards mastering the skills that matter. 
+            Join EXAMSPHERE today and start your journey towards mastering the skills that matter. 
             With our expert instructors, interactive learning, and supportive community, 
             success is just a click away.
           </p>

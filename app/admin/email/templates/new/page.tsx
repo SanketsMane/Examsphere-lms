@@ -66,7 +66,7 @@ export default function NewTemplatePage() {
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Subject Line</label>
-                            <Input name="subject" placeholder="Welcome to Kidokool!" required />
+                            <Input name="subject" placeholder="Welcome to ExamSphere!" required />
                         </div>
 
                          <div className="space-y-2">

@@ -61,7 +61,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
         </View>
         
         <Typography variant="small" className="text-slate-500 dark:text-slate-400 text-xs font-medium mb-2" numberOfLines={1}>
-           {user?.email || "student@kidokool.com"}
+           {user?.email || "student@examsphere.com"}
         </Typography>
 
         <View className="flex-row items-center">

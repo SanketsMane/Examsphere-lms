@@ -1,4 +1,4 @@
-// Automated Backup and Recovery System for KIDOKOOL
+// Automated Backup and Recovery System for EXAMSPHERE
 import { promises as fs } from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';

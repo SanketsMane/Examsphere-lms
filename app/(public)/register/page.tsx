@@ -34,7 +34,7 @@ export const dynamic = "force-dynamic";
 
 const testimonials = [
   {
-    quote: "KIDOKOOL has completely transformed the way I learn. The courses are structured, easy to follow, and the instructors are world-class.",
+    quote: "EXAMSPHERE has completely transformed the way I learn. The courses are structured, easy to follow, and the instructors are world-class.",
     author: "Happy Student",
     role: "Full Stack Developer",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
@@ -138,7 +138,7 @@ export default function RegisterPage() {
 
         <div className="relative z-10">
           <Link href="/" className="flex items-center gap-2 mb-12">
-            <span className="text-2xl font-bold tracking-tight">KIDOKOOL</span>
+            <span className="text-2xl font-bold tracking-tight">EXAMSPHERE</span>
           </Link>
           <div className="space-y-6 max-w-lg">
             <h1 className="text-4xl font-extrabold tracking-tight capitalize leading-tight">

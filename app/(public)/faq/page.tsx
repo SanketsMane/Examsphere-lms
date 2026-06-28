@@ -21,7 +21,7 @@ export default function FAQPage() {
                     </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="item-3">
-                    <AccordionTrigger>Can I teach on KIDOKOOL?</AccordionTrigger>
+                    <AccordionTrigger>Can I teach on EXAMSPHERE?</AccordionTrigger>
                     <AccordionContent>
                         Yes! We interpret certified teachers and subject matter experts. Click "Become a Tutor" in the footer to start your application.
                     </AccordionContent>

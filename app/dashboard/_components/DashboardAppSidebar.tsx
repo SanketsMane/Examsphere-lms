@@ -104,7 +104,7 @@ const data = {
     },
 
     {
-      title: "Kidokool Ai",
+      title: "ExamSphere Ai",
       url: "/dashboard/ai",
       icon: IconSparkles,
     },
@@ -135,7 +135,7 @@ const data = {
 
 import { authClient } from "@/lib/auth-client";
 import { IconSchool } from "@tabler/icons-react";
-import { TeachOnKidokoolCTA } from "./TeachOnKidokoolCTA";
+import { TeachOnExamSphereCTA } from "./TeachOnExamSphereCTA";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   /**
@@ -171,7 +171,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <Link href="/">
                 <Image src={Logo} alt="Logo" className="size-5" />
-                <span className="text-base font-semibold">KIDOKOOL.</span>
+                <span className="text-base font-semibold">EXAMSPHERE.</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -180,11 +180,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
         
-        {/* Teach on Kidokool CTA - Only for non-teachers */}
+        {/* Teach on ExamSphere CTA - Only for non-teachers */}
         {role !== "teacher" && (
             <div className="px-2 mt-4 mb-2">
                 <SidebarMenu>
-                    <TeachOnKidokoolCTA />
+                    <TeachOnExamSphereCTA />
                 </SidebarMenu>
             </div>
         )}

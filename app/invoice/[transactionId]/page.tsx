@@ -45,7 +45,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
                         <p className="text-muted-foreground mt-1">#{transaction.id.slice(-8).toUpperCase()}</p>
                     </div>
                     <div className="text-right">
-                        <h2 className="text-xl font-bold">Kidokool LMS</h2>
+                        <h2 className="text-xl font-bold">ExamSphere LMS</h2>
                         <p className="text-sm text-slate-500">
                             123 Learning Lane<br />
                             EdTech City, 400001<br />
@@ -106,8 +106,8 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
 
                 {/* Footer */}
                 <div className="border-t pt-8 text-center text-sm text-slate-500">
-                    <p>Thank you for choosing Kidokool LMS!</p>
-                    <p>For any questions, please contact support@kidokool.com</p>
+                    <p>Thank you for choosing ExamSphere LMS!</p>
+                    <p>For any questions, please contact support@examsphere.com</p>
                 </div>
 
                 {/* Print Actions (Hidden in Print) */}

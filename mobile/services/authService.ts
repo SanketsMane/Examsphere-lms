@@ -259,7 +259,7 @@ export const authService = {
        try {
          await api.post("/api/auth/request-password-reset", {
            email,
-           redirectTo: "kidokool-lms://reset-password", // Deep link for mobile
+           redirectTo: "examsphere-lms://reset-password", // Deep link for mobile
          });
          return { status: "success", data: undefined };
        } catch (error: any) {

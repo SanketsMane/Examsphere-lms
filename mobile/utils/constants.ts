@@ -19,7 +19,7 @@ const DEV_URL = "http://192.168.1.37:3000"; // Physical Device & Simulators (Use
 export const API_URL = `${DEV_URL}`;
 
 export const APP_CONFIG = {
-  name: "Kidokool LMS",
+  name: "ExamSphere LMS",
   version: "1.0.0",
   developer: "Sanket",
 };

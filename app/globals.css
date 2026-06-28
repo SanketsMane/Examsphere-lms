@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* KIDOKOOL Premium Palette (Yo-Coach Inspired) */
+  /* EXAMSPHERE Premium Palette (Yo-Coach Inspired) */
   --background: oklch(0.98 0.01 240);
   /* Soft White */
   --foreground: oklch(0.15 0.05 240);

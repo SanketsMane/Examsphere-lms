@@ -1,7 +1,7 @@
-// Service Worker for KIDOKOOL PWA
-const CACHE_NAME = 'kidokool-lms-v1.0.0';
-const STATIC_CACHE_NAME = 'kidokool-lms-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'kidokool-lms-dynamic-v1.0.0';
+// Service Worker for EXAMSPHERE PWA
+const CACHE_NAME = 'examsphere-lms-v1.0.0';
+const STATIC_CACHE_NAME = 'examsphere-lms-static-v1.0.0';
+const DYNAMIC_CACHE_NAME = 'examsphere-lms-dynamic-v1.0.0';
 
 // Files to cache for offline functionality
 const STATIC_FILES = [
@@ -211,7 +211,7 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     
     const options = {
-      body: data.body || 'New notification from KIDOKOOL',
+      body: data.body || 'New notification from EXAMSPHERE',
       icon: '/icon-192x192.png',
       badge: '/icon-96x96.png',
       tag: data.tag || 'general',
@@ -230,7 +230,7 @@ self.addEventListener('push', (event) => {
     };
     
     event.waitUntil(
-      self.registration.showNotification(data.title || 'KIDOKOOL', options)
+      self.registration.showNotification(data.title || 'EXAMSPHERE', options)
     );
   }
 });

@@ -61,7 +61,7 @@ export function AuthenticatedPricingCards({ plans, currentSubscriptionId, showCa
                 const options = {
                     key: res.key,
                     subscription_id: res.subscriptionId,
-                    name: "Kidokool LMS",
+                    name: "ExamSphere LMS",
                     description: `Subscription to ${plan.name}`,
                     handler: async function (response: any) {
                         toast.success("Subscription activated successfully!");

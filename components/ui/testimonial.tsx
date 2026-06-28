@@ -17,7 +17,7 @@ const testimonials = [
     },
     {
         quote:
-            "Finding a good math tutor was a struggle until I found Kidokool. The interactive sessions are a game changer.",
+            "Finding a good math tutor was a struggle until I found ExamSphere. The interactive sessions are a game changer.",
         name: "Rahul Verma",
         designation: "Parent",
         src: "https://images.unsplash.com/photo-1566492031776-63065f0ad4c6?q=80&w=2070&auto=format&fit=crop",

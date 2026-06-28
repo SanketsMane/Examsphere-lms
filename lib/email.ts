@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { prisma } from './db';
 
-const resendClient = () => new Resend(process.env.RESEND_API_KEY || 're_X8PzYDqF_LLQz5N8ToZ9naxuLBuU9uQtL');
+const resendClient = () => new Resend(process.env.RESEND_API_KEY || '');
 
 interface EmailData {
   to: string;
@@ -58,17 +58,15 @@ async function getEmailProvider() {
 }
 
 function getEnvTransporter() {
-  // HARDCODED GMAIL FOR BACKUP ONLY (EXPECTED TO FAIL ON SOME VPS)
+  // SMTP from environment (EMAIL_USER / EMAIL_PASS). Returns null if not configured.
+  const user = (process.env.EMAIL_USER || '').trim();
+  const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
+  if (!user || !pass) return null;
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // STARTTLS
-    logger: true,
-    debug: true,
-    auth: {
-      user: 'bksun170882@gmail.com',
-      pass: 'mwtinpysoylfarwj'
-    }
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: Number(process.env.EMAIL_PORT) || 587,
+    secure: process.env.EMAIL_SECURE === 'true', // false => STARTTLS on 587
+    auth: { user, pass }
   });
 }
 
@@ -106,60 +104,60 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       return true;
     }
 
-    // PRIMARY: RESEND (Force Enabled with verified fallback)
-    try {
-        console.log('Attempting to send email via RESEND...');
+    const fromAddress =
+      process.env.EMAIL_FROM ||
+      `EXAMSPHERE <${process.env.EMAIL_USER || 'no-reply@examsphere.online'}>`;
+    const mailOptions = {
+      from: fromAddress,
+      to: emailData.to,
+      subject: emailData.subject,
+      html: emailData.html,
+    };
+
+    // PRIMARY: RESEND HTTPS API (works where outbound SMTP is blocked, e.g. DigitalOcean)
+    if (process.env.RESEND_API_KEY) {
+      try {
         const data = await resendClient().emails.send({
-          from: 'onboarding@resend.dev',
+          from: process.env.RESEND_FROM || fromAddress,
           to: emailData.to,
           subject: emailData.subject,
           html: emailData.html,
         });
-
         if (data.data?.id) {
           console.log('Email sent successfully via RESEND!', data.data.id);
           return true;
         }
-        
-        console.warn('RESEND API returned no ID, falling back to SMTP...', data.error);
+        console.warn('RESEND returned no ID, trying SMTP fallback...', data.error);
       } catch (resendError: any) {
-        console.error('RESEND API failed, trying SMTP fallback:', resendError?.message || resendError);
+        console.error('RESEND failed, trying SMTP fallback:', resendError?.message || resendError);
       }
     }
 
-    // FALLBACK: DATABASE SMTP PROVIDER
+    // FALLBACK: ENV SMTP (EMAIL_USER / EMAIL_PASS) — used when SMTP egress is available
+    const envTransporter = getEnvTransporter();
+    if (envTransporter) {
+      try {
+        const info = await envTransporter.sendMail(mailOptions);
+        console.log('Email sent successfully via ENV SMTP provider:', info.messageId);
+        return true;
+      } catch (envError: any) {
+        console.error('ENV SMTP failed, trying DB provider:', envError?.message || envError);
+      }
+    }
+
+    // FALLBACK: DATABASE-configured SMTP PROVIDER
     const dbTransporter = await getEmailProvider();
     if (dbTransporter) {
       try {
-        const mailOptions = {
-          from: '"KIDOKOOL" <bksun170882@gmail.com>',
-          to: emailData.to,
-          subject: emailData.subject,
-          html: emailData.html
-        };
         const info = await dbTransporter.sendMail(mailOptions);
         console.log('Email sent successfully via DB SMTP provider:', info.messageId);
         return true;
       } catch (dbError: any) {
-        console.error('DB SMTP provider failed, trying ENV fallback:', dbError?.message || dbError);
+        console.error('DB SMTP provider failed:', dbError?.message || dbError);
       }
     }
 
-    // FINAL FALLBACK: ENV GMAIL (Most likely to fail)
-    const envTransporter = getEnvTransporter();
-    if (envTransporter) {
-      const mailOptions = {
-        from: '"KIDOKOOL" <bksun170882@gmail.com>',
-        to: emailData.to,
-        subject: emailData.subject,
-        html: emailData.html
-      };
-      const info = await envTransporter.sendMail(mailOptions);
-      console.log('Email sent successfully via ENV SMTP provider:', info.messageId);
-      return true;
-    }
-
-    throw new Error('No valid email provider found (RESEND, DB or ENV)');
+    throw new Error('No valid email provider succeeded (RESEND, ENV SMTP, or DB)');
   } catch (error: any) {
     console.error('Error sending email:', error);
     throw error; // Propagate the error to Better Auth

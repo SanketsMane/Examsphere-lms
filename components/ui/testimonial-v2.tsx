@@ -124,7 +124,7 @@ export const TestimonialsSectionV2 = ({ testimonials = [] }: TestimonialSectionP
                         What our users say
                     </h2>
                     <p className="text-center mt-5 text-neutral-500 dark:text-neutral-400 text-lg leading-relaxed max-w-sm transition-colors">
-                        Discover how thousands of learners and tutors transform their lives with Kidokool.
+                        Discover how thousands of learners and tutors transform their lives with ExamSphere.
                     </p>
                 </div>
 

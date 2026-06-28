@@ -299,7 +299,7 @@ export default function TeacherRegisterPage() {
           <div className="w-full max-w-xl">
             <div className="mb-10 lg:hidden">
               <h1 className="text-3xl font-bold mb-2">Become a Teacher</h1>
-              <p className="text-muted-foreground">Join Kidokool and start teaching today.</p>
+              <p className="text-muted-foreground">Join ExamSphere and start teaching today.</p>
             </div>
 
             <Card className="border-0 shadow-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">

@@ -74,7 +74,7 @@ export default function CourseDetails() {
     try {
       await Share.share({
         message: `Check out this course: ${course?.title}!`,
-        url: "https://kidokool.lms",
+        url: "https://examsphere.lms",
       });
     } catch (error) {
       console.error(error);

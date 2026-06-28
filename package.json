@@ -1,5 +1,5 @@
 {
-  "name": "kidokool-lms",
+  "name": "examsphere-lms",
   "version": "1.0.1",
   "private": true,
   "scripts": {
@@ -9,7 +9,6 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "test-email": "npx tsx scripts/test-email.ts",
-    "seed-users": "npx tsx scripts/seed-users.ts",
     "dev:all": "concurrently \"next dev\" \"tsx lib/websocket-server.ts\"",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -98,6 +97,7 @@
     "react-use": "^17.6.0",
     "recharts": "^2.15.3",
     "remark-gfm": "^4.0.1",
+    "resend": "^6.16.0",
     "slugify": "^1.6.6",
     "sonner": "^2.0.4",
     "tailwind-merge": "^3.3.0",

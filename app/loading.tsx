@@ -11,7 +11,7 @@ export default function GlobalLoading() {
           </div>
         </div>
         <p className="mt-6 text-neutral-500 font-medium tracking-wide animate-pulse">
-          Loading KIDOKOOL...
+          Loading EXAMSPHERE...
         </p>
       </div>
     </div>

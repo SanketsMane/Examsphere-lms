@@ -104,7 +104,7 @@ export default async function Home() {
             A smarter way to Learn <br /> <span className="text-primary">and grow</span>
           </>
         }
-        subtitle="Kidokool is here for you with various courses & materials from skilled tutors all around the world."
+        subtitle="ExamSphere is here for you with various courses & materials from skilled tutors all around the world."
         actions={[
           {
             text: 'Join the Class',

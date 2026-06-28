@@ -1,5 +1,5 @@
 /**
- * Advanced Security System for KIDOKOOL
+ * Advanced Security System for EXAMSPHERE
  * Enhanced security with comprehensive protection measures
  * Features: Bot detection, rate limiting, email validation, CSRF protection, 
  * input sanitization, file upload security, and performance monitoring

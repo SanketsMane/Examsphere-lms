@@ -214,19 +214,19 @@ export default async function AdminHelpPage() {
         <CardContent className="space-y-3">
           <div>
             <p className="font-medium">Technical Support</p>
-            <p className="text-sm">Email: <a href="mailto:admin-support@kidokool.com" className="text-primary hover:underline">admin-support@kidokool.com</a></p>
+            <p className="text-sm">Email: <a href="mailto:admin-support@examsphere.com" className="text-primary hover:underline">admin-support@examsphere.com</a></p>
             <p className="text-sm">Phone: +91 1800-ADMIN-00 (24/7)</p>
           </div>
           <Separator />
           <div>
             <p className="font-medium">Emergency Escalation</p>
             <p className="text-sm">For critical system issues only</p>
-            <p className="text-sm">Email: <a href="mailto:emergency@kidokool.com" className="text-primary hover:underline">emergency@kidokool.com</a></p>
+            <p className="text-sm">Email: <a href="mailto:emergency@examsphere.com" className="text-primary hover:underline">emergency@examsphere.com</a></p>
           </div>
           <Separator />
           <div className="bg-amber-50 dark:bg-amber-950 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
             <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Platform Status Page</p>
-            <p className="text-xs text-amber-700 dark:text-amber-300">Check for ongoing incidents: status.kidokool.com</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300">Check for ongoing incidents: status.examsphere.com</p>
           </div>
         </CardContent>
       </Card>

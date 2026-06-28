@@ -1,6 +1,6 @@
 {
-  "name": "KIDOKOOL - Professional Learning Platform",
-  "short_name": "KIDOKOOL",
+  "name": "EXAMSPHERE - Professional Learning Platform",
+  "short_name": "EXAMSPHERE",
   "description": "Advanced learning management system with video conferencing, collaborative whiteboard, and analytics",
   "start_url": "/",
   "display": "standalone",

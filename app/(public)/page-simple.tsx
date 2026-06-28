@@ -20,7 +20,7 @@ export default async function Home() {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-16">
         <h1 className="text-4xl font-bold text-center mb-8">
-          Welcome to KIDOKOOL
+          Welcome to EXAMSPHERE
         </h1>
         <p className="text-lg text-center text-gray-600">
           Transform Your Future with Learning

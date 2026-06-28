@@ -33,7 +33,7 @@ export default function AIScreen() {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AiMessage[]>([
-    { role: "assistant", content: "Hi! I'm your Kidokool AI Tutor. How can I help you with your learning today?" }
+    { role: "assistant", content: "Hi! I'm your ExamSphere AI Tutor. How can I help you with your learning today?" }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);

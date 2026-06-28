@@ -24,7 +24,7 @@ export async function sendTestEmail(formData: FormData) {
     // 3. Send email using existing utility
     const sent = await sendEmail({
       to: email,
-      subject: "Test Email from Kidokool LMS",
+      subject: "Test Email from ExamSphere LMS",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>Test Email Successful! 🎉</h2>
@@ -32,7 +32,7 @@ export async function sendTestEmail(formData: FormData) {
           <p><strong>Recipient:</strong> ${email}</p>
           <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
           <hr />
-          <p style="font-size: 12px; color: #666;">Kidokool LMS Diagnostic Tool</p>
+          <p style="font-size: 12px; color: #666;">ExamSphere LMS Diagnostic Tool</p>
         </div>
       `,
     });

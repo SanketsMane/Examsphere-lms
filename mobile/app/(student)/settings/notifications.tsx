@@ -83,7 +83,7 @@ export default function NotificationSettingsScreen() {
         <View className="bg-blue-50 dark:bg-blue-500/10 p-4 rounded-2xl mb-8 border border-blue-100 dark:border-blue-500/20 flex-row items-center">
            <Bell size={24} color="#3b82f6" className="mr-4" />
            <Typography className="text-blue-700 dark:text-blue-400 text-sm flex-1 leading-5">
-              Control which emails and push notifications you receive from Kidokool.
+              Control which emails and push notifications you receive from ExamSphere.
            </Typography>
         </View>
 
