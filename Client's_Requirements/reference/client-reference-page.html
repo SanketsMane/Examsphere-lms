@@ -1,0 +1,195 @@
+<!--
+  CLIENT-SUPPLIED REFERENCE MOCK (homepage) — pasted from WhatsApp.
+  This is the design target for Phase 1. It is a static HTML/CSS mock; port it into the
+  Next.js homepage using the tokens in ../design-tokens.md and next/font for Sora + Inter.
+  NOTE: the client's paste was cut off inside the "Resources" dropdown — the header/hero/cards/
+  why-choose/quote/footer CSS is complete and authoritative. Course-section markup lives in
+  client-reference-course-sections.html.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExamSphere — Learn. Compete. Succeed.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root{
+    --navy-950:#0A1B3D;
+    --navy-900:#0F2557;
+    --navy-700:#16336F;
+    --navy-500:#274B8C;
+    --orange-500:#FF7A1A;
+    --orange-600:#F0630A;
+    --green-600:#1D9A6C;
+    --green-700:#157A56;
+    --bg:#FFFFFF;
+    --bg-soft:#F4F7FC;
+    --bg-soft-2:#EEF2FA;
+    --ink-900:#0C1730;
+    --ink-700:#3A4560;
+    --ink-500:#6B7690;
+    --line:#E4E9F5;
+    --radius-lg:24px;
+    --radius-md:16px;
+    --radius-sm:10px;
+    --shadow-sm:0 2px 10px rgba(15,37,87,0.06);
+    --shadow-md:0 10px 30px rgba(15,37,87,0.10);
+    --shadow-lg:0 24px 60px rgba(15,37,87,0.16);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Inter',sans-serif; color:var(--ink-900); background:var(--bg); line-height:1.5; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3,h4{font-family:'Sora',sans-serif; color:var(--navy-950); letter-spacing:-0.02em;}
+  a{text-decoration:none; color:inherit;}
+  ul{list-style:none;}
+  img{max-width:100%; display:block;}
+  .container{max-width:1240px; margin:0 auto; padding:0 24px;}
+  .eyebrow{display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--orange-600);}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:14px 26px; border-radius:100px; font-weight:600; font-size:15px; border:1.5px solid transparent; cursor:pointer; transition:all .2s ease; white-space:nowrap;}
+  .btn-primary{background:var(--navy-900); color:#fff; box-shadow:var(--shadow-sm);}
+  .btn-primary:hover{background:var(--navy-950); transform:translateY(-2px); box-shadow:var(--shadow-md);}
+  .btn-outline{background:#fff; color:var(--navy-900); border-color:var(--line);}
+  .btn-outline:hover{border-color:var(--navy-900); transform:translateY(-2px);}
+  .btn-orange{background:var(--orange-500); color:#fff;}
+  .btn-orange:hover{background:var(--orange-600); transform:translateY(-2px); box-shadow:var(--shadow-md);}
+  .btn-green{background:var(--green-600); color:#fff;}
+  .btn-green:hover{background:var(--green-700); transform:translateY(-2px); box-shadow:var(--shadow-md);}
+  .btn-sm{padding:10px 20px; font-size:14px;}
+
+  /* HEADER */
+  header{position:sticky; top:0; z-index:100; background:rgba(255,255,255,0.86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--line);}
+  .nav-wrap{display:flex; align-items:center; justify-content:space-between; height:82px;}
+  .logo{display:flex; flex-direction:column; gap:2px;}
+  .logo-mark{display:flex; align-items:center; font-family:'Sora',sans-serif; font-weight:800; font-size:26px; color:var(--navy-950);}
+  .logo-mark .dot{color:var(--orange-500);}
+  .logo-mark .e-icon{width:34px; height:34px; border-radius:50%; background:var(--navy-900); display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:18px; margin-right:6px; position:relative;}
+  .logo-mark .e-icon::after{content:"✦"; position:absolute; top:-6px; right:-4px; font-size:12px; color:var(--orange-500);}
+  .logo-tag{font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-500); padding-left:2px;}
+  nav.main-nav{display:flex; align-items:center; gap:36px;}
+  nav.main-nav > ul{display:flex; align-items:center; gap:32px;}
+  nav.main-nav a.nav-link{font-weight:600; font-size:15px; color:var(--ink-700); position:relative; padding:8px 0;}
+  nav.main-nav a.nav-link.active{color:var(--navy-900);}
+  nav.main-nav a.nav-link.active::after{content:""; position:absolute; left:0; right:0; bottom:-2px; height:3px; border-radius:3px; background:var(--orange-500);}
+  .has-dropdown{position:relative;}
+  .has-dropdown > a{display:flex; align-items:center; gap:6px;}
+  .dropdown-panel{position:absolute; top:calc(100% + 18px); left:50%; transform:translateX(-50%) translateY(6px); width:560px; background:#fff; border-radius:var(--radius-md); box-shadow:var(--shadow-lg); border:1px solid var(--line); padding:22px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; opacity:0; visibility:hidden; transition:all .2s ease; z-index:50;}
+  .has-dropdown:hover .dropdown-panel{opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);}
+  .dd-col-title{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-500); padding:6px 10px 8px;}
+  .dd-col a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:10px; font-size:14px; font-weight:600; color:var(--ink-700);}
+  .dd-col a:hover{background:var(--bg-soft); color:var(--navy-900);}
+  .dd-col a i{width:16px; color:var(--orange-500); font-size:13px;}
+  .dd-col.dd-jee a i{color:var(--navy-700);}
+  .dd-col.dd-mbbs a i{color:var(--green-600);}
+  .header-actions{display:flex; align-items:center; gap:18px;}
+
+  /* HERO */
+  .hero{position:relative; overflow:hidden; padding:64px 0 40px;}
+  .hero-grid{display:grid; grid-template-columns:1.05fr 0.95fr; gap:40px; align-items:center;}
+  .hero h1{font-size:clamp(38px,4.6vw,58px); font-weight:800; line-height:1.06; margin:22px 0 20px;}
+  .hero h1 .accent{color:var(--orange-500);}
+  .hero p.lead{font-size:18px; color:var(--ink-700); max-width:520px; margin-bottom:30px;}
+  .hero-ctas{display:flex; gap:16px; margin-bottom:38px; flex-wrap:wrap;}
+  .hero-quicklinks{display:flex; gap:28px; flex-wrap:wrap;}
+  .ql-item{display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; color:var(--ink-700);}
+  .ql-item .ql-ic{width:38px; height:38px; border-radius:50%; background:var(--bg-soft); display:flex; align-items:center; justify-content:center; color:var(--navy-900); font-size:15px;}
+  .hero-visual{position:relative; display:flex; align-items:center; justify-content:center; min-height:460px;}
+  .orbit-ring{position:absolute; width:430px; height:430px; border:1.5px dashed #C9D4EC; border-radius:50%; animation:spin 40s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .badge-float{position:absolute; width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px; box-shadow:var(--shadow-md); z-index:3;}
+  .badge-float.b1{background:var(--navy-900); top:6%; right:2%;}
+  .badge-float.b2{background:var(--orange-500); top:38%; right:-4%;}
+  .badge-float.b3{background:var(--green-600); bottom:10%; left:0%;}
+
+  /* FEATURED CARDS */
+  .section{padding:80px 0;}
+  .section-head{text-align:center; max-width:680px; margin:0 auto 44px;}
+  .section-head h2{font-size:clamp(28px,3vw,38px); font-weight:800; margin-bottom:12px;}
+  .cards-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:26px;}
+  .feat-card{border-radius:var(--radius-lg); padding:36px 30px; border:1px solid var(--line); background:#fff; box-shadow:var(--shadow-sm); transition:transform .25s ease, box-shadow .25s ease; position:relative; overflow:hidden;}
+  .feat-card:hover{transform:translateY(-8px); box-shadow:var(--shadow-lg);}
+  .feat-card.card-navy{background:linear-gradient(160deg,#F5F8FF 0%, #fff 60%);}
+  .feat-card.card-orange{background:linear-gradient(160deg,#FFF4EA 0%, #fff 60%);}
+  .feat-card.card-green{background:linear-gradient(160deg,#EDFAF4 0%, #fff 60%);}
+  .feat-icon{width:66px; height:66px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:26px; margin-bottom:22px;}
+  .card-navy .feat-icon{background:var(--navy-900);}
+  .card-orange .feat-icon{background:var(--orange-500);}
+  .card-green .feat-icon{background:var(--green-600);}
+
+  /* WHY CHOOSE */
+  .why{background:var(--bg-soft);}
+  .why-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:56px;}
+  .why-item{background:#fff; border-radius:18px; padding:26px 18px; text-align:center; border:1px solid var(--line); transition:transform .2s ease;}
+  .stats-bar{display:grid; grid-template-columns:repeat(5,1fr); background:#fff; border-radius:var(--radius-lg); border:1px solid var(--line); box-shadow:var(--shadow-sm); overflow:hidden;}
+  .stat{padding:30px 14px; text-align:center; border-right:1px solid var(--line);}
+  .stat .num{font-family:'Sora',sans-serif; font-weight:800; font-size:30px; color:var(--navy-950);}
+  .stat .num.orange{color:var(--orange-500);}
+
+  /* QUOTE BANNER */
+  .quote-inner{background:linear-gradient(120deg,var(--navy-950) 0%, var(--navy-700) 100%); border-radius:var(--radius-lg); padding:56px 60px; color:#fff; position:relative; overflow:hidden; display:flex; align-items:center; gap:40px;}
+  .quote-text p{font-size:22px; font-weight:600; line-height:1.5;}
+  .quote-text .tagline{color:var(--orange-500); font-weight:800; margin-top:14px; font-size:18px;}
+
+  /* FOOTER (reference — see Phase 4 for the required final version) */
+  footer{background:var(--navy-950); color:#C9D3EC; padding-top:70px;}
+  .footer-top{display:grid; grid-template-columns:1.3fr 0.8fr 0.8fr 1.5fr; gap:40px; padding-bottom:50px; border-bottom:1px solid rgba(255,255,255,.1);}
+  .social-row a{width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; color:#fff; transition:.2s;}
+  .social-row a:hover{background:var(--orange-500); transform:translateY(-3px);}
+  .footer-form input, .footer-form textarea{width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:12px 14px; color:#fff; font-size:14px; margin-bottom:12px; outline:none;}
+</style>
+</head>
+<body>
+<!-- HEADER with grouped Courses mega-dropdown (the target for Phase 3) -->
+<header>
+  <div class="container nav-wrap">
+    <a href="#top" class="logo">
+      <span class="logo-mark"><span class="e-icon">e</span>xam<span class="dot">Sphere</span></span>
+      <span class="logo-tag">Learn &nbsp;•&nbsp; Compete &nbsp;•&nbsp; Succeed</span>
+    </a>
+    <nav class="main-nav">
+      <ul>
+        <li><a href="#top" class="nav-link active">Home</a></li>
+        <li class="has-dropdown">
+          <a href="#jee" class="nav-link">Courses <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="dropdown-panel">
+            <div class="dd-col dd-jee">
+              <div class="dd-col-title">Competitive Exams</div>
+              <a href="#jee"><i class="fa-solid fa-rocket"></i>JEE (Main &amp; Advanced)</a>
+              <a href="#neet"><i class="fa-solid fa-flask"></i>NEET (UG)</a>
+            </div>
+            <div class="dd-col dd-foundation">
+              <div class="dd-col-title">Foundation</div>
+              <a href="#foundation"><i class="fa-solid fa-book"></i>Class 9–10</a>
+              <a href="#foundation"><i class="fa-solid fa-graduation-cap"></i>Class 11–12 (Boards Prep)</a>
+            </div>
+            <div class="dd-col dd-mbbs">
+              <div class="dd-col-title">MBBS</div>
+              <a href="#mbbs"><i class="fa-solid fa-staff-snake"></i>Medical Subjects</a>
+            </div>
+          </div>
+        </li>
+        <li><a href="#" class="nav-link">Test Series</a></li>
+        <li><a href="#" class="nav-link">About Us</a></li>
+        <li class="has-dropdown">
+          <a href="#" class="nav-link">Resources <i class="fa-solid fa-chevron-down"></i></a>
+          <div class="dropdown-panel" style="width:280px; grid-template-columns:1fr;">
+            <div class="dd-col">
+              <a href="#"><i class="fa-solid fa-file-lines"></i>Study Notes</a>
+              <a href="#"><i class="fa-solid fa-square-poll-vertical"></i>PYQ Papers</a>
+            </div>
+          </div>
+        </li>
+        <li><a href="#" class="nav-link">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<!--
+  HERO / CARDS / WHY-CHOOSE / STATS / QUOTE / TRUST markup:
+  reproduce from the client's image (see ../course-content-data.md for exact copy).
+  The four detailed course sections are in client-reference-course-sections.html.
+-->
+</body>
+</html>

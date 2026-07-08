@@ -227,6 +227,10 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                 <Label htmlFor="linkedin">LinkedIn</Label>
                                 <Input id="linkedin" name="linkedin" defaultValue={settings?.linkedin || ""} placeholder="https://linkedin.com/in/..." />
                             </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="youtube">YouTube</Label>
+                                <Input id="youtube" name="youtube" defaultValue={settings?.youtube || ""} placeholder="https://youtube.com/@..." />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

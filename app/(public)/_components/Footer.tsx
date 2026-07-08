@@ -1,179 +1,162 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   Facebook,
-  Twitter,
   Instagram,
+  Linkedin,
   Youtube,
+  Twitter,
   Mail,
   MapPin,
   Phone,
-  ArrowRight
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { constructS3Url } from "@/lib/s3-utils";
+import { getSiteSettings } from "@/app/data/settings/get-site-settings";
+import { FooterQueryForm } from "./FooterQueryForm";
 
-const defaultFooterLinks = {
-  learn: [
-    { name: "Find Tutors", href: "/find-teacher" },
-    { name: "Online Courses", href: "/courses" },
-    { name: "Group Classes", href: "/live-sessions" },
-  ],
-  teach: [
-    { name: "Become a Tutor", href: "/register/teacher" },
-    { name: "Teacher Rules", href: "/terms" },
-    { name: "Success Stories", href: "/testimonials-demo" },
-    { name: "Teacher Verification", href: "/teacher/verification" },
-  ],
-  support: [
-    { name: "Help Center", href: "/help" },
-    { name: "Contact Us", href: "/contact" },
-    { name: "FAQs", href: "/faq" },
-    { name: "Report Issue", href: "/report" },
-  ],
-  company: [
-    { name: "About Us", href: "/about" },
-    { name: "Careers", href: "/careers" },
-    { name: "Blog", href: "/blog" },
-    { name: "Privacy Policy", href: "/privacy" },
-  ],
+// Fallback contact details — replace with the client's real details (or set them in Site Settings).
+const FALLBACK = {
+  phone: "+91 00000 00000",
+  email: "support@examsphere.online",
+  address: "India",
+  facebook: "#",
+  instagram: "#",
+  linkedin: "#",
+  youtube: "#",
+  twitter: "#",
 };
 
-import { getSiteSettings } from "@/app/data/settings/get-site-settings";
+const quickLinks = [
+  { name: "Home", href: "/" },
+  { name: "Courses", href: "/#courses" },
+  { name: "About", href: "/about" },
+  { name: "Contact", href: "/contact" },
+];
 
-// ... existing imports ...
+const legalLinks = [
+  { name: "Privacy Policy", href: "/privacy" },
+  { name: "Terms & Conditions", href: "/terms" },
+  { name: "Refund Policy", href: "/refund" },
+  { name: "Cookie Policy", href: "/cookies" },
+];
 
 export async function Footer() {
   const settings = await getSiteSettings();
-  const footerLinksData = settings?.footerLinks ? (settings.footerLinks as any) : defaultFooterLinks;
-  
-  // Ensure we have fallback arrays for all categories to prevent crashes - Author: Sanket
-  const footerLinks = {
-    learn: footerLinksData?.learn || defaultFooterLinks.learn,
-    teach: footerLinksData?.teach || defaultFooterLinks.teach,
-    support: footerLinksData?.support || defaultFooterLinks.support,
-    company: footerLinksData?.company || defaultFooterLinks.company,
-  };
-  
-  // Construct proper logo URL — handles data URIs, http URLs, and S3 keys
-  const logoSrc = settings?.logo && settings.logo.trim() !== ""
-    ? constructS3Url(settings.logo)
-    : "/logo.png";
+
+  const phone = settings?.contactPhone?.trim() || FALLBACK.phone;
+  const email = settings?.contactEmail?.trim() || FALLBACK.email;
+  const address = settings?.contactAddress?.trim() || FALLBACK.address;
+
+  const socials = [
+    { name: "Instagram", href: settings?.instagram?.trim() || FALLBACK.instagram, Icon: Instagram },
+    { name: "Facebook", href: settings?.facebook?.trim() || FALLBACK.facebook, Icon: Facebook },
+    { name: "LinkedIn", href: settings?.linkedin?.trim() || FALLBACK.linkedin, Icon: Linkedin },
+    { name: "YouTube", href: settings?.youtube?.trim() || FALLBACK.youtube, Icon: Youtube },
+    { name: "Twitter", href: settings?.twitter?.trim() || FALLBACK.twitter, Icon: Twitter },
+  ];
+
+  const logoSrc =
+    settings?.logo && settings.logo.trim() !== "" ? constructS3Url(settings.logo) : "/logo.png";
+  const siteName = settings?.siteName || "ExamSphere";
 
   return (
-    <footer className="bg-[#0b1120] text-slate-300 border-t border-slate-800/50 font-sans">
-
-
-      {/* Main Links Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8">
-          {/* Brand Column */}
-          <div className="lg:col-span-2 space-y-6">
+    <footer className="bg-navy-950 text-slate-300">
+      <div className="max-w-[1240px] mx-auto px-6 pt-16 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.4fr_0.8fr_0.8fr_1.4fr] gap-10 lg:gap-8">
+          {/* Brand + Contact */}
+          <div className="space-y-5">
             <Link href="/" className="flex items-center gap-2">
-              <div className="relative w-10 h-10">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={logoSrc} 
-                    alt={settings?.siteName || "EXAMSPHERE"} 
-                    className="w-full h-full object-contain" 
-                  />
+              <div className="relative w-9 h-9">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoSrc} alt={siteName} className="w-full h-full object-contain" />
               </div>
-              <span className="text-2xl font-bold text-white tracking-tight">{settings?.siteName || "EXAMSPHERE"}</span>
+              <span className="text-2xl font-extrabold text-white font-display tracking-tight">
+                {siteName}
+              </span>
             </Link>
-            <p className="text-slate-400 leading-relaxed max-w-sm">
-              The world's leading online learning platform. Join millions of learners and instructors gathering to master new skills.
+            <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
+              Expert guidance, smart strategies and personalized mentorship for JEE, NEET,
+              Foundation and MBBS aspirants.
             </p>
 
-            <div className="flex items-center gap-4 text-sm text-slate-400 pt-4">
-              {settings?.contactPhone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-primary" />
-                  <span>{settings.contactPhone}</span>
-                </div>
-              )}
-              {settings?.contactEmail && (
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-primary" />
-                  <span>{settings.contactEmail}</span>
-                </div>
-              )}
-            </div>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-start gap-3">
+                <Phone className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />
+                <a href={`tel:${phone.replace(/\s+/g, "")}`} className="hover:text-white transition-colors">
+                  {phone}
+                </a>
+              </li>
+              <li className="flex items-start gap-3">
+                <Mail className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />
+                <a href={`mailto:${email}`} className="hover:text-white transition-colors break-all">
+                  {email}
+                </a>
+              </li>
+              <li className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />
+                <span>{address}</span>
+              </li>
+            </ul>
 
-            <div className="flex gap-4 pt-2">
-              {settings?.facebook && (
-                <Link href={settings.facebook} target="_blank" className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all cursor-pointer">
-                  <Facebook className="h-5 w-5" />
-                </Link>
-              )}
-              {settings?.twitter && (
-                <Link href={settings.twitter} target="_blank" className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all cursor-pointer">
-                  <Twitter className="h-5 w-5" />
-                </Link>
-              )}
-              {settings?.instagram && (
-                <Link href={settings.instagram} target="_blank" className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all cursor-pointer">
-                  <Instagram className="h-5 w-5" />
-                </Link>
-              )}
-              {settings?.youtube && (
-                <Link href={settings.youtube} target="_blank" className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all cursor-pointer">
-                  <Youtube className="h-5 w-5" />
-                </Link>
-              )}
+            <div className="flex gap-2.5 pt-1">
+              {socials.map(({ name, href, Icon }) => (
+                <a
+                  key={name}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={name}
+                  className="h-9 w-9 rounded-full bg-white/[0.08] flex items-center justify-center text-white hover:bg-orange-500 hover:-translate-y-0.5 transition-all"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Links Columns */}
-          <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-8">
-            <div>
-              <h4 className="text-white font-bold mb-6">Learn</h4>
-              <ul className="space-y-3 text-sm">
-                {footerLinks.learn.map((link: any) => (
-                  <li key={link.name}>
-                    <Link href={link.href} className="hover:text-primary transition-colors block py-1">
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-bold mb-6">Teach</h4>
-              <ul className="space-y-3 text-sm">
-                {footerLinks.teach.map((link: any) => (
-                  <li key={link.name}>
-                    <Link href={link.href} className="hover:text-primary transition-colors block py-1">
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-bold mb-6">Company</h4>
-              <ul className="space-y-3 text-sm">
-                {footerLinks.company.map((link: any) => (
-                  <li key={link.name}>
-                    <Link href={link.href} className="hover:text-primary transition-colors block py-1">
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Quick Links */}
+          <div>
+            <h4 className="text-white font-bold mb-5">Quick Links</h4>
+            <ul className="space-y-3 text-sm">
+              {quickLinks.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className="text-slate-400 hover:text-orange-500 transition-colors">
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="text-white font-bold mb-5">Legal</h4>
+            <ul className="space-y-3 text-sm">
+              {legalLinks.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className="text-slate-400 hover:text-orange-500 transition-colors">
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Query Box */}
+          <div>
+            <h4 className="text-white font-bold mb-5">Have a Query?</h4>
+            <FooterQueryForm />
           </div>
         </div>
       </div>
 
-      {/* Bottom Bar */}
-      <div className="border-t border-slate-800 bg-[#060a15]">
-        <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} ExamSphere. All rights reserved. <span className="ml-2 text-slate-600">v1.0.1</span></p>
+      {/* Bottom bar */}
+      <div className="border-t border-white/10 bg-[#060a15]">
+        <div className="max-w-[1240px] mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+          <p>Copyright © 2026 {siteName}. All Rights Reserved.</p>
           <div className="flex items-center gap-6">
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+            <Link href="/refund" className="hover:text-white transition-colors">Refund</Link>
             <Link href="/cookies" className="hover:text-white transition-colors">Cookies</Link>
           </div>
         </div>

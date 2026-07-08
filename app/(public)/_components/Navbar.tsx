@@ -7,35 +7,14 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 import { UserDropdown } from "./UserDropdown";
 import { Search, Menu as MenuIcon, X } from "lucide-react";
-import Menu, { IMenu } from "@/components/ui/navbar";
 import { constructS3Url } from "@/lib/s3-helper";
+import { CoursesMegaMenu, CoursesMobileGroup } from "./CoursesMegaMenu";
 
-const navigationItems: IMenu[] = [
-  {
-    id: 1,
-    title: "Home",
-    url: "/",
-  },
-  {
-    id: 2,
-    title: "Courses",
-    url: "/courses",
-  },
-  {
-    id: 3,
-    title: "Group Classes",
-    url: "/live-sessions",
-  },
-  {
-    id: 4,
-    title: "Teachers",
-    url: "/find-teacher",
-  },
-  {
-    id: 5,
-    title: "Pricing",
-    url: "/pricing",
-  },
+// Simple links shown alongside the "Courses" mega-dropdown.
+const navigationItems = [
+  { id: 1, title: "Home", url: "/" },
+  { id: 2, title: "About Us", url: "/about" },
+  { id: 3, title: "Contact", url: "/contact" },
 ];
 
 export function Navbar({ settings }: { settings?: any }) {
@@ -75,15 +54,27 @@ export function Navbar({ settings }: { settings?: any }) {
           )}
         </Link>
 
-        {/* Categories / Desktop Nav */}
-        <div className="hidden md:flex flex-1 items-center justify-center gap-6">
-          {/* Simple functional search bar placeholder - Udemy Style */}
-
-
-          {/* Integrated New Menu Component */}
-          <div className="flex items-center text-sm font-medium text-foreground">
-            <Menu list={navigationItems} />
-          </div>
+        {/* Desktop Nav */}
+        <div className="hidden md:flex flex-1 items-center justify-center gap-1">
+          <Link
+            href="/"
+            className="px-4 py-2 rounded font-semibold text-[15px] text-ink-700 dark:text-foreground hover:text-navy-900 dark:hover:text-white transition-colors"
+          >
+            Home
+          </Link>
+          <CoursesMegaMenu />
+          <Link
+            href="/about"
+            className="px-4 py-2 rounded font-semibold text-[15px] text-ink-700 dark:text-foreground hover:text-navy-900 dark:hover:text-white transition-colors"
+          >
+            About Us
+          </Link>
+          <Link
+            href="/contact"
+            className="px-4 py-2 rounded font-semibold text-[15px] text-ink-700 dark:text-foreground hover:text-navy-900 dark:hover:text-white transition-colors"
+          >
+            Contact
+          </Link>
         </div>
 
         {/* Right Actions */}
@@ -136,16 +127,28 @@ export function Navbar({ settings }: { settings?: any }) {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-border bg-background p-4 absolute top-16 left-0 right-0 shadow-lg">
           <nav className="flex flex-col space-y-4">
-            {navigationItems.map(item => (
-              <Link
-                key={item.id}
-                href={item.url}
-                className="flex items-center justify-between text-foreground font-medium py-2 border-b border-border last:border-0"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {item.title}
-              </Link>
-            ))}
+            <Link
+              href="/"
+              className="flex items-center justify-between text-foreground font-medium py-2 border-b border-border"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Home
+            </Link>
+
+            <CoursesMobileGroup onNavigate={() => setIsMobileMenuOpen(false)} />
+
+            {navigationItems
+              .filter((item) => item.title !== "Home")
+              .map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.url}
+                  className="flex items-center justify-between text-foreground font-medium py-2 border-b border-border last:border-0"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.title}
+                </Link>
+              ))}
             {!session && (
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-gray-100">
                 <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-center py-2.5 font-bold text-foreground border border-input rounded hover:bg-accent">

@@ -7,12 +7,24 @@ function getClientIP(request: NextRequest): string {
   return request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 }
 
+// Build an absolute redirect from the forwarded Host/Proto headers.
+// In `output: 'standalone'` behind a reverse proxy, request.url reflects the
+// internal bind address (localhost:3000), so redirects must use the real host.
+function redirectTo(request: NextRequest, pathname: string) {
+  const host = request.headers.get("host") || request.nextUrl.host;
+  const proto =
+    request.headers.get("x-forwarded-proto") ||
+    request.nextUrl.protocol.replace(":", "") ||
+    "https";
+  return NextResponse.redirect(new URL(pathname, `${proto}://${host}`));
+}
+
 // Your existing authentication middleware
 async function authMiddleware(request: NextRequest) {
   const sessionCookie = getSessionCookie(request);
 
   if (!sessionCookie) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return redirectTo(request, "/login");
   }
 
   return NextResponse.next();
@@ -85,7 +97,7 @@ export default async function proxy(request: NextRequest) {
     const sessionCookie = getSessionCookie(request);
 
     if (!sessionCookie) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return redirectTo(request, "/login");
     }
 
     // Let the page components handle role verification
