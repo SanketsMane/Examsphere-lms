@@ -1,18 +1,26 @@
-import { Loader2 } from 'lucide-react';
-
+/**
+ * Global loading screen — minimal, professional, theme-aware.
+ * Brand logo chip + wordmark + a slim indeterminate progress bar.
+ */
 export default function GlobalLoading() {
   return (
-    <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[9999] flex items-center justify-center">
-      <div className="flex flex-col items-center">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg animate-pulse" style={{ animationDuration: '2s' }}></div>
-          </div>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background">
+      <div className="flex w-[200px] flex-col items-center">
+        {/* Logo on a clean white chip so it reads on any theme */}
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-[0_10px_30px_-8px_rgba(10,27,61,0.35)] ring-1 ring-black/[0.06]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="ExamSphere" className="h-9 w-9 object-contain" />
         </div>
-        <p className="mt-6 text-neutral-500 font-medium tracking-wide animate-pulse">
-          Loading EXAMSPHERE...
-        </p>
+
+        {/* Wordmark */}
+        <div className="font-display text-lg font-bold tracking-tight text-navy-950 dark:text-white">
+          Exam<span className="text-orange-500">Sphere</span>
+        </div>
+
+        {/* Slim indeterminate progress bar */}
+        <div className="mt-5 h-1 w-full overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/10">
+          <div className="es-loading-bar h-full w-1/3 rounded-full bg-navy-900 dark:bg-white" />
+        </div>
       </div>
     </div>
   );

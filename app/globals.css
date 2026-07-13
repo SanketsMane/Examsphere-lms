@@ -275,3 +275,12 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 transition-colors;
 }
+
+/* Slim indeterminate progress bar used by the global loading screen. */
+@keyframes es-loading-bar {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(340%); }
+}
+.es-loading-bar {
+  animation: es-loading-bar 1.15s ease-in-out infinite;
+}
