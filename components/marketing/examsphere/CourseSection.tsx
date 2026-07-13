@@ -1,10 +1,10 @@
-import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import {
   COURSE_SECTIONS,
   type CourseSectionData,
   type CourseAccent,
 } from "@/app/(public)/_data/courses-content";
+import { EnquireButton } from "./EnquireButton";
 
 const accentMap: Record<
   CourseAccent,
@@ -67,12 +67,10 @@ export function CourseSection({ course }: { course: CourseSectionData }) {
               {course.description}
             </p>
           </div>
-          <Link
-            href={course.enrollHref}
-            className={`inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 shrink-0 ${a.btn}`}
-          >
-            Enroll Now <ArrowRight className="h-4 w-4" />
-          </Link>
+          <EnquireButton
+            withArrow
+            className={`inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 shrink-0 cursor-pointer ${a.btn}`}
+          />
         </div>
 
         {/* Body */}
@@ -144,24 +142,15 @@ export function CourseSection({ course }: { course: CourseSectionData }) {
                   <div className="text-xs text-ink-500 dark:text-muted-foreground">{course.mentor.role}</div>
                 </div>
               </div>
-              {course.price && (
-                <div className="flex items-baseline gap-2 my-4">
-                  <span className="font-display font-extrabold text-2xl text-navy-950 dark:text-white">
-                    {course.price.now}
-                  </span>
-                  {course.price.was && (
-                    <span className="text-sm text-ink-500 dark:text-muted-foreground line-through">
-                      {course.price.was}
-                    </span>
-                  )}
-                </div>
-              )}
-              <Link
-                href={course.enrollHref}
-                className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 ${a.btn}`}
-              >
-                Enroll Now
-              </Link>
+              <p className="text-sm text-ink-600 dark:text-muted-foreground my-4 leading-relaxed">
+                Personalised fees &amp; batches — share your details and our team will get in touch.
+              </p>
+              <EnquireButton
+                className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 cursor-pointer ${a.btn}`}
+              />
+              <p className="text-xs text-center text-ink-500 dark:text-muted-foreground mt-2.5">
+                No payment now — just an enquiry.
+              </p>
             </div>
           </div>
         </div>

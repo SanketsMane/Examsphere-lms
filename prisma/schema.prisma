@@ -2115,3 +2115,42 @@ model EmailGlobalSettings {
 
   @@map("email_global_settings")
 }
+
+// ── Chatbot lead capture ─────────────────────────────────────────────
+// A visitor must submit their contact details before chatting with the
+// public assistant. Each inquiry stores the contact info + full transcript
+// and is managed by admins from /admin/inquiries.
+model ChatInquiry {
+  id            String               @id @default(cuid())
+  name          String
+  email         String
+  phone         String
+  status        String               @default("new") // new | contacted | qualified | closed | spam
+  source        String               @default("chatbot")
+  ipAddress     String?
+  userAgent     String?              @db.Text
+  notes         String?              @db.Text // internal admin notes
+  messageCount  Int                  @default(0)
+  lastMessageAt DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  messages      ChatInquiryMessage[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([status])
+  @@index([createdAt])
+  @@map("chat_inquiry")
+}
+
+model ChatInquiryMessage {
+  id        String      @id @default(cuid())
+  inquiryId String
+  inquiry   ChatInquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  role      String // user | assistant
+  content   String      @db.Text
+  createdAt DateTime    @default(now())
+
+  @@index([inquiryId])
+  @@map("chat_inquiry_message")
+}

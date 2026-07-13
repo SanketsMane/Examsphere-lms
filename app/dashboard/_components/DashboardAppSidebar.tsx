@@ -1,26 +1,34 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import Image from "next/image";
 import {
-  IconCamera,
-  IconDashboard,
-  IconFileAi,
-  IconFileDescription,
-  IconHelp,
-  IconSearch,
-  IconSettings,
-  IconMessage,
-  IconVideo,
+  IconLayoutDashboard,
   IconBook,
-  IconCalendar,
-  IconUsers,
-  IconBell,
-  IconTicket,
+  IconBooks,
+  IconFolder,
+  IconVideo,
+  IconCertificate,
   IconSparkles,
+  IconCompass,
+  IconUserSearch,
+  IconUsersGroup,
+  IconMessage,
+  IconBell,
+  IconCalendar,
+  IconWallet,
+  IconCrown,
+  IconChartBar,
+  IconSettings,
+  IconLifebuoy,
+  IconHelp,
+  IconSchool,
 } from "@tabler/icons-react";
-import Logo from "@/public/logo.png";
 
-import { NavMain } from "@/components/sidebar/nav-main";
+import Logo from "@/public/logo.png";
+import { authClient } from "@/lib/auth-client";
+import { NavGroups, type NavGroup } from "@/components/sidebar/nav-groups";
 import { NavSecondary } from "@/components/sidebar/nav-secondary";
 import { NavUser } from "@/components/sidebar/nav-user";
 import {
@@ -32,172 +40,110 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import Link from "next/link";
-import Image from "next/image";
-
-const data = {
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: IconDashboard,
-    },
-    {
-      title: "Find a Mentor",
-      url: "/find-teacher",
-      icon: IconSearch,
-    },
-    {
-      title: "All Courses",
-      url: "/courses",
-      icon: IconBook,
-    },
-    {
-      title: "My Courses",
-      url: "/dashboard/courses",
-      icon: IconBook,
-    },
-    {
-      title: "Course Resources",
-      url: "/dashboard/resources",
-      icon: IconFileDescription,
-    },
-    {
-      title: "My Groups",
-      url: "/dashboard/groups",
-      icon: IconUsers,
-    },
-    {
-      title: "Live Sessions",
-      url: "/dashboard/sessions",
-      icon: IconVideo,
-    },
-    {
-      title: "Wallet",
-      url: "/dashboard/wallet",
-      icon: IconTicket, // Using IconTicket as wallet icon placeholder
-    },
-    {
-      title: "My Subscription",
-      url: "/subscription",
-      icon: IconSparkles,
-    },
-    {
-      title: "Messages",
-      url: "/dashboard/messages",
-      icon: IconMessage,
-    },
-    {
-      title: "Notifications",
-      url: "/dashboard/notifications",
-      icon: IconBell,
-    },
-    {
-      title: "Analytics",
-      url: "/dashboard/analytics",
-      icon: IconFileAi,
-    },
-    {
-      title: "Calendar",
-      url: "/dashboard/calendar",
-      icon: IconCalendar,
-    },
-
-    {
-      title: "ExamSphere Ai",
-      url: "/dashboard/ai",
-      icon: IconSparkles,
-    },
-    {
-      title: "Certificates",
-      url: "/dashboard/certificates",
-      icon: IconSchool,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "/dashboard/settings",
-      icon: IconSettings,
-    },
-    {
-      title: "Support Tickets",
-      url: "/dashboard/issues",
-      icon: IconTicket,
-    },
-    {
-      title: "Get Help",
-      url: "/dashboard/help",
-      icon: IconHelp,
-    },
-  ],
-};
-
-import { authClient } from "@/lib/auth-client";
-import { IconSchool } from "@tabler/icons-react";
 import { TeachOnExamSphereCTA } from "./TeachOnExamSphereCTA";
 
+/**
+ * Student dashboard sidebar — organized into labeled sections with unique icons and an
+ * icon-rail collapse. Author: Sanket
+ */
+const navGroups: NavGroup[] = [
+  {
+    items: [{ title: "Dashboard", url: "/dashboard", icon: IconLayoutDashboard, exact: true }],
+  },
+  {
+    label: "Learning",
+    items: [
+      { title: "My Courses", url: "/dashboard/courses", icon: IconBook },
+      { title: "Course Resources", url: "/dashboard/resources", icon: IconFolder },
+      { title: "Live Sessions", url: "/dashboard/sessions", icon: IconVideo },
+      { title: "Certificates", url: "/dashboard/certificates", icon: IconCertificate },
+      { title: "ExamSphere AI", url: "/dashboard/ai", icon: IconSparkles },
+    ],
+  },
+  {
+    label: "Explore",
+    items: [
+      { title: "Browse Courses", url: "/courses", icon: IconBooks },
+      { title: "Find a Mentor", url: "/find-teacher", icon: IconUserSearch },
+      { title: "My Groups", url: "/dashboard/groups", icon: IconUsersGroup },
+    ],
+  },
+  {
+    label: "Activity",
+    items: [
+      { title: "Messages", url: "/dashboard/messages", icon: IconMessage },
+      { title: "Notifications", url: "/dashboard/notifications", icon: IconBell },
+      { title: "Calendar", url: "/dashboard/calendar", icon: IconCalendar },
+      { title: "Analytics", url: "/dashboard/analytics", icon: IconChartBar },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { title: "Wallet", url: "/dashboard/wallet", icon: IconWallet },
+      { title: "My Subscription", url: "/subscription", icon: IconCrown },
+    ],
+  },
+];
+
+const secondaryNav = [
+  { title: "Settings", url: "/dashboard/settings", icon: IconSettings },
+  { title: "Support Tickets", url: "/dashboard/issues", icon: IconLifebuoy },
+  { title: "Get Help", url: "/dashboard/help", icon: IconHelp },
+];
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  /**
-   * Application sidebar with dynamic navigation and role-based links.
-   * Author: Sanket
-   */
   const { data: session } = authClient.useSession();
   const role = (session?.user as any)?.role;
 
-  // Create a copy of the secondary nav items with explicit type to allow 'highlight'
-  const secondaryNav: { title: string; url: string; icon: any; highlight?: boolean }[] = [...data.navSecondary];
-
-  // Add Teacher link based on role
-  // If teacher -> Go to Teacher Dashboard
+  const secondary: { title: string; url: string; icon: any; highlight?: boolean }[] = [
+    ...secondaryNav,
+  ];
   if (role === "teacher") {
-    secondaryNav.unshift({
+    secondary.unshift({
       title: "Instructor Dashboard",
       url: "/teacher",
       icon: IconSchool,
       highlight: true,
     });
   }
-  // If student -> Render distinctive CTA separately (not in standard list)
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
+            <SidebarMenuButton size="lg" asChild className="hover:bg-sidebar-accent/50">
               <Link href="/">
-                <Image src={Logo} alt="Logo" className="size-5" />
-                <span className="text-base font-semibold">EXAMSPHERE.</span>
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white shadow-sm">
+                  <Image src={Logo} alt="ExamSphere" className="size-6 object-contain" />
+                </div>
+                <div className="grid flex-1 text-left leading-tight">
+                  <span className="truncate font-display font-bold text-base">ExamSphere</span>
+                  <span className="truncate text-[11px] text-muted-foreground">Student Portal</span>
+                </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        
-        {/* Teach on ExamSphere CTA - Only for non-teachers */}
+        <NavGroups groups={navGroups} />
+
         {role !== "teacher" && (
-            <div className="px-2 mt-4 mb-2">
-                <SidebarMenu>
-                    <TeachOnExamSphereCTA />
-                </SidebarMenu>
-            </div>
+          <div className="px-2 mt-2 group-data-[collapsible=icon]:hidden">
+            <SidebarMenu>
+              <TeachOnExamSphereCTA />
+            </SidebarMenu>
+          </div>
         )}
 
-        <NavSecondary items={secondaryNav} className="mt-auto" />
+        <NavSecondary items={secondary} className="mt-auto" />
       </SidebarContent>
+
       <SidebarFooter>
         <NavUser />
-        <div className="px-4 py-2 text-center">
-          <span className="text-[10px] text-muted-foreground/50 font-medium tracking-widest uppercase">
-            v1.0.1
-          </span>
-        </div>
       </SidebarFooter>
     </Sidebar>
   );

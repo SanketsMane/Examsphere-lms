@@ -4,6 +4,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
 
+  // Ensure the dynamically-imported `openai` SDK is traced into the standalone
+  // bundle for the public chatbot route (Next misses dynamic imports otherwise).
+  outputFileTracingIncludes: {
+    '/api/public/chat': ['./node_modules/openai/**/*'],
+  },
+
 
   experimental: {
     serverActions: {

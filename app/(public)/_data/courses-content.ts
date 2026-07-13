@@ -70,7 +70,6 @@ export const COURSE_SECTIONS: CourseSectionData[] = [
       language: "English / Hindi",
     },
     mentor: { initials: "RK", name: "Dr. R. Kapoor", role: "Lead Physics Mentor, 15+ yrs" },
-    price: { now: "₹24,999", was: "₹39,999" },
     enrollHref: "/register",
   },
   {
@@ -100,7 +99,6 @@ export const COURSE_SECTIONS: CourseSectionData[] = [
       language: "English / Hindi",
     },
     mentor: { initials: "SM", name: "Dr. S. Mehta", role: "Lead Biology Mentor, MBBS, MD" },
-    price: { now: "₹22,999", was: "₹34,999" },
     enrollHref: "/register",
   },
   {
@@ -130,7 +128,6 @@ export const COURSE_SECTIONS: CourseSectionData[] = [
       language: "English / Hindi",
     },
     mentor: { initials: "AN", name: "A. Nair", role: "Foundation Programme Head" },
-    price: { now: "₹9,999", was: "₹15,999" },
     enrollHref: "/register",
   },
   {
@@ -160,7 +157,6 @@ export const COURSE_SECTIONS: CourseSectionData[] = [
       language: "English",
     },
     mentor: { initials: "DV", name: "Dr. D. Verma", role: "Clinical Faculty, MD" },
-    price: { now: "₹18,999", was: "₹27,999" },
     enrollHref: "/register",
   },
 ];

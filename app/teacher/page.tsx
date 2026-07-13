@@ -1,21 +1,24 @@
-import { requireTeacher } from "../data/auth/require-roles";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { getSessionWithRole } from "../data/auth/require-roles";
-import { adminGetCourses } from "../data/admin/admin-get-courses";
-import { RevenueCard } from "@/components/dashboard/yo-coach/revenue-card";
-import { StatBox } from "@/components/dashboard/yo-coach/stat-box";
-import { ChartSection } from "@/components/dashboard/yo-coach/chart-section";
-import { ChartAreaInteractive } from "@/components/sidebar/chart-area-interactive";
-import { BookOpen, Users, Wallet, Clock, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { getSessionWithRole } from "../data/auth/require-roles";
+import { getTeacherAnalytics } from "../actions/analytics";
+import { formatPrice } from "@/lib/currency";
+import { ChartAreaInteractive } from "@/components/sidebar/chart-area-interactive";
+import { PageHeader, StatCard, Panel } from "@/components/dashboard/es/dashboard-kit";
+import {
+  Wallet,
+  Users,
+  BookOpen,
+  Clock,
+  Star,
+  GraduationCap,
+  Video,
+  CalendarClock,
+  Plus,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
-
-import { formatPrice } from "@/lib/currency"; // Added for localization - Author: Sanket
-
-import { getTeacherAnalytics } from "../actions/analytics";
 
 export default async function TeacherDashboardPage() {
   const session = await getSessionWithRole();
@@ -24,147 +27,85 @@ export default async function TeacherDashboardPage() {
   const userCountry = (session.user as any).country || "India";
 
   const teacherProfile = await prisma.teacherProfile.findUnique({
-    where: { userId: session.user.id }
+    where: { userId: session.user.id },
   });
+  if (!teacherProfile) redirect("/register/teacher");
+  if (!teacherProfile.isApproved) redirect("/teacher/verification");
 
-  if (!teacherProfile) {
-    // No profile -> register
-    redirect("/register/teacher");
-  }
-
-  if (!teacherProfile.isApproved) {
-    // Not approved -> verification
-    redirect("/teacher/verification");
-  }
-
-  // await requireTeacher(); // Assuming this is handled layout/middleware or check below
-  // Transform revenue data for chart
   const { stats, topReview, revenueData } = await getTeacherAnalytics();
+  const chartData = revenueData.map((item) => ({ date: item.month, revenue: item.revenue / 100 }));
+  const firstName = session.user.name?.split(" ")[0] || "there";
 
-  const chartData = revenueData.map(item => ({
-    date: item.month,
-    revenue: item.revenue / 100 // Convert cents to dollars/rupees
-  }));
-
-  // Earnings Data
-  const earningsStats = [
-    {
-      title: "Total Earnings",
-      amount: formatPrice(stats.totalEarnings, userCountry),
-      icon: <Wallet className="h-5 w-5" />,
-      variant: "blue" as const,
-      subTitle: "Lifetime earnings"
-    },
-    {
-      title: "Pending Payout",
-      amount: formatPrice(Number(stats.pendingPayouts), userCountry),
-      icon: <Clock className="h-5 w-5" />,
-      variant: "orange" as const,
-      subTitle: Number(stats.pendingPayouts) > 0 ? "Processing soon" : "No pending payouts"
-    },
-    {
-      title: "Lifetime Students",
-      amount: stats.studentsCount.toString(),
-      icon: <Users className="h-5 w-5" />,
-      variant: "purple" as const,
-      subTitle: `Across ${stats.coursesCreated} courses`
-    }
-  ];
-
-  const contentStats = [
-    {
-      title: "My Content",
-      main: { label: "Total Courses", value: stats.coursesCreated.toString(), subValue: `${stats.totalEnrollments} Enrollments` },
-      secondary: { label: "Blog Posts", value: stats.blogPostsCount.toString(), subValue: "Published articles" },
-      color: "bg-blue-600"
-    },
-    {
-      title: "Engagement",
-      main: { label: "Avg Rating", value: stats.averageRating.toFixed(1), subValue: "Student reviews" },
-      secondary: { label: "Sessions", value: stats.sessionsCompleted.toString(), subValue: "Completed" },
-      color: "bg-orange-500"
-    },
-    {
-      title: "Live Sessions",
-      main: { label: "Sessions", value: stats.sessionsCompleted.toString(), subValue: "Completed" },
-      secondary: { label: "Upcoming", value: stats.upcomingSessions.toString(), subValue: "Check Calendar" },
-      color: "bg-purple-600"
-    }
+  const secondary = [
+    { icon: Star, label: "Avg Rating", value: stats.averageRating.toFixed(1), hint: "Student reviews", accent: "orange" as const },
+    { icon: GraduationCap, label: "Enrollments", value: stats.totalEnrollments.toString(), hint: `Across ${stats.coursesCreated} courses`, accent: "green" as const },
+    { icon: Video, label: "Sessions Done", value: stats.sessionsCompleted.toString(), hint: "Completed", accent: "sky" as const },
+    { icon: CalendarClock, label: "Upcoming", value: stats.upcomingSessions.toString(), hint: "Check calendar", accent: "violet" as const },
   ];
 
   return (
-    <div className="space-y-6 p-4 md:p-6 container mx-auto bg-gray-50/50 dark:bg-black/50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Instructor Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Welcome back! Here's your performance overview.</p>
-        </div>
-        <Link href="/teacher/courses/create">
-          <Button>Create New Course</Button>
-        </Link>
-      </div>
-
-      {/* 1. Earnings Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {earningsStats.map((stat, i) => (
-          <RevenueCard key={i} {...stat} />
-        ))}
-      </div>
-
-      {/* 2. Content Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {contentStats.map((stat, i) => (
-          <StatBox
-            key={i}
-            title={stat.title}
-            mainStat={stat.main}
-            secondaryStat={stat.secondary}
-            accentColor={stat.color}
-          />
-        ))}
-      </div>
-
-      {/* 3. Main Chart Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ChartSection
-          title="Earnings Statistics"
-          tabs={["Revenue"]}
-          activeTab="Revenue"
-          className="lg:col-span-2 bg-white dark:bg-card"
+    <div className="space-y-8">
+      <PageHeader title={`Welcome back, ${firstName}`} subtitle="Here's how your teaching is performing.">
+        <Link
+          href="/teacher/courses/create"
+          className="inline-flex items-center gap-2 rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-navy-950"
         >
-          <ChartAreaInteractive
-            data={chartData}
-            dataKey="revenue"
-            label="Revenue"
-            color="#2563eb"
-          />
-        </ChartSection>
+          <Plus className="size-4" /> Create Course
+        </Link>
+      </PageHeader>
 
-        {/* Right Side Widgets */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-card p-6 rounded-xl shadow-sm border-none">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" /> Top Review
-            </h3>
-            {topReview ? (
-              <>
-                <p className="text-sm text-gray-600 dark:text-gray-300 italic mb-4">"{topReview.comment || "No comment provided."}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-gray-200 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {topReview.reviewer.image && <img src={topReview.reviewer.image} alt={topReview.reviewer.name || ""} className="w-full h-full object-cover" />}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold">{topReview.reviewer.name || "Anonymous"}</p>
-                    <p className="text-[10px] text-muted-foreground">{new Date(topReview.createdAt).toLocaleDateString()}</p>
-                  </div>
+      {/* Primary metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <StatCard icon={Wallet} accent="navy" label="Total Earnings" value={formatPrice(stats.totalEarnings, userCountry)} hint="Lifetime" />
+        <StatCard icon={Users} accent="sky" label="Lifetime Students" value={stats.studentsCount.toString()} hint={`${stats.coursesCreated} courses`} />
+        <StatCard icon={BookOpen} accent="orange" label="Courses" value={stats.coursesCreated.toString()} hint={`${stats.blogPostsCount} blog posts`} />
+        <StatCard
+          icon={Clock}
+          accent="violet"
+          label="Pending Payout"
+          value={formatPrice(Number(stats.pendingPayouts), userCountry)}
+          hint={Number(stats.pendingPayouts) > 0 ? "Processing soon" : "All settled"}
+        />
+      </div>
+
+      {/* Chart + side */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Panel title="Earnings Statistics" icon={Wallet} className="lg:col-span-2" bodyClassName="p-2 sm:p-4">
+          <ChartAreaInteractive data={chartData} dataKey="revenue" label="Revenue" color="#0F2557" />
+        </Panel>
+
+        <Panel title="Top Review" icon={Star}>
+          {topReview ? (
+            <div>
+              <p className="mb-4 text-sm italic text-ink-700 dark:text-muted-foreground">
+                &ldquo;{topReview.comment || "No comment provided."}&rdquo;
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="size-9 overflow-hidden rounded-full bg-bg-soft dark:bg-muted">
+                  {topReview.reviewer.image && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={topReview.reviewer.image} alt={topReview.reviewer.name || ""} className="size-full object-cover" />
+                  )}
                 </div>
-              </>
-            ) : (
-              <p className="text-sm text-gray-500 italic">No reviews yet.</p>
-            )}
-          </div>
-        </div>
+                <div>
+                  <p className="text-sm font-bold text-navy-950 dark:text-white">{topReview.reviewer.name || "Anonymous"}</p>
+                  <p className="text-xs text-ink-500 dark:text-muted-foreground">
+                    {new Date(topReview.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm italic text-ink-500 dark:text-muted-foreground">No reviews yet.</p>
+          )}
+        </Panel>
+      </div>
+
+      {/* Secondary metrics */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        {secondary.map((s) => (
+          <StatCard key={s.label} {...s} />
+        ))}
       </div>
     </div>
   );

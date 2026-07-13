@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 import { answerFromFaq, buildKnowledgeText, isOnTopic, OFF_TOPIC_REPLY } from "./knowledge";
 
 /**
@@ -46,8 +47,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = (await req.json()) as { messages?: ChatMessage[] };
+    const body = (await req.json()) as { messages?: ChatMessage[]; inquiryId?: string };
     const messages = Array.isArray(body.messages) ? body.messages : [];
+    const inquiryId = typeof body.inquiryId === "string" ? body.inquiryId : null;
     const latest = [...messages].reverse().find((m) => m.role === "user");
     const userText = (latest?.content || "").slice(0, 2000).trim();
 
@@ -55,24 +57,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: "Please type a question and I'll help you out!" });
     }
 
-    // COST CONTROL: only spend a paid API call when the question is actually about ExamSphere.
-    // Off-topic / "free ChatGPT" abuse (coding, general knowledge, homework solving, essays…) is
-    // refused here for free and never reaches the LLM.
-    if (process.env.OPENAI_API_KEY && isOnTopic(userText)) {
+    // Compute the reply. COST CONTROL: only spend a paid API call when the question is
+    // actually about ExamSphere. Off-topic ("free ChatGPT" abuse) is refused here for free.
+    let reply: string | null = null;
+    const onTopic = isOnTopic(userText);
+
+    if (process.env.OPENAI_API_KEY && onTopic) {
       try {
-        const reply = await llmReply(messages, userText);
-        if (reply) return NextResponse.json({ reply });
+        reply = await llmReply(messages, userText);
       } catch (err) {
         console.error("Public chat LLM failed, using FAQ fallback:", err);
       }
     }
-
-    // No API (or off-topic): answer from the free FAQ engine. If it can't match an ExamSphere
-    // intent AND the message is clearly off-topic, send the fixed refusal.
-    if (!isOnTopic(userText)) {
-      return NextResponse.json({ reply: OFF_TOPIC_REPLY });
+    if (!reply) {
+      reply = onTopic ? answerFromFaq(userText) : OFF_TOPIC_REPLY;
     }
-    return NextResponse.json({ reply: answerFromFaq(userText) });
+
+    // Persist this turn against the lead (best-effort — never blocks the reply).
+    if (inquiryId) {
+      persistTurn(inquiryId, userText, reply).catch((e) =>
+        console.error("Persist chat turn failed:", e?.message || e)
+      );
+    }
+
+    return NextResponse.json({ reply });
   } catch (err) {
     console.error("Public chat error:", err);
     return NextResponse.json(
@@ -80,6 +88,25 @@ export async function POST(req: Request) {
       { status: 200 }
     );
   }
+}
+
+/** Store the user's message + assistant reply against an inquiry and bump its counters. */
+async function persistTurn(inquiryId: string, userText: string, reply: string): Promise<void> {
+  const exists = await prisma.chatInquiry.findUnique({ where: { id: inquiryId }, select: { id: true } });
+  if (!exists) return; // ignore stale / forged ids
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.chatInquiryMessage.createMany({
+      data: [
+        { inquiryId, role: "user", content: userText.slice(0, 4000) },
+        { inquiryId, role: "assistant", content: reply.slice(0, 8000) },
+      ],
+    }),
+    prisma.chatInquiry.update({
+      where: { id: inquiryId },
+      data: { messageCount: { increment: 2 }, lastMessageAt: now },
+    }),
+  ]);
 }
 
 async function llmReply(history: ChatMessage[], userText: string): Promise<string | null> {
