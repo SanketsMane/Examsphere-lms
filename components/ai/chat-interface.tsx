@@ -187,18 +187,25 @@ export function ChatInterface() {
         }),
       });
 
+      const data = await response.json().catch(() => null);
+
       if (!response.ok) {
-        throw new Error("Failed to get response");
+        // The route returns a user-safe message and a `retryable` flag, so the
+        // assistant can say "busy, try again" vs "unavailable" instead of one
+        // blanket error for a 402, a 429 and a crash alike.
+        const message =
+          data?.error || "The assistant is unavailable right now. Please try again.";
+        toast.error(message);
+        return;
       }
 
-      const data = await response.json();
       const aiMessage: Message = { role: "assistant", content: data.content };
-      
+
       setMessages((prev) => [...prev, aiMessage]);
       fetchConversations(); // Refresh list to update times/titles if changed
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong. Please try again.");
+      toast.error("Couldn't reach the assistant. Check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -271,8 +278,11 @@ export function ChatInterface() {
                  </Sheet>
                  <div className="flex items-center gap-2">
                      <span className="font-semibold">ExamSphere Ai</span>
-                     <span className="px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 text-xs font-medium">
-                         qwen2.5:14b
+                     {/* The model name used to be hardcoded here ("qwen2.5:14b") and
+                         went stale the moment the provider changed. The model is a
+                         server-side detail, so it is no longer surfaced to users. */}
+                     <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+                         Beta
                      </span>
                  </div>
             </div>

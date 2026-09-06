@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { answerFromFaq, buildKnowledgeText, isOnTopic, OFF_TOPIC_REPLY } from "./knowledge";
+import { AI_MODEL, getAiClient, isAiConfigured, logAiError, toAiError } from "@/lib/ai";
 
 /**
  * Public chatbot endpoint — NO authentication required (unlike /api/ai/chat).
  * Always returns a useful, grounded answer:
- *   • If OPENAI_API_KEY (and optional OPENAI_BASE_URL / CHAT_MODEL) is set, it uses the LLM with
- *     the ExamSphere knowledge base as the system prompt.
+ *   • If an AI key is configured, it asks Vision IT Infra (see lib/ai.ts) with the
+ *     ExamSphere knowledge base as the system prompt.
  *   • Otherwise it falls back to a deterministic FAQ engine so the bot always works.
  */
 
@@ -62,11 +63,13 @@ export async function POST(req: Request) {
     let reply: string | null = null;
     const onTopic = isOnTopic(userText);
 
-    if (process.env.OPENAI_API_KEY && onTopic) {
+    if (isAiConfigured() && onTopic) {
       try {
         reply = await llmReply(messages, userText);
       } catch (err) {
-        console.error("Public chat LLM failed, using FAQ fallback:", err);
+        // Never fail the visitor: fall through to the deterministic FAQ engine.
+        // The server log still records *why* (402 = balance exhausted, etc).
+        logAiError("public-chat", toAiError(err));
       }
     }
     if (!reply) {
@@ -110,11 +113,9 @@ async function persistTurn(inquiryId: string, userText: string, reply: string): 
 }
 
 async function llmReply(history: ChatMessage[], userText: string): Promise<string | null> {
-  const { default: OpenAI } = await import("openai");
-  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL || undefined,
-  });
+  // Shared Vision IT Infra client — same key, base URL and model as the
+  // authenticated assistant, rather than a second copy of the config here.
+  const client = getAiClient();
 
   const trimmed = history
     .filter((m) => m.role === "user" || m.role === "assistant")
@@ -122,7 +123,7 @@ async function llmReply(history: ChatMessage[], userText: string): Promise<strin
     .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }));
 
   const completion = await client.chat.completions.create({
-    model: process.env.CHAT_MODEL || "gpt-4o-mini",
+    model: AI_MODEL,
     temperature: 0.4,
     max_tokens: 500,
     messages: [
