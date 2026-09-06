@@ -20,8 +20,6 @@ import {
   NotebookPen,
   ClipboardList,
   RefreshCw,
-  Rocket,
-  GraduationCap,
   Target,
 } from "lucide-react";
 
@@ -185,7 +183,7 @@ export const PROGRAM_CARDS: ProgramCardData[] = [
       "Olympiads",
       "Crash Courses & Test Series",
     ],
-    href: "#jee",
+    href: "/programs#competitive",
   },
   {
     id: "foundation",
@@ -199,7 +197,7 @@ export const PROGRAM_CARDS: ProgramCardData[] = [
       "Concept Building",
       "Strong Fundamentals",
     ],
-    href: "#foundation",
+    href: "/programs#foundation",
   },
   {
     id: "mbbs",
@@ -213,35 +211,6 @@ export const PROGRAM_CARDS: ProgramCardData[] = [
       "Notes & Question Bank",
       "High Yield Revision",
     ],
-    href: "#mbbs",
-  },
-];
-
-/** Grouped nav dropdown structure (Phase 3). Items point to on-page anchors. */
-export const COURSE_MENU_GROUPS: {
-  title: string;
-  accent: CourseAccent;
-  items: { label: string; icon: LucideIcon; href: string }[];
-}[] = [
-  {
-    title: "Competitive Exams",
-    accent: "navy",
-    items: [
-      { label: "JEE (Main & Advanced)", icon: Rocket, href: "/#jee" },
-      { label: "NEET (UG)", icon: FlaskConical, href: "/#neet" },
-    ],
-  },
-  {
-    title: "Foundation",
-    accent: "orange",
-    items: [
-      { label: "Class 9–10", icon: BookOpen, href: "/#foundation" },
-      { label: "Class 11–12 (Boards Prep)", icon: GraduationCap, href: "/#foundation" },
-    ],
-  },
-  {
-    title: "MBBS",
-    accent: "green",
-    items: [{ label: "Medical Subjects", icon: Stethoscope, href: "/#mbbs" }],
+    href: "/programs#mbbs",
   },
 ];

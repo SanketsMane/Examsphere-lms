@@ -60,13 +60,13 @@ export function HeroExamSphere() {
 
             <div className="flex flex-wrap gap-4 mb-9">
               <Link
-                href="#jee"
+                href="/register"
                 className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-full font-semibold text-sm bg-navy-900 hover:bg-navy-950 text-white shadow-[var(--shadow-es-sm)] transition-all hover:-translate-y-0.5"
               >
                 <Rocket className="h-4 w-4" /> Start Learning
               </Link>
               <Link
-                href="#courses"
+                href="/programs"
                 className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-full font-semibold text-sm bg-card border border-border text-navy-900 dark:text-white hover:border-navy-900 dark:hover:border-white transition-all hover:-translate-y-0.5"
               >
                 <BookOpen className="h-4 w-4" /> Explore Courses

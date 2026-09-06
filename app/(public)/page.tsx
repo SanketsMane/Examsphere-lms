@@ -7,14 +7,16 @@ import {
   WhyChoose,
   QuoteAndTrust,
 } from "@/components/marketing/examsphere/HomeSections";
-import { CourseSections } from "@/components/marketing/examsphere/CourseSection";
 
 export const dynamic = "force-dynamic";
 
 /**
  * ExamSphere homepage — rebuilt to match the client's reference design.
- * Order: Hero → Program cards → Detailed course sections (JEE/NEET/Foundation/MBBS)
- *        → Why Choose + stats → Quote banner + trust strip.
+ * Order: Hero → Program cards → Why Choose + stats → Quote banner + trust strip.
+ *
+ * The per-programme detail that used to live here as anchored sections now has its own
+ * routes under /programs/<slug>, so the homepage stays short and each programme is
+ * linkable and indexable on its own.
  * The old DB-driven marketing sections (FeaturedCourses, CategoriesGrid, PopularLanguages,
  * etc.) were removed per the client requirement — the dropdown + on-page sections are now the
  * primary way to access course info. See Client's_Requirements/02-PHASE-course-sections.md.
@@ -29,9 +31,6 @@ export default async function Home() {
       <HeroExamSphere />
 
       <ProgramCards />
-
-      {/* Detailed, anchored course sections — targets of the Courses dropdown */}
-      <CourseSections />
 
       <WhyChoose />
 

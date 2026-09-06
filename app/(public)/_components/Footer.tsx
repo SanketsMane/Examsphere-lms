@@ -27,7 +27,7 @@ const FALLBACK = {
 
 const quickLinks = [
   { name: "Home", href: "/" },
-  { name: "Courses", href: "/#courses" },
+  { name: "Programs", href: "/programs" },
   { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
 ];
