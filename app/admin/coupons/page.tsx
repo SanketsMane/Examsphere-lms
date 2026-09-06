@@ -14,6 +14,7 @@ import { Plus, Trash, Power } from "lucide-react";
 import Link from "next/link";
 import { toggleCouponStatus, deleteCoupon } from "./actions"; // We'll make these client-friendly or wrap them
 import { CouponStats } from "./_components/coupon-stats";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function AdminCouponsPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
+  await requireAdmin();
   const { page } = await searchParams;
   const currentPage = Number(page) || 1;
   const pageSize = 10;
@@ -101,6 +103,7 @@ export default async function AdminCouponsPage({
                    {/* Wrapped actions to satisfy type requirements */}
                    <form action={async () => {
                       "use server";
+    await requireAdmin();
                       await toggleCouponStatus(coupon.id, !coupon.isActive);
                    }} className="inline-block">
                         <Button variant="ghost" size="icon" title={coupon.isActive ? "Deactivate" : "Activate"}>
@@ -109,6 +112,7 @@ export default async function AdminCouponsPage({
                    </form>
                    <form action={async () => {
                       "use server";
+    await requireAdmin();
                       await deleteCoupon(coupon.id);
                    }} className="inline-block">
                         <Button variant="ghost" size="icon" className="text-destructive">

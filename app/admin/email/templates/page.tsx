@@ -20,12 +20,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 /**
  * Author: Sanket
  * Email Templates List Page
  */
 export default async function EmailTemplatesPage() {
+  await requireAdmin();
   const templates = await prisma.emailTemplate.findMany({
     orderBy: { name: 'asc' }
   });

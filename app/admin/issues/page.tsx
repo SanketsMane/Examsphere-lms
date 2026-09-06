@@ -1,4 +1,4 @@
-"use server"; // Should be server component logic mainly
+"use server";
 
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,10 @@ import { formatDate } from "@/lib/utils";
 import { updateIssueStatus, escalateIssue } from "@/app/actions/issues";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, AlertTriangle, XCircle, ArrowUpCircle } from "lucide-react";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 export default async function AdminIssuesPage() {
+  await requireAdmin();
     /**
      * Admin dashboard for managing and escalating user issues.
      * Author: Sanket
@@ -121,6 +123,7 @@ function IssueTable({ issues }: { issues: any[] }) {
                                             <>
                                                 <form action={async () => {
                                                     "use server";
+    await requireAdmin();
                                                     await updateIssueStatus(issue.id, "InProgress");
                                                 }}>
                                                     <Button size="icon" variant="ghost" title="Mark In Progress">
@@ -130,6 +133,7 @@ function IssueTable({ issues }: { issues: any[] }) {
 
                                                 <form action={async () => {
                                                     "use server";
+    await requireAdmin();
                                                     await updateIssueStatus(issue.id, "Resolved");
                                                 }}>
                                                     <Button size="icon" variant="ghost" title="Resolve">
@@ -140,6 +144,7 @@ function IssueTable({ issues }: { issues: any[] }) {
                                                 {!issue.isEscalated && (
                                                     <form action={async () => {
                                                         "use server";
+    await requireAdmin();
                                                         await escalateIssue(issue.id);
                                                     }}>
                                                         <Button size="icon" variant="ghost" title="Escalate">
@@ -151,6 +156,7 @@ function IssueTable({ issues }: { issues: any[] }) {
                                         )}
                                         <form action={async () => {
                                             "use server";
+    await requireAdmin();
                                             await updateIssueStatus(issue.id, "Closed");
                                         }}>
                                             <Button size="icon" variant="ghost" title="Close">

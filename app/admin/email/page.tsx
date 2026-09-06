@@ -15,12 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { revalidatePath } from "next/cache";
 import { TestEmailForm } from "./_components/test-email-form";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 /**
  * Author: Sanket
  * Email Management Dashboard - Refined for production
  */
 export default async function EmailManagementPage() {
+  await requireAdmin();
   const globalSettings = await prisma.emailGlobalSettings.findUnique({
     where: { id: 'default' }
   });
@@ -38,6 +40,7 @@ export default async function EmailManagementPage() {
 
   async function toggleSystemStatus() {
     "use server";
+    await requireAdmin();
     // Author: Sanket - Toggle global email system status
     const current = await prisma.emailGlobalSettings.findUnique({
       where: { id: 'default' }

@@ -10,12 +10,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 /**
  * Author: Sanket
  * Edit Email Provider Page - Using async params for Next.js 16 compatibility
  */
 export default async function EditProviderPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin();
   const { id } = await params;
   
   const provider = await prisma.emailProvider.findUnique({
@@ -30,6 +32,7 @@ export default async function EditProviderPage({ params }: { params: Promise<{ i
 
   async function updateProvider(formData: FormData) {
     "use server";
+    await requireAdmin();
     const name = formData.get("name") as string;
     const type = formData.get("type") as string;
     const host = formData.get("host") as string;

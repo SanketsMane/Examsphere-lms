@@ -2,8 +2,10 @@ import { BlogForm } from "../_components/blog-form";
 import { FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 export default async function AdminEditBlogPostPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin();
     const { id } = await params;
     const post = await prisma.blogPost.findUnique({
         where: { id }

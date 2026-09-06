@@ -22,18 +22,21 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 /**
  * Author: Sanket
  * Email Providers List Page
  */
 export default async function EmailProvidersPage() {
+  await requireAdmin();
   const providers = await prisma.emailProvider.findMany({
     orderBy: { isDefault: 'desc' }
   });
 
   async function toggleProvider(id: string, currentStatus: boolean) {
     "use server";
+    await requireAdmin();
     await prisma.emailProvider.update({
       where: { id },
       data: { isActive: !currentStatus }
@@ -43,6 +46,7 @@ export default async function EmailProvidersPage() {
 
   async function setAsDefault(id: string) {
     "use server";
+    await requireAdmin();
     // Unset current default
     await prisma.emailProvider.updateMany({
       where: { isDefault: true },
@@ -107,7 +111,8 @@ export default async function EmailProvidersPage() {
                     <Badge variant="secondary">{p.type.toUpperCase()}</Badge>
                   </TableCell>
                   <TableCell>
-                    <form action={async () => { "use server"; await toggleProvider(p.id, p.isActive); }}>
+                    <form action={async () => { "use server";
+    await requireAdmin(); await toggleProvider(p.id, p.isActive); }}>
                       <button type="submit" className="focus:outline-none">
                         {p.isActive ? (
                           <Badge className="bg-emerald-500 cursor-pointer">Active</Badge>
@@ -123,7 +128,8 @@ export default async function EmailProvidersPage() {
                         <IconTrophy className="h-3 w-3 mr-1" /> Primary
                       </Badge>
                     ) : (
-                      <form action={async () => { "use server"; await setAsDefault(p.id); }}>
+                      <form action={async () => { "use server";
+    await requireAdmin(); await setAsDefault(p.id); }}>
                         <Button variant="ghost" size="sm" type="submit" className="text-xs h-7">
                           Set as Primary
                         </Button>

@@ -72,8 +72,8 @@ export function EditCourseForm({ data }: iAppProps) {
       fileKey: data.fileKey,
       price: data.price,
       duration: data.duration,
-      level: data.level as CourseSchemaType["level"],
-      category: data.category as CourseSchemaType["category"],
+      level: data.level as CourseEditSchemaType["level"],
+      category: data.category as CourseEditSchemaType["category"],
       status: data.status,
       slug: data.slug,
       smallDescription: data.smallDescription,
@@ -81,7 +81,7 @@ export function EditCourseForm({ data }: iAppProps) {
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: CourseSchemaType) {
+  function onSubmit(values: CourseEditSchemaType) {
     startTransition(async () => {
       const { data: result, error } = await tryCatch(
         editCourse(values, data.id)

@@ -8,6 +8,7 @@ import {
 import { EmptyState } from "@/components/general/EmptyState";
 import { Suspense } from "react";
 import { requireTeacherOrAdmin } from "@/app/data/auth/require-roles";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export default async function CoursesPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
+  await requireAdmin();
   const { page } = await searchParams;
   const currentPage = Number(page) || 1;
 

@@ -1,9 +1,11 @@
 import { createExpertise, createLanguage, deleteExpertise, deleteLanguage, getMetadata } from "@/app/actions/metadata";
 import { MetadataManager } from "./_components/metadata-manager";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function MetadataPage() {
+  await requireAdmin();
     const { expertise, languages } = await getMetadata();
 
     return (

@@ -14,12 +14,14 @@ import { Textarea } from "@/components/ui/textarea"; // Assuming this exists
 import { Badge } from "@/components/ui/badge";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 /**
  * Author: Sanket
  * Email Template Editor Page - Using async params for Next.js 16 compatibility
  */
 export default async function TemplateEditorPage({ params }: { params: Promise<{ slug: string }> }) {
+  await requireAdmin();
   const { slug } = await params;
   
   const template = await prisma.emailTemplate.findUnique({
@@ -32,6 +34,7 @@ export default async function TemplateEditorPage({ params }: { params: Promise<{
 
   async function updateTemplate(formData: FormData) {
     "use server";
+    await requireAdmin();
     // Author: Sanket - Extract and update template data
     const name = formData.get("name") as string;
     const subject = formData.get("subject") as string;

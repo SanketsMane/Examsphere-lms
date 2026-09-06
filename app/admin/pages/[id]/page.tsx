@@ -2,8 +2,10 @@ import { PageForm } from "../_components/page-form";
 import { FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 export default async function AdminEditPagePage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin();
     const { id } = await params;
     const page = await prisma.page.findUnique({
         where: { id }

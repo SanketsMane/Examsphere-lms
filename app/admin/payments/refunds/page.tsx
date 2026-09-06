@@ -198,6 +198,7 @@ function RefundActions({ refund: r }: { refund: any }) {
       <ConfirmAction
         action={async () => {
           "use server";
+    await requireAdmin();
           await updateRefundStatus(r.id, "Approved");
         }}
         title="Approve this refund?"
@@ -214,6 +215,7 @@ function RefundActions({ refund: r }: { refund: any }) {
       <ConfirmAction
         action={async () => {
           "use server";
+    await requireAdmin();
           await updateRefundStatus(r.id, "Rejected");
         }}
         title="Reject this refund?"

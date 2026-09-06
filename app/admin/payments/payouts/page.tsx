@@ -225,6 +225,7 @@ function PayoutActions({ payout: p }: { payout: any }) {
         <ConfirmAction
           action={async () => {
             "use server";
+    await requireAdmin();
             await updatePayoutStatus(p.id, "Approved");
           }}
           title="Approve this withdrawal?"
@@ -241,6 +242,7 @@ function PayoutActions({ payout: p }: { payout: any }) {
         <ConfirmAction
           action={async () => {
             "use server";
+    await requireAdmin();
             await updatePayoutStatus(p.id, "Rejected");
           }}
           title="Reject this withdrawal?"
@@ -265,6 +267,7 @@ function PayoutActions({ payout: p }: { payout: any }) {
         <ConfirmAction
           action={async () => {
             "use server";
+    await requireAdmin();
             await updatePayoutStatus(p.id, "Completed");
           }}
           title="Mark this payout as paid?"

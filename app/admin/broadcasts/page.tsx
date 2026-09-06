@@ -1,9 +1,11 @@
 import { getAllBroadcasts } from "@/app/actions/broadcasts";
 import { BroadcastClient } from "./_components/broadcast-client";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 // Author: Sanket
 // Admin page for managing broadcast banners
 export default async function BroadcastsPage() {
+  await requireAdmin();
   const broadcasts = await getAllBroadcasts();
 
   return (

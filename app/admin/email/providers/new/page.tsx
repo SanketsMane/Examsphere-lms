@@ -11,15 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 
 /**
  * Author: Sanket
  * Add New Email Provider Page
  */
 export default async function NewProviderPage() {
+  await requireAdmin();
   
   async function createProvider(formData: FormData) {
     "use server";
+    await requireAdmin();
     const name = formData.get("name") as string;
     const type = formData.get("type") as string;
     const host = formData.get("host") as string;
