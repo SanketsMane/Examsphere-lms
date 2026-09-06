@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/db";
 import { CreateGroupForm } from "../_components/create-group-form";
+import { requireTeacher } from "@/app/data/auth/require-roles";
 
 export default async function CreateGroupPage() {
+  await requireTeacher();
     const subjects = await prisma.subject.findMany({
         where: { isActive: true },
         orderBy: { name: 'asc' }

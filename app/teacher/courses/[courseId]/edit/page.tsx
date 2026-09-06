@@ -18,6 +18,7 @@ type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { CourseActions } from "./_components/CourseActions";
+import { requireTeacher } from "@/app/data/auth/require-roles";
 
 export default async function EditRoute({
   params,
@@ -26,6 +27,7 @@ export default async function EditRoute({
   params: Params;
   searchParams: SearchParams;
 }) {
+  await requireTeacher();
   const { courseId } = await params;
   const { tab } = await searchParams;
   const [data, session] = await Promise.all([

@@ -8,8 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { PlusCircle, Users, CheckCircle, XCircle } from "lucide-react";
 import { updateEnrollmentStatus, deleteGroupClass } from "@/app/actions/groups";
+import { requireTeacher } from "@/app/data/auth/require-roles";
 
 export default async function TeacherGroupsPage() {
+  await requireTeacher();
     const session = await auth.api.getSession({
         headers: await headers()
     });
@@ -92,6 +94,7 @@ export default async function TeacherGroupsPage() {
                                                     <div className="flex gap-1">
                                                         <form action={async () => {
                                                             "use server";
+    await requireTeacher();
                                                             await updateEnrollmentStatus(enrollment.id, "Active");
                                                         }}>
                                                             <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600">
@@ -100,6 +103,7 @@ export default async function TeacherGroupsPage() {
                                                         </form>
                                                         <form action={async () => {
                                                             "use server";
+    await requireTeacher();
                                                             await updateEnrollmentStatus(enrollment.id, "Cancelled");
                                                         }}>
                                                             <Button size="icon" variant="ghost" className="h-6 w-6 text-red-600">

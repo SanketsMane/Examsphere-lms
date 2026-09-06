@@ -41,7 +41,16 @@ export async function POST(req: NextRequest) {
             .update(body)
             .digest("hex");
 
-        if (expectedSignature !== signature) {
+        // Constant-time compare. A plain !== leaks timing information about how
+        // many leading bytes matched, which is the standard way HMAC checks are
+        // attacked. Length is checked first because timingSafeEqual throws on a
+        // length mismatch.
+        const sigBuf = Buffer.from(signature, "utf8");
+        const expBuf = Buffer.from(expectedSignature, "utf8");
+        if (
+            sigBuf.length !== expBuf.length ||
+            !crypto.timingSafeEqual(sigBuf, expBuf)
+        ) {
             return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
         }
 
@@ -60,21 +69,25 @@ export async function POST(req: NextRequest) {
             });
 
             if (enrollment) {
-                if (enrollment.status !== "Active") {
+                // Razorpay retries webhooks, and deliveries can arrive concurrently.
+                // The previous read-then-write let two deliveries both observe
+                // status !== "Active" and each create a commission row, paying the
+                // teacher twice for one sale. updateMany with the status in the WHERE
+                // clause makes activation a single atomic compare-and-set: exactly one
+                // delivery gets count === 1 and does the follow-up work.
+                const claimed = await prisma.enrollment.updateMany({
+                    where: { id: enrollment.id, status: { not: "Active" } },
+                    data: { status: "Active", razorpayPaymentId: payment.id },
+                });
+
+                if (claimed.count === 1) {
                     // Fetch course details for notification
                     const course = await prisma.course.findUnique({
                         where: { id: enrollment.courseId },
                         select: { title: true }
                     });
 
-                    await prisma.enrollment.update({
-                        where: { id: enrollment.id },
-                        data: { 
-                            status: "Active",
-                            razorpayPaymentId: payment.id // Store Payment ID for refunds - Author: Sanket
-                        }
-                    });
-                    
+
                     // Get course with teacher info
                     const courseWithTeacher = await prisma.course.findUnique({
                         where: { id: enrollment.courseId },

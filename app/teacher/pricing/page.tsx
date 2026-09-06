@@ -3,8 +3,10 @@ import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { PricingForm } from "./_components/PricingForm";
+import { requireTeacher } from "@/app/data/auth/require-roles";
 
 export default async function TeacherPricingPage() {
+  await requireTeacher();
   const session = await auth.api.getSession({
     headers: await headers(),
   });

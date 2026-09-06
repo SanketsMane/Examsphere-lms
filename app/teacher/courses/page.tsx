@@ -8,11 +8,13 @@ import { Edit, MoreHorizontal, Plus, Trash } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { requireTeacher } from "@/app/data/auth/require-roles";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 export const dynamic = "force-dynamic";
 
 export default async function TeacherCoursesPage() {
+  await requireTeacher();
     const session = await getSessionWithRole();
     if (!session || (session.user.role !== "teacher" && session.user.role !== "admin")) {
         return redirect("/login");

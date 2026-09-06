@@ -11,10 +11,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatPriceSimple } from "@/lib/currency";
 import { getTeacherBundles } from "@/app/actions/bundles";
 import { CreateBundleDialog } from "./_components/create-bundle-dialog";
+import { requireTeacher } from "@/app/data/auth/require-roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeacherBundlesPage() {
+  await requireTeacher();
     const session = await getSessionWithRole();
     if (!session || (session.user.role !== "teacher" && session.user.role !== "admin")) {
         return redirect("/login");

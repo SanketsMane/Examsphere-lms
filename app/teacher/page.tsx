@@ -6,6 +6,7 @@ import { getTeacherAnalytics } from "../actions/analytics";
 import { formatPrice } from "@/lib/currency";
 import { ChartAreaInteractive } from "@/components/sidebar/chart-area-interactive";
 import { PageHeader, StatCard, Panel } from "@/components/dashboard/es/dashboard-kit";
+import { requireTeacher } from "@/app/data/auth/require-roles";
 import {
   Wallet,
   Users,
@@ -21,6 +22,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function TeacherDashboardPage() {
+  await requireTeacher();
   const session = await getSessionWithRole();
   if (!session?.user?.id) redirect("/login");
 

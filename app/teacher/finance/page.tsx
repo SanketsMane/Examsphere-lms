@@ -8,10 +8,12 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { WithdrawForm } from "./_components/withdraw-form";
 import { getTeacherPayoutData } from "@/app/actions/teacher-payouts";
+import { requireTeacher } from "@/app/data/auth/require-roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeacherFinancePage() {
+  await requireTeacher();
     const session = await auth.api.getSession({
         headers: await headers()
     });

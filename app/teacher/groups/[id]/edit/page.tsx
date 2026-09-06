@@ -3,8 +3,10 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { EditGroupForm } from "../../_components/edit-group-form";
 import { notFound } from "next/navigation";
+import { requireTeacher } from "@/app/data/auth/require-roles";
 
 export default async function EditGroupPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireTeacher();
     const session = await auth.api.getSession({
         headers: await headers()
     });
