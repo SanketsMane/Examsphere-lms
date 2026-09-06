@@ -12,24 +12,27 @@ import { Star, Rocket, GraduationCap, Users, BookOpen, Trophy } from "lucide-rea
  * change needed. Until a file is present, an on-brand placeholder is shown.
  */
 
-// Detect the hero images at request time so they "just work" once the files are added.
-// `light` = transparent cutout (floats on the light page); `dark` = dark-optimised artwork.
-function findHeroImages(): { light: string | null; dark: string | null } {
+// Detect the hero image at request time so it "just works" once the file is added.
+// It must be a transparent cutout: it floats directly on the page in both light and dark
+// mode. Do not reintroduce a dark-specific variant with a baked-in background — that reads
+// as an unwanted black card in dark mode.
+function findHeroImage(): string | null {
   const dir = path.join(process.cwd(), "public", "images");
-  const pick = (names: string[]) => {
-    for (const name of names) {
-      try {
-        if (fs.existsSync(path.join(dir, name))) return `/images/${name}`;
-      } catch {
-        /* ignore */
-      }
+  const names = [
+    "hero-students.webp",
+    "hero-students.png",
+    "hero-students.avif",
+    "hero-students.jpg",
+    "hero-students.jpeg",
+  ];
+  for (const name of names) {
+    try {
+      if (fs.existsSync(path.join(dir, name))) return `/images/${name}`;
+    } catch {
+      /* ignore */
     }
-    return null;
-  };
-  return {
-    light: pick(["hero-students.png", "hero-students.jpg", "hero-students.jpeg", "hero-students.webp", "hero-students.avif"]),
-    dark: pick(["hero-students-dark.webp", "hero-students-dark.png", "hero-students-dark.jpg"]),
-  };
+  }
+  return null;
 }
 export function HeroExamSphere() {
   return (
@@ -95,50 +98,30 @@ export function HeroExamSphere() {
 }
 
 function HeroVisual() {
-  const { light, dark } = findHeroImages();
-  const heroImage = light || dark;
+  const heroImage = findHeroImage();
 
   return (
     <div className="relative flex items-center justify-center min-h-[380px] md:min-h-[520px]">
       {heroImage ? (
         <div className="relative w-full max-w-[380px] md:max-w-[540px]">
-          {/* Soft brand glow behind the floating light-mode cutout (dark mode uses the framed
-              artwork below, so the glow is hidden there). */}
+          {/* Soft brand glow behind the floating cutout — softened, not hidden, in dark mode
+              so the artwork still sits on the page rather than in a card. */}
           <div
             aria-hidden
-            className="absolute inset-[6%] -z-10 rounded-full blur-3xl opacity-60 dark:hidden
+            className="absolute inset-[6%] -z-10 rounded-full blur-3xl opacity-60 dark:opacity-30
                        bg-[radial-gradient(closest-side,rgba(147,197,253,0.55),transparent)]"
           />
 
-          {/* LIGHT MODE: transparent cutout floats directly on the page. */}
-          {light && (
-            <Image
-              src={light}
-              alt="ExamSphere students — future doctors and engineers"
-              width={1181}
-              height={1280}
-              priority={!dark}
-              sizes="(max-width: 768px) 380px, 540px"
-              className={`w-full h-auto object-contain select-none drop-shadow-[0_18px_40px_rgba(8,17,45,0.18)] ${
-                dark ? "block dark:hidden" : ""
-              }`}
-            />
-          )}
-
-          {/* DARK MODE: dark-optimised artwork, framed as a rounded hero card. */}
-          {dark && (
-            <Image
-              src={dark}
-              alt="ExamSphere students — future doctors and engineers"
-              width={1122}
-              height={1402}
-              priority
-              sizes="(max-width: 768px) 380px, 540px"
-              className={`w-full h-auto object-contain select-none rounded-[28px] ring-1 ring-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.6)] ${
-                light ? "hidden dark:block" : ""
-              }`}
-            />
-          )}
+          {/* Transparent cutout floats directly on the page in both themes. */}
+          <Image
+            src={heroImage}
+            alt="ExamSphere students — future doctors and engineers"
+            width={1181}
+            height={1280}
+            priority
+            sizes="(max-width: 768px) 380px, 540px"
+            className="w-full h-auto object-contain select-none drop-shadow-[0_18px_40px_rgba(8,17,45,0.18)]"
+          />
         </div>
       ) : (
         <div className="relative z-[2] w-[290px] md:w-[360px] aspect-[3/3.4] rounded-[28px] overflow-hidden bg-gradient-to-b from-bg-soft-2 to-bg-soft dark:from-muted dark:to-muted/60 border border-border shadow-[var(--shadow-es-lg)] flex flex-col items-center justify-center text-center px-6">

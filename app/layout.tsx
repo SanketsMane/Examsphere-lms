@@ -102,8 +102,11 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem={false}
+          // Bumped from the implicit "theme" key: the old default was dark, so returning
+          // visitors had "dark" persisted and would never see the new light default.
+          storageKey="examsphere-theme-v2"
           disableTransitionOnChange
         >
           <CurrencyProvider initialRates={settings?.currencyRates as Record<string, number>}>
