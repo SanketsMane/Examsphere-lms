@@ -115,8 +115,8 @@ function HeroVisual() {
             <Image
               src={light}
               alt="ExamSphere students — future doctors and engineers"
-              width={1122}
-              height={1402}
+              width={1181}
+              height={1280}
               priority={!dark}
               sizes="(max-width: 768px) 380px, 540px"
               className={`w-full h-auto object-contain select-none drop-shadow-[0_18px_40px_rgba(8,17,45,0.18)] ${

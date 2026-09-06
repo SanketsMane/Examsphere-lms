@@ -77,6 +77,10 @@ export default async function RootLayout({
 }>) {
   const settings = await getSiteSettings();
   const favicon = settings?.favicon ? constructS3Url(settings.favicon) : "/favicon.ico";
+  // iOS ignores .ico for home-screen icons, so fall back to a real PNG.
+  const appleTouchIcon = settings?.favicon
+    ? constructS3Url(settings.favicon)
+    : "/apple-touch-icon.png";
   const siteName = settings?.siteName || "EXAMSPHERE";
 
   return (
@@ -89,7 +93,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={siteName} />
-        <link rel="apple-touch-icon" href={favicon} />
+        <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIcon} />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body
