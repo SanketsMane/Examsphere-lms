@@ -95,7 +95,7 @@ export function NewLessonModal({
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Lesson Name" {...field} />
+                    <Input placeholder="e.g. Newton's Laws of Motion" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

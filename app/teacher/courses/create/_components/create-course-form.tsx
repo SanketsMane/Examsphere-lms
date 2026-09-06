@@ -260,7 +260,7 @@ export function CreateCourseForm({ categories }: CreateCourseFormProps) {
                                             <FormLabel>Category</FormLabel>
                                             <Select
                                                 onValueChange={field.onChange}
-                                                defaultValue={field.value as string}
+                                                value={field.value as string}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className="w-full">
@@ -289,7 +289,7 @@ export function CreateCourseForm({ categories }: CreateCourseFormProps) {
                                             <FormLabel>Level</FormLabel>
                                             <Select
                                                 onValueChange={field.onChange}
-                                                defaultValue={field.value as string}
+                                                value={field.value as string}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className="w-full">

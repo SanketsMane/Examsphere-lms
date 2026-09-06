@@ -88,7 +88,7 @@ export function NewChapterModal({ courseId }: { courseId: string }) {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Chapter Name" {...field} />
+                    <Input placeholder="e.g. Mechanics" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

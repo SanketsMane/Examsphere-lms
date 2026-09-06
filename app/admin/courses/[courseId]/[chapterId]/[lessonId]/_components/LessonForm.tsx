@@ -97,7 +97,7 @@ export function LessonForm({ chapterId, data, courseId }: iAppProps) {
                   <FormItem>
                     <FormLabel>Lesson Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Chapter xyz" {...field} />
+                      <Input placeholder="e.g. Newton's Laws of Motion" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
