@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/app/data/user/require-user";
 import { prisma } from "@/lib/db";
 import { deductFromWallet } from "@/app/actions/wallet";
+import { paiseToRupees } from "@/lib/money";
 
 // ... imports
 import { getSiteSettings } from "@/app/data/settings/get-site-settings";
@@ -113,7 +114,10 @@ export async function POST(
             if (session.price > 0) {
                 await deductFromWallet(
                     user.id,
-                    session.price,
+                    // LiveSession.price is stored in paise; Wallet.balance is in
+                    // rupees ("1 point = Rs 1"). Passing session.price straight
+                    // through debited 100x — a Rs 499 session took Rs 49,900.
+                    paiseToRupees(session.price),
                     "SESSION_BOOKING",
                     `Booked live session: ${session.title}`,
                     { sessionId: session.id, sessionTitle: session.title }

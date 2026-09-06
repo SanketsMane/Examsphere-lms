@@ -118,3 +118,16 @@ export function maskAccountNumber(account?: string | null): string {
   if (trimmed.length <= 4) return "••••";
   return `•••• ${trimmed.slice(-4)}`;
 }
+
+/**
+ * Convert an amount held in MINOR units (paise) to MAJOR units (whole rupees).
+ *
+ * LiveSession.price is stored in paise (CreateSessionForm writes
+ * `Math.round(price * 100)`), while Wallet.balance is in rupees — the schema
+ * says so outright: `balance Int // Balance in points (1 point = Rs 1)`.
+ * Debiting the wallet with a session price directly therefore charged 100x.
+ */
+export function paiseToRupees(minorUnits: number): number {
+  const v = Number.isFinite(minorUnits) ? minorUnits : 0;
+  return Math.round(v / MINOR_UNITS_PER_MAJOR);
+}
