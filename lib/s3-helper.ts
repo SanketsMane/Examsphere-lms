@@ -15,13 +15,24 @@ export function constructS3Url(key: string): string {
 
     // Construct URL based on environment - Author: Sanket
     const bucket = env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES;
-    
-    // If we have a custom endpoint (MinIO), use it correctly
+
+    // Preferred: an explicit public read URL (Cloudflare R2 r2.dev / custom domain).
+    //
+    // This must be separate from AWS_ENDPOINT_URL_S3. On R2 the S3 API endpoint only
+    // answers SigV4-signed requests, so building object URLs from it returns 401 for
+    // every image. These public URLs are bucket-rooted — the bucket is bound to the
+    // hostname — so the key is appended directly, with no bucket segment.
+    const publicBase = env.NEXT_PUBLIC_S3_PUBLIC_URL?.trim();
+    if (publicBase) {
+        return `${publicBase.replace(/\/+$/, "")}/${key.replace(/^\/+/, "")}`;
+    }
+
+    // Fallback: path-style endpoint (MinIO / LocalStack) → {endpoint}/{bucket}/{key}
     if (env.AWS_ENDPOINT_URL_S3) {
-        const baseUrl = env.AWS_ENDPOINT_URL_S3.endsWith('/') 
-            ? env.AWS_ENDPOINT_URL_S3.slice(0, -1) 
+        const baseUrl = env.AWS_ENDPOINT_URL_S3.endsWith('/')
+            ? env.AWS_ENDPOINT_URL_S3.slice(0, -1)
             : env.AWS_ENDPOINT_URL_S3;
-        
+
         // MinIO usually expects {endpoint}/{bucket}/{key}
         return `${baseUrl}/${bucket}/${key}`;
     }

@@ -33,6 +33,12 @@ export const env = createEnv({
     NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES: z.string().min(1),
     NEXT_PUBLIC_AWS_REGION: z.string().min(1),
     NEXT_PUBLIC_S3_LOCAL_ENDPOINT: z.string().optional(),
+    // Public read base URL for uploaded objects (Cloudflare R2 r2.dev URL or a custom
+    // domain). R2's S3 API endpoint requires SigV4 on every request, so it cannot serve
+    // public reads — object URLs must be built from this instead. Optional so an
+    // unset value degrades to the legacy S3 path rather than breaking every page:
+    // this block is validated in the browser (SKIP_ENV_VALIDATION is server-only).
+    NEXT_PUBLIC_S3_PUBLIC_URL: z.string().optional(),
   },
 
   // For Next.js >= 13.4.4, you only need to destructure client variables:
@@ -41,5 +47,6 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES,
     NEXT_PUBLIC_AWS_REGION: process.env.NEXT_PUBLIC_AWS_REGION,
     NEXT_PUBLIC_S3_LOCAL_ENDPOINT: process.env.NEXT_PUBLIC_S3_LOCAL_ENDPOINT,
+    NEXT_PUBLIC_S3_PUBLIC_URL: process.env.NEXT_PUBLIC_S3_PUBLIC_URL,
   },
 });

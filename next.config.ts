@@ -79,6 +79,15 @@ const nextConfig: NextConfig = {
           protocol: 'https',
           hostname: '**.s3.**.amazonaws.com',
       },
+      // Cloudflare R2 — public bucket URL (r2.dev) and any custom domain bound to it.
+      {
+          protocol: "https",
+          hostname: "*.r2.dev",
+      },
+      {
+          protocol: "https",
+          hostname: "*.r2.cloudflarestorage.com",
+      },
       {
           protocol: "https",
           hostname: "ui-avatars.com",
