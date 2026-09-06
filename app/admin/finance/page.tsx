@@ -1,35 +1,31 @@
-import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
+import { requireAdmin } from "@/app/data/auth/require-roles";
 import { getSiteSettings } from "@/app/actions/settings";
-import { Banknote } from "lucide-react";
 import { FinanceSettingsForm } from "./_components/finance-settings-form";
+import { PageHeader } from "@/app/admin/payments/_components/payments-ui";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Admin Finance Dashboard Page
- * @author Sanket
+ * Earnings & Fees.
+ *
+ * Sits under the Payments group in the sidebar, so it uses the same PageHeader
+ * as the other three screens. It previously added its own `container mx-auto
+ * px-4 py-8`, which double-padded it inside the admin shell and made it the
+ * only page in the group with a different content width.
  */
 export default async function AdminFinancePage() {
-    await requireAdmin();
+  await requireAdmin();
 
-    const settings = await getSiteSettings();
+  const settings = await getSiteSettings();
 
-    return (
-        <div className="space-y-6 container mx-auto px-4 py-8">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold flex items-center gap-3">
-                    <Banknote className="h-8 w-8 text-green-600" />
-                    Earnings & Financial Controls
-                </h1>
-                <p className="text-muted-foreground max-w-2xl">
-                    Manage platform earnings, tax configuration, and currency settings. 
-                    These settings affect all live courses, sessions, and wallet transactions.
-                </p>
-            </div>
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Earnings & Fees"
+        description="Commission, tax and currency settings. These apply to all live courses, sessions and wallet transactions."
+      />
 
-            <div className="pt-4">
-                <FinanceSettingsForm initialData={settings} />
-            </div>
-        </div>
-    );
+      <FinanceSettingsForm initialData={settings} />
+    </div>
+  );
 }

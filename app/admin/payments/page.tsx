@@ -1,169 +1,195 @@
-import { requireAdmin } from "@/app/data/auth/require-roles"; // Secure Admin Check - Author: Sanket
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { IconCreditCard, IconTrendingUp, IconDownload, IconWallet } from "@tabler/icons-react";
+import { requireAdmin } from "@/app/data/auth/require-roles";
 import { prisma as db } from "@/lib/db";
-import { format } from "date-fns";
+import { formatMoney } from "@/lib/money";
 import Link from "next/link";
-import { formatPrice } from "@/lib/currency";
-
-/**
- * Author: Sanket
- */
+import { ChevronRight, Receipt, Wallet, ReceiptText, Banknote } from "lucide-react";
+import {
+  PageHeader,
+  Panel,
+  StatusPill,
+  Money,
+  StatCard,
+  EmptyState,
+  ErrorState,
+} from "./_components/payments-ui";
 
 export const dynamic = "force-dynamic";
 
-export default async function PaymentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string }>;
-}) {
-  const { page } = await searchParams;
-  const currentPage = Number(page) || 1;
-  const pageSize = 10;
-  const skip = (currentPage - 1) * pageSize;
+function fullDate(d: Date) {
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata",
+  }).format(d);
+}
 
+const SECTIONS = [
+  {
+    href: "/admin/payments/transactions",
+    icon: Receipt,
+    title: "All Transactions",
+    description: "Every payment processed, with provider references.",
+  },
+  {
+    href: "/admin/payments/payouts",
+    icon: Wallet,
+    title: "Withdraw Requests",
+    description: "Review and approve teacher payouts.",
+  },
+  {
+    href: "/admin/payments/refunds",
+    icon: ReceiptText,
+    title: "Refund Requests",
+    description: "Review student refund requests.",
+  },
+  {
+    href: "/admin/finance",
+    icon: Banknote,
+    title: "Earnings & Fees",
+    description: "Commission, tax and currency settings.",
+  },
+];
+
+export default async function PaymentsPage() {
   await requireAdmin();
 
-  const enrollments = await db.enrollment.findMany({
-    include: {
-      User: true,
-      Course: true,
-    },
-    orderBy: { createdAt: 'desc' },
-    skip,
-    take: pageSize,
-  });
+  let recent: any[] = [];
+  let totals = { revenue: 0, pendingValue: 0, total: 0, active: 0, pending: 0 };
+  let queue = { payouts: 0, refunds: 0 };
 
-  // Calculate total revenue from all active enrollments - Author: Sanket
-  const revenueData = await db.enrollment.aggregate({
-    where: { status: 'Active' },
-    _sum: {
-      amount: true
-    }
-  });
-  const totalRevenue = revenueData._sum.amount || 0;
+  try {
+    const [enrollments, revenueAgg, pendingAgg, total, active, pending, payoutQ, refundQ] =
+      await Promise.all([
+        db.enrollment.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 8,
+          include: { User: { select: { name: true } }, Course: { select: { title: true } } },
+        }),
+        db.enrollment.aggregate({ where: { status: "Active" }, _sum: { amount: true } }),
+        db.enrollment.aggregate({ where: { status: "Pending" }, _sum: { amount: true } }),
+        db.enrollment.count(),
+        db.enrollment.count({ where: { status: "Active" } }),
+        db.enrollment.count({ where: { status: "Pending" } }),
+        db.payoutRequest.count({ where: { status: "Pending" } }),
+        db.refundRequest.count({ where: { status: "Pending" } }),
+      ]);
 
-  // Get true counts for all statuses - Author: Sanket
-  const stats = {
-    total: await db.enrollment.count(),
-    active: await db.enrollment.count({ where: { status: 'Active' } }),
-    pending: await db.enrollment.count({ where: { status: 'Pending' } }),
-  };
+    recent = enrollments;
+    totals = {
+      // Enrollment.amount is whole rupees. The previous code used
+      // currency.formatPrice(), which divides by 100 because it expects paise —
+      // so a Rs 499 sale was reported here as Rs 4.99.
+      revenue: revenueAgg._sum.amount ?? 0,
+      pendingValue: pendingAgg._sum.amount ?? 0,
+      total,
+      active,
+      pending,
+    };
+    queue = { payouts: payoutQ, refunds: refundQ };
+  } catch {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Payments" description="Revenue, payouts and refunds across the platform." />
+        <Panel>
+          <ErrorState message="Payment data could not be loaded. Refresh to try again." />
+        </Panel>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <IconCreditCard className="h-8 w-8" />
-            Payments & Transactions
-          </h1>
-          <p className="text-muted-foreground">Monitor platform revenue and transactions</p>
-        </div>
-        <div className="flex gap-2">
-            <Link href="/admin/payments/transactions">
-                <Button variant="outline">
-                    <IconTrendingUp className="mr-2 h-4 w-4" />
-                    Transactions
-                </Button>
-            </Link>
-            <Link href="/admin/payments/payouts">
-                <Button variant="outline">
-                    <IconWallet className="mr-2 h-4 w-4" />
-                    Withdrawals
-                </Button>
-            </Link>
-            <Link href="/admin/payments/refunds">
-                <Button variant="outline">
-                    <IconCreditCard className="mr-2 h-4 w-4" />
-                    Refunds
-                </Button>
-            </Link>
-        </div>
+      <PageHeader
+        title="Payments"
+        description="Revenue, payouts and refunds across the platform."
+      />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          label="Settled revenue"
+          value={formatMoney(totals.revenue)}
+          hint={`${totals.active} active enrolments`}
+        />
+        <StatCard
+          label="Pending revenue"
+          value={formatMoney(totals.pendingValue)}
+          tone="pending"
+          hint={`${totals.pending} awaiting payment`}
+        />
+        <StatCard label="Total enrolments" value={totals.total.toLocaleString("en-IN")} />
+        <StatCard
+          label="Needs review"
+          value={String(queue.payouts + queue.refunds)}
+          tone={queue.payouts + queue.refunds > 0 ? "pending" : "default"}
+          hint={`${queue.payouts} payouts · ${queue.refunds} refunds`}
+        />
       </div>
 
-      <div className="grid md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatPrice(totalRevenue)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Transactions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.active}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-          </CardContent>
-        </Card>
+      {/* Section links. The sidebar already nests these four; this repeats them
+          as an overview rather than adding a second tab bar on the page. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {SECTIONS.map((s) => {
+          const Icon = s.icon;
+          return (
+            <Link
+              key={s.href}
+              href={s.href}
+              className="group flex items-center gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50"
+            >
+              <span className="rounded-md bg-muted p-2 text-muted-foreground">
+                <Icon className="h-5 w-5" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">{s.title}</span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {s.description}
+                </span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          );
+        })}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
-          <CardDescription>View all payment transactions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {enrollments.map((enrollment) => (
-              <div key={enrollment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <p className="font-medium">{enrollment.Course.title}</p>
-                  <p className="text-sm text-muted-foreground">User: {enrollment.User.name}</p>
-                  <p className="text-xs text-muted-foreground">{format(new Date(enrollment.createdAt), 'PPP p')}</p>
+      <Panel
+        title="Recent enrolments"
+        actions={
+          <Link
+            href="/admin/payments/transactions"
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            View all transactions
+          </Link>
+        }
+      >
+        {recent.length === 0 ? (
+          <EmptyState
+            icon={Receipt}
+            title="No enrolments yet"
+            description="Course purchases will appear here as they happen."
+          />
+        ) : (
+          <ul className="divide-y">
+            {recent.map((e) => (
+              <li
+                key={e.id}
+                className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{e.Course?.title ?? "—"}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {e.User?.name ?? "—"} · {fullDate(e.createdAt)}
+                  </p>
                 </div>
-                  <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="font-medium">{formatPrice(enrollment.amount)}</p>
-                    <p className="text-xs text-muted-foreground">Course Enrollment</p>
-                  </div>
-                  <Badge variant={enrollment.status === 'Active' ? 'default' : enrollment.status === 'Pending' ? 'secondary' : 'destructive'}>
-                    {enrollment.status}
-                  </Badge>
+                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <Money>{formatMoney(e.amount ?? 0)}</Money>
+                  <StatusPill status={e.status} />
                 </div>
-              </div>
+              </li>
             ))}
-            {enrollments.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">No transactions found</p>
-            )}
-          </div>
-          
-          {Math.ceil(stats.total / pageSize) > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
-                <Link href={currentPage <= 1 ? "#" : `/admin/payments?page=${currentPage - 1}`} className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}>Previous</Link>
-              </Button>
-              <div className="text-sm font-medium">
-                Page {currentPage} of {Math.ceil(stats.total / pageSize)}
-              </div>
-              <Button variant="outline" size="sm" asChild disabled={currentPage >= Math.ceil(stats.total / pageSize)}>
-                <Link href={currentPage >= Math.ceil(stats.total / pageSize) ? "#" : `/admin/payments?page=${currentPage + 1}`} className={currentPage >= Math.ceil(stats.total / pageSize) ? "pointer-events-none opacity-50" : ""}>Next</Link>
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }

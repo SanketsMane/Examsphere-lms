@@ -81,3 +81,40 @@ export function effectivePrice(course: {
 
   return discountPrice;
 }
+
+/**
+ * Format an amount held in MAJOR units (whole rupees) for display.
+ *
+ * Deliberately separate from `formatPrice()` in lib/currency.ts, which divides by
+ * 100 because it expects minor units. Enrollment.amount, Course.price and payout
+ * amounts are all stored in major units, so passing them through that helper
+ * under-reports every figure by 100x — the admin revenue total showed a Rs 499
+ * sale as Rs 4.99.
+ *
+ * Uses `Intl` grouping for the locale and always shows the currency, so a bare
+ * number can never appear on a money screen.
+ */
+export function formatMoney(
+  majorUnits: number,
+  opts: { currency?: string; locale?: string; showDecimals?: boolean } = {}
+): string {
+  const { currency = "INR", locale = "en-IN", showDecimals = false } = opts;
+  const value = Number.isFinite(majorUnits) ? majorUnits : 0;
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: showDecimals ? 2 : 0,
+    maximumFractionDigits: showDecimals ? 2 : 0,
+  }).format(value);
+}
+
+/**
+ * Mask an account number, showing only the last 4 digits.
+ * Full bank account numbers must never be rendered in a list view.
+ */
+export function maskAccountNumber(account?: string | null): string {
+  if (!account) return "—";
+  const trimmed = String(account).replace(/\s+/g, "");
+  if (trimmed.length <= 4) return "••••";
+  return `•••• ${trimmed.slice(-4)}`;
+}

@@ -1,143 +1,286 @@
-"use server";
-
+import { requireAdmin } from "@/app/data/auth/require-roles";
 import { prisma } from "@/lib/db";
-import { formatPrice } from "@/lib/format";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatMoney, maskAccountNumber } from "@/lib/money";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { formatDate } from "@/lib/utils";
 import { updatePayoutStatus } from "@/app/actions/admin-payouts";
-import { getCurrencyData, convertPrice } from "@/lib/currency";
-import { PayoutRequestStatus } from "@prisma/client";
-import { Check, X } from "lucide-react";
-import { revalidatePath } from "next/cache";
+import { Check, X, Wallet, Banknote } from "lucide-react";
+import {
+  PageHeader,
+  Panel,
+  StatusPill,
+  Money,
+  StatCard,
+  EmptyState,
+  ErrorState,
+  TableScroll,
+  MobileRow,
+} from "../_components/payments-ui";
+import { ConfirmAction, ActionButton } from "../_components/confirm-action";
 
-export default async function PayoutsPage() {
-    const payouts = await prisma.payoutRequest.findMany({
-        orderBy: { createdAt: "desc" },
-        include: {
-            teacher: {
-                include: { user: { select: { name: true, email: true, country: true } } }
-            }
-        }
-    });
+export const dynamic = "force-dynamic";
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Withdrawal Requests</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Teacher</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Bank Details</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {payouts.map((payout) => (
-                            <TableRow key={payout.id}>
-                                <TableCell>{formatDate(payout.createdAt)}</TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col">
-                                        <span className="font-medium">{payout.teacher.user.name}</span>
-                                        <span className="text-xs text-muted-foreground">{payout.teacher.user.email}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col">
-                                        <span>
-                                            {formatPrice(
-                                                convertPrice(Number(payout.requestedAmount), payout.teacher.user.country),
-                                                getCurrencyData(payout.teacher.user.country).code
-                                            )}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            ({formatPrice(Number(payout.requestedAmount), "USD")})
-                                        </span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="text-xs">
-                                        <p>Bank: {payout.bankName || "N/A"}</p>
-                                        <p>Acc: {payout.bankAccountNumber}</p>
-                                        <p>Name: {payout.bankAccountName}</p>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <StatusBadge status={payout.status} />
-                                </TableCell>
-                                <TableCell>
-                                    {payout.status === "Pending" && (
-                                        <div className="flex items-center gap-2">
-                                            <form action={async () => {
-                                                "use server";
-                                                await updatePayoutStatus(payout.id, "Approved");
-                                            }}>
-                                                <Button size="icon" variant="outline" className="h-8 w-8 text-green-600">
-                                                    <Check className="h-4 w-4" />
-                                                </Button>
-                                            </form>
-                                            <form action={async () => {
-                                                "use server";
-                                                await updatePayoutStatus(payout.id, "Rejected");
-                                            }}>
-                                                <Button size="icon" variant="outline" className="h-8 w-8 text-red-600">
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </form>
-                                        </div>
-                                    )}
-                                    {payout.status === "Approved" && (
-                                        <form action={async () => {
-                                            "use server";
-                                            await updatePayoutStatus(payout.id, "Completed");
-                                        }}>
-                                            <Button size="sm" variant="outline">Mark Paid</Button>
-                                        </form>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {payouts.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                    No payout requests found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-    );
+/** Payout amounts are Decimal in the DB; render via the row's own currency column. */
+function payoutAmount(amount: unknown, currency: string) {
+  return formatMoney(Number(amount ?? 0), { currency: currency || "USD", showDecimals: true });
 }
 
-function StatusBadge({ status }: { status: PayoutRequestStatus }) {
-    const styles: Record<string, string> = {
-        Pending: "bg-yellow-100 text-yellow-800",
-        Approved: "bg-blue-100 text-blue-800",
-        Completed: "bg-green-100 text-green-800",
-        Rejected: "bg-red-100 text-red-800",
-        Failed: "bg-red-100 text-red-800",
-    };
+function fullDate(d: Date) {
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata",
+  }).format(d);
+}
 
+export default async function PayoutsPage() {
+  // Server-side guard. app/admin/layout.tsx is a client component, so its role
+  // check only runs after the server has already rendered and sent this page —
+  // which meant any signed-in user could read teacher bank details from here.
+  await requireAdmin();
+
+  let payouts;
+  try {
+    payouts = await prisma.payoutRequest.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      include: {
+        teacher: { include: { user: { select: { name: true, email: true } } } },
+      },
+    });
+  } catch (e) {
     return (
-        <Badge variant="secondary" className={styles[status] || "bg-gray-100"}>
-            {status}
-        </Badge>
+      <div className="space-y-6">
+        <PageHeader title="Withdraw Requests" description="Teacher payout requests awaiting review." />
+        <Panel>
+          <ErrorState message="The payout records could not be loaded. Refresh to try again." />
+        </Panel>
+      </div>
     );
+  }
+
+  const pending = payouts.filter((p) => p.status === "Pending");
+  const approved = payouts.filter((p) => p.status === "Approved");
+  const pendingTotal = pending.reduce((sum, p) => sum + Number(p.requestedAmount ?? 0), 0);
+  const currency = payouts[0]?.currency || "USD";
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Withdraw Requests"
+        description="Review and approve teacher payout requests. Approving releases money and cannot be undone here."
+      />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Awaiting review" value={String(pending.length)} tone="pending" />
+        <StatCard
+          label="Pending value"
+          value={formatMoney(pendingTotal, { currency, showDecimals: true })}
+          tone="pending"
+          hint="Not yet paid out"
+        />
+        <StatCard label="Approved" value={String(approved.length)} hint="Ready to mark paid" />
+        <StatCard label="Total requests" value={String(payouts.length)} />
+      </div>
+
+      <Panel
+        title="All requests"
+        description={payouts.length ? `Showing ${payouts.length} most recent` : undefined}
+      >
+        {payouts.length === 0 ? (
+          <EmptyState
+            icon={Wallet}
+            title="No withdrawal requests yet"
+            description="When a teacher requests a payout, it will appear here for review."
+          />
+        ) : (
+          <>
+            {/* ---------- Desktop / tablet: table ---------- */}
+            <TableScroll>
+              <Table className="hidden md:table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Requested</TableHead>
+                    <TableHead>Teacher</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Bank account</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payouts.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                        {fullDate(p.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{p.teacher.user.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {p.teacher.user.email}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Money>{payoutAmount(p.requestedAmount, p.currency)}</Money>
+                        {p.netAmount != null && (
+                          <p className="text-xs text-muted-foreground">
+                            Net {payoutAmount(p.netAmount, p.currency)}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p className="font-medium">{p.bankName || "—"}</p>
+                          {/* Masked: full account numbers must never appear in a list. */}
+                          <p className="font-mono text-xs text-muted-foreground">
+                            {maskAccountNumber(p.bankAccountNumber)}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <StatusPill status={p.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <PayoutActions payout={p} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableScroll>
+
+            {/* ---------- Mobile: cards ---------- */}
+            <ul className="divide-y md:hidden">
+              {payouts.map((p) => (
+                <li key={p.id} className="space-y-2 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{p.teacher.user.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {p.teacher.user.email}
+                      </p>
+                    </div>
+                    <StatusPill status={p.status} />
+                  </div>
+                  <MobileRow label="Amount">
+                    <Money>{payoutAmount(p.requestedAmount, p.currency)}</Money>
+                  </MobileRow>
+                  <MobileRow label="Bank">
+                    <span className="text-sm">{p.bankName || "—"}</span>
+                  </MobileRow>
+                  <MobileRow label="Account">
+                    <span className="font-mono text-xs">
+                      {maskAccountNumber(p.bankAccountNumber)}
+                    </span>
+                  </MobileRow>
+                  <MobileRow label="Requested">
+                    <span className="text-xs text-muted-foreground">{fullDate(p.createdAt)}</span>
+                  </MobileRow>
+                  <div className="pt-1">
+                    <PayoutActions payout={p} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+/**
+ * Approve / reject / mark-paid.
+ *
+ * Every one of these is irreversible from this screen, so each goes through a
+ * review dialog showing the teacher, the amount, and the fee/net breakdown
+ * before it can be confirmed.
+ */
+function PayoutActions({ payout: p }: { payout: any }) {
+  const amount = payoutAmount(p.requestedAmount, p.currency);
+  const details = [
+    { label: "Teacher", value: p.teacher.user.name },
+    { label: "Bank", value: p.bankName || "—" },
+    { label: "Account", value: maskAccountNumber(p.bankAccountNumber) },
+    { label: "Requested amount", value: amount },
+    ...(p.processingFee != null
+      ? [{ label: "Processing fee", value: payoutAmount(p.processingFee, p.currency) }]
+      : []),
+    ...(p.netAmount != null
+      ? [{ label: "Net to teacher", value: payoutAmount(p.netAmount, p.currency) }]
+      : []),
+  ];
+
+  if (p.status === "Pending") {
+    return (
+      <div className="flex flex-wrap items-center gap-2 md:justify-end">
+        <ConfirmAction
+          action={async () => {
+            "use server";
+            await updatePayoutStatus(p.id, "Approved");
+          }}
+          title="Approve this withdrawal?"
+          description="This approves the payout for release. It cannot be undone from this screen."
+          details={details}
+          confirmLabel="Approve payout"
+          successMessage="Withdrawal approved"
+          trigger={
+            <ActionButton tone="approve">
+              <Check className="mr-1.5 h-4 w-4" /> Approve
+            </ActionButton>
+          }
+        />
+        <ConfirmAction
+          action={async () => {
+            "use server";
+            await updatePayoutStatus(p.id, "Rejected");
+          }}
+          title="Reject this withdrawal?"
+          description="The teacher will be told the request was declined. This cannot be undone."
+          details={details}
+          confirmLabel="Reject request"
+          destructive
+          successMessage="Withdrawal rejected"
+          trigger={
+            <ActionButton tone="reject">
+              <X className="mr-1.5 h-4 w-4" /> Reject
+            </ActionButton>
+          }
+        />
+      </div>
+    );
+  }
+
+  if (p.status === "Approved") {
+    return (
+      <div className="md:text-right">
+        <ConfirmAction
+          action={async () => {
+            "use server";
+            await updatePayoutStatus(p.id, "Completed");
+          }}
+          title="Mark this payout as paid?"
+          description="Only do this once the transfer has actually left the account. It cannot be undone."
+          details={details}
+          confirmLabel="Mark as paid"
+          successMessage="Payout marked as paid"
+          trigger={
+            <ActionButton>
+              <Banknote className="mr-1.5 h-4 w-4" /> Mark paid
+            </ActionButton>
+          }
+        />
+      </div>
+    );
+  }
+
+  return <span className="text-xs text-muted-foreground">No action needed</span>;
 }
