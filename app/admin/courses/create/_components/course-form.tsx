@@ -23,7 +23,8 @@ import {
     FormControl,
     FormField,
     FormItem,
-    FormLabel,
+    FormDescription,
+  FormLabel,
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -146,7 +147,7 @@ export function CourseForm({ categories }: CourseFormProps) {
                                     <FormItem>
                                         <FormLabel>Title</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Course Title" {...field} value={field.value as string} />
+                                            <Input placeholder="e.g. JEE Physics Crash Course" {...field} value={field.value as string} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -161,7 +162,7 @@ export function CourseForm({ categories }: CourseFormProps) {
                                         <FormItem className="w-full">
                                             <FormLabel>Slug</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="course-slug" {...field} value={field.value as string} />
+                                                <Input placeholder="e.g. jee-physics-crash-course" {...field} value={field.value as string} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -189,7 +190,7 @@ export function CourseForm({ categories }: CourseFormProps) {
                                         <FormLabel>Small Description</FormLabel>
                                         <FormControl>
                                             <Textarea
-                                                placeholder="Small Description"
+                                                placeholder="One line shown on course cards"
                                                 className="min-h-[120px]"
                                                 {...field}
                                             />
@@ -218,10 +219,17 @@ export function CourseForm({ categories }: CourseFormProps) {
                                 name="fileKey"
                                 render={({ field }) => (
                                     <FormItem className="w-full">
-                                        <FormLabel>Upload photo</FormLabel>
+                                        <FormLabel>Course Thumbnail</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="thumbnail-key.jpg" {...field} value={field.value as string} />
+                                            <Uploader
+                                                fileTypeAccepted="image"
+                                                onChange={field.onChange}
+                                                value={field.value as string}
+                                            />
                                         </FormControl>
+                                        <FormDescription>
+                                            Shown on course cards and the course page. Landscape images work best.
+                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -269,7 +277,7 @@ export function CourseForm({ categories }: CourseFormProps) {
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select Value" />
+                                                        <SelectValue placeholder="Select Level" />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
@@ -294,7 +302,7 @@ export function CourseForm({ categories }: CourseFormProps) {
                                             <FormLabel>Duration (hours)</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="Duration"
+                                                    placeholder="e.g. 40"
                                                     type="number"
                                                     {...field}
                                                     value={field.value as any}
@@ -317,7 +325,7 @@ export function CourseForm({ categories }: CourseFormProps) {
                                                         {currencyConfig.symbol}
                                                     </span>
                                                     <Input 
-                                                        placeholder="Price" 
+                                                        placeholder={`Price in ${currencyConfig.code}`} 
                                                         type="number" 
                                                         className="pl-8"
                                                         {...field} 

@@ -111,7 +111,7 @@ export function EditCourseForm({ data }: iAppProps) {
             <FormItem>
               <FormLabel>Title</FormLabel>
               <FormControl>
-                <Input placeholder="Title" {...field} />
+                <Input placeholder="e.g. JEE Physics Crash Course" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -126,7 +126,7 @@ export function EditCourseForm({ data }: iAppProps) {
               <FormItem className="w-full">
                 <FormLabel>Slug</FormLabel>
                 <FormControl>
-                  <Input placeholder="Slug" {...field} />
+                  <Input placeholder="e.g. jee-physics-crash-course" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -156,7 +156,7 @@ export function EditCourseForm({ data }: iAppProps) {
               <FormLabel>Small Description</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Small Description"
+                  placeholder="One line shown on course cards"
                   className="min-h-[120px]"
                   {...field}
                 />
@@ -185,7 +185,7 @@ export function EditCourseForm({ data }: iAppProps) {
           name="fileKey"
           render={({ field }) => (
             <FormItem className="w-full">
-              <FormLabel>Upload photo</FormLabel>
+              <FormLabel>Course Thumbnail</FormLabel>
               <FormControl>
                 <Uploader
                   fileTypeAccepted="image"
@@ -240,7 +240,7 @@ export function EditCourseForm({ data }: iAppProps) {
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Value" />
+                      <SelectValue placeholder="Select Level" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -264,7 +264,7 @@ export function EditCourseForm({ data }: iAppProps) {
               <FormItem className="w-full">
                 <FormLabel>Duration (hours)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Duration" type="number" {...field} />
+                  <Input placeholder="e.g. 40" type="number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
