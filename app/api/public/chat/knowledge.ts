@@ -92,7 +92,7 @@ const ON_TOPIC = [
 
 // Clear signals of "free assistant" abuse we should refuse without paying for the API.
 const OFF_TOPIC = [
-  "code", "coding", "program ", "programming", "python", "javascript", "java ", "c++", "html",
+  "code", "coding", "programming", "python", "javascript", "java ", "c++", "html",
   "css", "sql", "function", "algorithm", "compile", "debug", "script", "api ",
   "write a", "write me", "write an", "essay", "poem", "story", "translate", "translation",
   "capital of", "who won", "president", "prime minister", "weather", "movie", "song", "recipe",
@@ -100,10 +100,23 @@ const OFF_TOPIC = [
 ];
 
 /** True when the message is safe/relevant enough to spend an API call on. */
+/**
+ * Unambiguous signals that this really is a question about ExamSphere. If one of
+ * these is present, a generic abuse keyword must not veto the message — a real
+ * enquiry like "which program suits me, I'm weak at organic chemistry" was being
+ * refused because it happened to contain a blocked substring.
+ */
+const STRONG_ON_TOPIC = [
+  "examsphere", "exam sphere", "jee", "neet", "mbbs", "foundation",
+  "course", "courses", "fee", "fees", "admission", "admissions",
+  "enroll", "enrol", "batch", "syllabus", "scholarship", "demo",
+];
+
 export function isOnTopic(message: string): boolean {
   const t = ` ${message.toLowerCase()} `;
-  if (OFF_TOPIC.some((k) => t.includes(k))) return false;
-  return ON_TOPIC.some((k) => t.includes(k));
+  const strong = STRONG_ON_TOPIC.some((k) => t.includes(k));
+  if (!strong && OFF_TOPIC.some((k) => t.includes(k))) return false;
+  return strong || ON_TOPIC.some((k) => t.includes(k));
 }
 
 /* ============================ Deterministic FAQ engine ============================ */
