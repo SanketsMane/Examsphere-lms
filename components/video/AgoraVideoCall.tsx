@@ -215,7 +215,7 @@ function VideoCallContent({ sessionId, onCallEnd }: AgoraVideoCallProps) {
       const uid = meetingRoom.isTeacher ? "teacher" : "student";
       const tokenRes = await fetch("/api/video-call", {
         method: "POST",
-        body: JSON.stringify({ action: "generateToken", channelName: meetingRoom.roomId, uid }),
+        body: JSON.stringify({ action: "generateToken", sessionId, channelName: meetingRoom.roomId, uid }),
         headers: { "Content-Type": "application/json" }
       });
       const tokenData = await tokenRes.json();
@@ -309,7 +309,7 @@ function VideoCallContent({ sessionId, onCallEnd }: AgoraVideoCallProps) {
       // Get RTM Token
       const res = await fetch("/api/video-call", {
         method: "POST",
-        body: JSON.stringify({ action: "generateRtmToken", uid }),
+        body: JSON.stringify({ action: "generateRtmToken", sessionId, uid }),
         headers: { "Content-Type": "application/json" }
       });
       const data = await res.json();
