@@ -5,6 +5,7 @@ import { protectEnrollmentAction } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
 import { getRazorpayInstance, getRazorpayKeyId } from "@/lib/razorpay";
 import { checkEnrollmentLimit } from "@/lib/subscription-limits";
+import { toPaise } from "@/lib/money";
 
 export async function enrollInCourseAction(
   courseId: string
@@ -98,7 +99,10 @@ export async function enrollInCourseAction(
       const razorpay = await getRazorpayInstance();
       if (!razorpay) throw new Error("Razorpay failed to initialize");
 
-      const amountInPaisa = Math.round(course.price); // Price is already in paisa/cents in DB
+      // Course prices are stored in whole rupees (see lib/money.ts). This line
+      // previously passed the rupee figure to Razorpay as paise, charging ₹4.99
+      // for a ₹499 course — a 100x undercharge.
+      const amountInPaisa = toPaise(course.price);
       const options = {
         amount: amountInPaisa.toString(),
         currency: "INR",
@@ -247,20 +251,12 @@ export async function enrollInCourseWithWallet(courseId: string, couponCode?: st
             }
 
             // Commission Logic
-            if (finalPrice > 0) {
-                // Determine teacher ID... Course might have an owner? 
-                // Currently Course model doesn't seem to link to a 'Teacher' directly in this context 
-                // or I missed it in the select. 
-                // Let's check schema/model if needed. 
-                // For now, omitting commission if not strictly required by task, 
-                // BUT `enrollInCourseAction` didn't implement commission either!
-                // It only did Razorpay order creation. 
-                // Wait, `enrollInCourseAction` doesn't seem to finalize the enrollment in the success callback of Razorpay?
-                // Ah, the webhook probably handles it. 
-                // For wallet, we are confirming IT HERE. So we should arguably record commission if the system expects it.
-                // However, seeing `enrollInCourseAction` (lines 9-144) it DOES NOT create commission. 
-                // So I will align with existing logic and NOT add commission here to avoid side effects.
-            }
+            // NOTE: no teacher commission is accrued on a wallet course purchase.
+            // This mirrors the Razorpay path, which also does not accrue commission
+            // here (it is handled downstream on payment confirmation). Flagged during
+            // the course-creation audit: commission on wallet purchases needs a
+            // product decision before being added, since changing it retroactively
+            // would alter teacher payouts.
 
             return { status: "success", message: "Enrolled successfully", slug: course.slug };
         });

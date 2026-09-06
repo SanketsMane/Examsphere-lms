@@ -84,7 +84,6 @@ export function CreateCourseForm({ categories }: CreateCourseFormProps) {
             duration: 0,
             level: "Beginner",
             category: categories[0]?.name || "",
-            status: "Draft",
             slug: "",
             smallDescription: "",
         },
@@ -110,7 +109,14 @@ export function CreateCourseForm({ categories }: CreateCourseFormProps) {
                     router.push("/teacher");
                 }
             } else if (result.status === "error") {
-                toast.error(result.message);
+                // Map server-side validation back onto the specific inputs, instead
+                // of only showing a single opaque toast.
+                if (result.fieldErrors) {
+                    for (const [name, msg] of Object.entries(result.fieldErrors)) {
+                        form.setError(name as any, { type: "server", message: msg });
+                    }
+                }
+                toast.error(result.message ?? "Could not create the course.");
             }
         });
     }
@@ -345,34 +351,15 @@ export function CreateCourseForm({ categories }: CreateCourseFormProps) {
                                 />
                             </div>
 
-                            <FormField<CourseSchemaType>
-                                control={form.control}
-                                name="status"
-                                render={({ field }) => (
-                                    <FormItem className="w-full">
-                                        <FormLabel>Status</FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            defaultValue={field.value as string}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select Status" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {courseStatus.map((category) => (
-                                                    <SelectItem key={category} value={category}>
-                                                        {category}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {/* Status is intentionally not editable here. New courses are always
+                                created as Draft; publishing goes through admin review from the
+                                course edit screen. */}
+                            <div className="w-full rounded-md border border-dashed bg-muted/40 px-4 py-3">
+                                <p className="text-sm font-medium">Status: Draft</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Add your chapters next, then submit the course for admin review.
+                                </p>
+                            </div>
 
                             <Button type="submit" disabled={pending}>
                                 {pending ? (

@@ -13,6 +13,13 @@ import {
   LessonSchemaType,
 } from "@/lib/zodSchemas";
 import { revalidatePath } from "next/cache";
+import {
+  adminCourseSchema,
+  buildCourseData,
+  handleCourseWriteError,
+  toFieldErrors,
+} from "@/lib/course-write";
+import { courseEditSchema } from "@/lib/zodSchemas";
 import { createSystemNotification } from "@/app/actions/notifications";
 import { sendCourseSubmissionEmail } from "@/lib/email-notifications";
 
@@ -50,12 +57,15 @@ export async function editCourse(
     }
     */
 
-    const result = courseSchema.safeParse(data);
+    // Admins may additionally set isFeatured; teachers may not.
+    const schema = user.role === "admin" ? adminCourseSchema : courseEditSchema;
+    const result = schema.safeParse(data);
 
     if (!result.success) {
       return {
         status: "error",
-        message: "Invalid data",
+        message: "Please correct the highlighted fields.",
+        fieldErrors: toFieldErrors(result.error),
       };
     }
 
@@ -108,16 +118,17 @@ export async function editCourse(
       }
     }
 
-    // QA-061: Prevent teacher self-promotion (Author: Sanket)
-    const dataToSave: any = {
-      ...result.data,
-      description: result.data.description ? DOMPurify.sanitize(result.data.description) : result.data.description,
-      smallDescription: result.data.smallDescription ? DOMPurify.sanitize(result.data.smallDescription) : result.data.smallDescription,
-      status: statusToSave as any,
-    };
+    // QA-061: teachers cannot promote their own course. buildCourseData writes an
+    // explicit column list, so `isFeatured` can only ever be what we pass here.
+    const dataToSave = buildCourseData(result.data as any, {
+      status: statusToSave as string,
+      isFeatured:
+        user.role === "admin" ? ((result.data as any).isFeatured ?? false) : undefined as any,
+    });
 
-    if (user.role === "teacher") {
-      delete dataToSave.isFeatured;
+    // Only an admin may change featured placement; for teachers leave it untouched.
+    if (user.role !== "admin") {
+      delete (dataToSave as any).isFeatured;
     }
 
     await prisma.course.update({
@@ -145,11 +156,12 @@ export async function editCourse(
       status: "success",
       message: message,
     };
-  } catch {
-    return {
-      status: "error",
-      message: "Failed to update Course",
-    };
+  } catch (error) {
+    return handleCourseWriteError(error, {
+      action: "teacher.editCourse",
+      userId: user.id,
+      slug: (data as any)?.slug,
+    });
   }
 }
 

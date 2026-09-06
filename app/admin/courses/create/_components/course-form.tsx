@@ -74,6 +74,7 @@ export function CourseForm({ categories }: CourseFormProps) {
     const form = useForm<CourseSchemaType>({
         resolver: zodResolver(courseSchema) as any,
         defaultValues: {
+            category: categories[0]?.name ?? "",
             title: "",
             description: "",
             fileKey: "",
@@ -103,7 +104,13 @@ export function CourseForm({ categories }: CourseFormProps) {
                 form.reset();
                 router.push("/admin/courses");
             } else if (result.status === "error") {
-                toast.error(result.message);
+                // Map server-side validation back onto the specific inputs.
+                if (result.fieldErrors) {
+                    for (const [name, msg] of Object.entries(result.fieldErrors)) {
+                        form.setError(name as any, { type: "server", message: msg });
+                    }
+                }
+                toast.error(result.message ?? "Could not create the course.");
             }
         });
     }
