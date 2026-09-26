@@ -9,6 +9,8 @@ interface EmailData {
   subject: string;
   html: string;
   from?: string;
+  /** e.g. the visitor who filled in the contact form, so staff can just hit Reply. */
+  replyTo?: string;
 }
 
 interface TemplateData {
@@ -112,6 +114,7 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       to: emailData.to,
       subject: emailData.subject,
       html: emailData.html,
+      ...(emailData.replyTo ? { replyTo: emailData.replyTo } : {}),
     };
 
     // PRIMARY: RESEND HTTPS API (works where outbound SMTP is blocked, e.g. DigitalOcean)
@@ -122,6 +125,7 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
           to: emailData.to,
           subject: emailData.subject,
           html: emailData.html,
+          ...(emailData.replyTo ? { replyTo: emailData.replyTo } : {}),
         });
         if (data.data?.id) {
           console.log('Email sent successfully via RESEND!', data.data.id);

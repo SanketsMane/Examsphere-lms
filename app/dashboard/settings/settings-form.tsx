@@ -6,17 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Bell, Lock, Settings, User, Heart, Target, ShieldCheck } from "lucide-react";
-import { useActionState } from "react";
+import { Bell, Settings, User, GraduationCap } from "lucide-react";
+import { useActionState, useState } from "react";
 import { updateProfile } from "./actions";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { Uploader } from "@/components/file-uploader/Uploader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { constructS3Url } from "@/lib/s3-helper";
+import { BOARDS, CURRENT_CLASSES, TARGET_PROGRAMS } from "@/lib/examsphere-taxonomy";
+import { isSchoolStudent } from "@/lib/student-profile";
 
 const initialState = {
     message: "",
@@ -26,11 +26,21 @@ const initialState = {
 interface SettingsFormProps {
     user: any;
     preferences: any;
-    categories: any[];
+    studentProfile: any;
 }
 
-export function SettingsForm({ user, preferences, categories }: SettingsFormProps) {
+const selectClass =
+    "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+
+const thisYear = new Date().getFullYear();
+const TARGET_YEARS = Array.from({ length: 8 }, (_, i) => thisYear + i);
+
+export function SettingsForm({ user, preferences, studentProfile }: SettingsFormProps) {
     const [state, formAction, isPending] = useActionState(updateProfile, initialState);
+    const profile = studentProfile ?? {};
+    // Board and guardian details only apply to school students, not MBBS.
+    const [currentClass, setCurrentClass] = useState<string>(profile.currentClass ?? "");
+    const schoolStudent = isSchoolStudent({ currentClass });
 
     useEffect(() => {
         if (state?.status === "success") {
@@ -91,127 +101,116 @@ export function SettingsForm({ user, preferences, categories }: SettingsFormProp
                                 <Label htmlFor="email">Email</Label>
                                 <Input id="email" type="email" defaultValue={user.email} disabled />
                             </div>
-                            {/* Country Selection for Localization - Author: Sanket */}
-                            <div className="space-y-2">
-                                <Label htmlFor="country">Country (For Localized Pricing)</Label>
-                                <select 
-                                    id="country" 
-                                    name="country" 
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    defaultValue={user.country || "India"}
-                                >
-                                    <option value="India">India (₹)</option>
-                                    <option value="United States">United States ($)</option>
-                                    <option value="United Arab Emirates">United Arab Emirates (AED)</option>
-                                    <option value="United Kingdom">United Kingdom (£)</option>
-                                    <option value="European Union">European Union (€)</option>
-                                    <option value="Singapore">Singapore (S$)</option>
-                                    <option value="Canada">Canada (C$)</option>
-                                    <option value="Australia">Australia (A$)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="bio">Bio</Label>
-                            <Textarea
-                                id="bio"
-                                name="bio"
-                                placeholder="Tell us a little about yourself"
-                                defaultValue={user.bio || ""}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="education">Education</Label>
-                            <Textarea
-                                id="education"
-                                name="education"
-                                placeholder="Enter your education details..."
-                                defaultValue={user.education || ""}
-                            />
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Interests & Goals */}
+                {/* ExamSphere academic profile (BUG-0007) */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Target className="h-5 w-5" />
-                            Learning Goals & Interests
+                            <GraduationCap className="h-5 w-5" />
+                            Academic Profile
                         </CardTitle>
-                        <CardDescription>Tell us what you want to learn to get better recommendations</CardDescription>
+                        <CardDescription>
+                            Tell us what you&apos;re preparing for so we can guide you to the right courses and mentors
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-4">
-                            <Label>Interests (Categories)</Label>
-                            
-                            {categories.map((parent) => (
-                                <div key={parent.id} className="space-y-2">
-                                    <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-                                        {parent.name}
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {parent.children && parent.children.length > 0 ? (
-                                            parent.children.map((child: any) => (
-                                                <label
-                                                    key={child.id}
-                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        name="categories"
-                                                        value={child.name}
-                                                        defaultChecked={preferences?.categories?.includes(child.name)}
-                                                        className="hidden peer"
-                                                    />
-                                                    <div className="w-4 h-4 rounded-sm border peer-checked:bg-blue-600 peer-checked:border-blue-600 flex items-center justify-center">
-                                                        <div className="w-2 h-2 bg-white rounded-full hidden peer-checked:block" />
-                                                    </div>
-                                                    <span className="text-sm font-medium">{child.name}</span>
-                                                </label>
-                                            ))
-                                        ) : (
-                                            <label
-                                                className="flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    name="categories"
-                                                    value={parent.name}
-                                                    defaultChecked={preferences?.categories?.includes(parent.name)}
-                                                    className="hidden peer"
-                                                />
-                                                <div className="w-4 h-4 rounded-sm border peer-checked:bg-blue-600 peer-checked:border-blue-600 flex items-center justify-center">
-                                                    <div className="w-2 h-2 bg-white rounded-full hidden peer-checked:block" />
-                                                </div>
-                                                <span className="text-sm font-medium">{parent.name}</span>
-                                            </label>
-                                        )}
-                                    </div>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="targetProgram">Target Programme</Label>
+                                <select id="targetProgram" name="targetProgram" className={selectClass} defaultValue={profile.targetProgram ?? ""}>
+                                    <option value="">Select programme</option>
+                                    {TARGET_PROGRAMS.map((p) => (
+                                        <option key={p} value={p}>{p === "Foundation" ? "Foundation (Class 6–10)" : p}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="currentClass">Current Class / Year</Label>
+                                <select
+                                    id="currentClass"
+                                    name="currentClass"
+                                    className={selectClass}
+                                    value={currentClass}
+                                    onChange={(e) => setCurrentClass(e.target.value)}
+                                >
+                                    <option value="">Select class</option>
+                                    {CURRENT_CLASSES.map((c) => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="targetYear">Target Exam Year</Label>
+                                <select id="targetYear" name="targetYear" className={selectClass} defaultValue={profile.targetYear ?? ""}>
+                                    <option value="">Select year</option>
+                                    {TARGET_YEARS.map((y) => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {schoolStudent && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="board">Board</Label>
+                                    <select id="board" name="board" className={selectClass} defaultValue={profile.board ?? ""}>
+                                        <option value="">Select board</option>
+                                        {BOARDS.map((b) => (
+                                            <option key={b} value={b}>{b}</option>
+                                        ))}
+                                    </select>
                                 </div>
-                            ))}
-
-                            {categories.length === 0 && (
-                                <p className="text-sm text-muted-foreground">No categories available.</p>
                             )}
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="institution">School / College</Label>
+                                <Input
+                                    id="institution"
+                                    name="institution"
+                                    placeholder="Your school, coaching institute or medical college"
+                                    defaultValue={profile.institution ?? ""}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="city">City</Label>
+                                <Input id="city" name="city" autoComplete="address-level2" defaultValue={profile.city ?? ""} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="state">State</Label>
+                                <Input id="state" name="state" autoComplete="address-level1" defaultValue={profile.state ?? ""} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="contactPhone">Mobile Number</Label>
+                                <Input
+                                    id="contactPhone"
+                                    name="contactPhone"
+                                    type="tel"
+                                    autoComplete="tel"
+                                    placeholder="+91 98765 43210"
+                                    defaultValue={profile.contactPhone ?? ""}
+                                />
+                            </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="goals">Learning Goals</Label>
-                            <Textarea
-                                id="goals"
-                                name="goals"
-                                placeholder="e.g., Learn React, Master Figma, Get a job in tech..."
-                                defaultValue={preferences?.goals?.join(", ") || ""}
-                            />
-                            <p className="text-xs text-muted-foreground">Separate goals with commas</p>
-                        </div>
+                        {schoolStudent && (
+                            <div className="grid gap-4 md:grid-cols-2 border-t pt-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="guardianName">Parent / Guardian Name</Label>
+                                    <Input id="guardianName" name="guardianName" defaultValue={profile.guardianName ?? ""} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="guardianPhone">Parent / Guardian Mobile</Label>
+                                    <Input
+                                        id="guardianPhone"
+                                        name="guardianPhone"
+                                        type="tel"
+                                        defaultValue={profile.guardianPhone ?? ""}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
-
-
 
                 {/* Notification Settings */}
                 <Card>
@@ -229,14 +228,6 @@ export function SettingsForm({ user, preferences, categories }: SettingsFormProp
                                 <p className="text-sm text-muted-foreground">Receive email updates</p>
                             </div>
                             <Switch defaultChecked={preferences?.notifications ?? true} name="notifications" value="on" />
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <Label>Course Updates</Label>
-                                <p className="text-sm text-muted-foreground">Get notified about new lessons</p>
-                            </div>
-                            <Switch defaultChecked />
                         </div>
                     </CardContent>
                 </Card>

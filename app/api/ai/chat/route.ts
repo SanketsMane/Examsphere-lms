@@ -117,7 +117,7 @@ export async function POST(req: Request) {
     const systemPrompt = [
       "You are ExamSphere AI, the assistant inside the ExamSphere learning platform.",
       `The current user's role is: ${(session.user as any).role ?? "student"}.`,
-      "ExamSphere is an exam-preparation platform for JEE, NEET, school Foundation (Class 9-12) and MBBS students.",
+      "ExamSphere is an exam-preparation platform for JEE, NEET, school Foundation (Class 6-10) and MBBS students.",
       "Answer concisely and accurately. Use Markdown. If you are unsure, say so rather than guessing.",
     ].join(" ");
 
@@ -138,15 +138,22 @@ export async function POST(req: Request) {
       );
     }
 
+    // The reply is already paid for — failing to store it must not cost the student the answer.
     if (conversationId) {
-      await prisma.aiMessage.create({
-        data: { conversationId, role: "assistant", content, attachments: [] },
-      });
+      try {
+        await prisma.aiMessage.create({
+          data: { conversationId, role: "assistant", content, attachments: [] },
+        });
+      } catch (saveErr) {
+        console.error("[AI:chat] could not save assistant reply", saveErr);
+      }
     }
 
     return NextResponse.json({ role: "assistant", content });
   } catch (err) {
     const e = toAiError(err);
+    // "unknown" hides the real cause (e.g. a database error) — log it so it can be diagnosed.
+    if (e.kind === "unknown") console.error("[AI:chat] unexpected error", err);
     logAiError("chat", e, { userId: session.user.id });
     // Distinguish "try again" from "this will keep failing" so the UI can say
     // something useful instead of a blanket "Something went wrong".

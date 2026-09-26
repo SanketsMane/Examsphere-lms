@@ -4,51 +4,21 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
 import {
   Loader2,
   Mail,
   ArrowRight,
-  CheckCircle2,
-  Quote,
-  User,
   Eye,
   EyeOff,
   Lock
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { currentCallbackUrl, withCallbackUrl } from "@/lib/callback-url";
 import { toast } from "sonner";
-import Image from "next/image";
-import Autoplay from "embla-carousel-autoplay";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
-
-const testimonials = [
-  {
-    quote: "EXAMSPHERE has completely transformed the way I learn. The courses are structured, easy to follow, and the instructors are world-class.",
-    author: "Happy Student",
-    role: "Full Stack Developer",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
-  },
-  {
-    quote: "As a teacher, this platform gave me the tools to reach thousands of students globally. The analytics and support are unmatched.",
-    author: "Verified Instructor",
-    role: "Senior Math Instructor",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80"
-  },
-  {
-    quote: "I landed my dream job after completing the Bootcamp here. The certificate actually carries weight in the industry.",
-    author: "Recent Graduate",
-    role: "Software Engineer",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80"
-  }
-];
+import { AuthHeroPanel } from "@/components/marketing/examsphere/AuthHeroPanel";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -57,6 +27,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // e.g. set by an Enroll button so the student lands back on the courses page after login.
+  const [callbackUrl, setCallbackUrl] = useState<string | null>(null);
+  useEffect(() => setCallbackUrl(currentCallbackUrl()), []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +45,7 @@ export default function LoginPage() {
           onSuccess: () => {
             toast.dismiss(); // Dismiss any loading toasts if present
             toast.success("Login successful! Redirecting...");
-            router.push("/dashboard");
+            router.push(callbackUrl ?? "/dashboard");
           },
           onError: (ctx) => {
             console.error("Login Error:", ctx);
@@ -98,7 +71,10 @@ export default function LoginPage() {
           onSuccess: () => {
              toast.dismiss();
             toast.success("Verification code sent! Check your inbox.");
-            router.push(`/verify-request?email=${email}`);
+            router.push(
+              `/verify-request?email=${encodeURIComponent(email)}` +
+                (callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : "")
+            );
           },
           onError: (ctx) => {
              console.error("OTP Error:", ctx);
@@ -123,66 +99,9 @@ export default function LoginPage() {
   return (
     <MotionWrapper className="min-h-screen grid lg:grid-cols-2">
       {/* Left Side - Visuals */}
-      <div className="hidden lg:flex flex-col relative bg-zinc-900 text-white p-12 justify-between overflow-hidden">
-        {/* Background Image & Overlay */}
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop"
-            alt="Background"
-            fill
-            sizes="50vw"
-            className="object-cover opacity-40 mix-blend-overlay"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
-        </div>
-
-        <div className="relative z-10">
-          <Link href="/" className="flex items-center gap-2 mb-12">
-            <span className="text-2xl font-bold tracking-tight">EXAMSPHERE</span>
-          </Link>
-          <div className="space-y-6 max-w-lg">
-            <h1 className="text-4xl font-extrabold tracking-tight capitalize leading-tight">
-              Welcome back to your <span className="text-primary">learning journey</span>.
-            </h1>
-            <div className="flex flex-col gap-3">
-              {["Pick up where you left off", "Track your progress", "Connect with mentors"].map((feature, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  <span className="font-medium text-zinc-200">{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Testimonials Carousel */}
-        <div className="relative z-10 w-full mb-10">
-          <Carousel
-            opts={{ loop: true }}
-            plugins={[Autoplay({ delay: 5000 })]}
-            className="w-full max-w-xl"
-          >
-            <CarouselContent>
-              {testimonials.map((t, i) => (
-                <CarouselItem key={i}>
-                  <div className="p-6 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl">
-                    <Quote className="w-8 h-8 text-primary mb-4 opacity-50" />
-                    <p className="text-lg leading-relaxed font-medium mb-6">"{t.quote}"</p>
-                    <div className="flex items-center gap-4">
-                      <img src={t.avatar} alt={t.author} className="w-12 h-12 rounded-full object-cover border-2 border-primary/50" />
-                      <div>
-                        <h4 className="font-bold">{t.author}</h4>
-                        <p className="text-sm text-zinc-400">{t.role}</p>
-                      </div>
-                    </div>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
-        </div>
-      </div>
+      <AuthHeroPanel
+        heading={<>Welcome back to your <span className="text-orange-500">learning journey</span>.</>}
+      />
 
       {/* Right Side - Form */}
       <div className="flex flex-col items-center justify-center p-6 lg:p-12 bg-background">
@@ -221,8 +140,10 @@ export default function LoginPage() {
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
+                  name="email"
                   type="email"
-                  placeholder="john@example.com"
+                  placeholder="Enter your email"
+                  autoComplete="off"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -247,7 +168,9 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     placeholder="••••••••"
                     required
                     value={password}
@@ -279,7 +202,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link href="/register" className="font-bold text-primary hover:underline">
+            <Link href={withCallbackUrl("/register", callbackUrl)} className="font-bold text-primary hover:underline">
               Sign up
             </Link>
           </p>

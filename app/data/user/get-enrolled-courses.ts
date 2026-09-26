@@ -25,6 +25,10 @@ export async function getEnrolledCourses() {
           slug: true,
           duration: true,
           category: true,
+          resources: {
+            orderBy: { createdAt: "desc" },
+            select: { id: true, title: true, fileUrl: true, fileType: true },
+          },
           user: {
             select: {
               name: true,

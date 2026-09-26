@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { teacherProfileSchema, languages } from "@/lib/zodSchemas";
+import { teacherProfileSchema } from "@/lib/zodSchemas";
+import { EXPERTISE_AREAS, TEACHING_LANGUAGES } from "@/lib/examsphere-taxonomy";
 
 type TeacherProfileFormData = z.infer<typeof teacherProfileSchema>;
 
@@ -39,14 +40,6 @@ interface TeacherProfileFormProps {
   existingProfile?: TeacherProfile;
   onSave?: (profile: TeacherProfile) => void;
 }
-
-const expertiseAreas = [
-  "Programming", "Web Development", "Mobile Development", "Data Science", "Machine Learning", "AI",
-  "DevOps", "Cloud Computing", "Cybersecurity", "Blockchain", "Game Development", "UI/UX Design",
-  "Digital Marketing", "Business", "Finance", "Mathematics", "Physics", "Chemistry", "Biology",
-  "English", "Languages", "Music", "Art", "Photography", "Writing", "Psychology", "Philosophy",
-  "History", "Economics", "Engineering", "Architecture", "Medicine", "Law", "Education", "Other"
-];
 
 const timezones = [
   "UTC", "EST", "CST", "MST", "PST", "GMT", "CET", "IST", "JST", "AEST", "Other"
@@ -89,11 +82,13 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
     form.setValue("expertise", watchedExpertise.filter(e => e !== item));
   };
 
-  const addLanguage = () => {
-    if (languageInput && !watchedLanguages.includes(languageInput)) {
-      form.setValue("languages", [...watchedLanguages, languageInput]);
-      setLanguageInput("");
+  // Selecting a language adds it straight away (like expertise) — previously it only staged the
+  // value until a separate "+" click, so the dropdown looked broken (BUG-0008).
+  const addLanguage = (lang: string) => {
+    if (lang && !watchedLanguages.includes(lang)) {
+      form.setValue("languages", [...watchedLanguages, lang], { shouldValidate: true });
     }
+    setLanguageInput("");
   };
 
   const removeLanguage = (item: string) => {
@@ -202,7 +197,7 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
                       <SelectValue placeholder="Select popular topic..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {expertiseAreas.map((area) => (
+                      {EXPERTISE_AREAS.map((area) => (
                         <SelectItem key={area} value={area}>
                           {area}
                         </SelectItem>
@@ -255,23 +250,18 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
             <FormItem>
               <FormLabel>Languages You Teach In</FormLabel>
               <div className="space-y-2">
-                <div className="flex gap-2">
-                  <Select value={languageInput} onValueChange={setLanguageInput}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select a language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {languages.map((lang) => (
-                        <SelectItem key={lang} value={lang}>
-                          {lang}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button type="button" onClick={addLanguage} size="icon" variant="outline">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Select value={languageInput} onValueChange={addLanguage}>
+                  <SelectTrigger className="w-full md:w-[240px]">
+                    <SelectValue placeholder="Add a language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEACHING_LANGUAGES.filter((lang) => !watchedLanguages.includes(lang)).map((lang) => (
+                      <SelectItem key={lang} value={lang}>
+                        {lang}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <div className="flex flex-wrap gap-2">
                   {watchedLanguages.map((lang) => (
                     <Badge key={lang} variant="secondary" className="text-sm">
@@ -290,31 +280,8 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
               <FormMessage />
             </FormItem>
 
-            {/* Hourly Rate & Timezone & Experience */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="hourlyRate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hourly Rate (INR)</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        placeholder="2500"
-                        min="5"
-                        step="0.01"
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                      />
-                    </FormControl>
-                    <FormDescription>For 1-on-1 sessions</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+            {/* Timezone & Experience */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="experience"

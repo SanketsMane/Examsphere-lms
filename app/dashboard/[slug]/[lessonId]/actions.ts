@@ -51,7 +51,7 @@ export async function markLessonComplete(
     return {
       status: "success",
       message: certificateData?.status === "success"
-        ? "Course Completed! Certificate Generated."
+        ? "Course completed!"
         : "Progress updated",
       data: certificateData
     };

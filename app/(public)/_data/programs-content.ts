@@ -86,7 +86,7 @@ export interface ProgramData {
   tagline: string;
   description: string;
   accent: CourseAccent;
-  /** Three quick proof points shown in the page hero. */
+  /** Three quick proof points shown in the page hero — always Duration/Structure, Focus, Includes. */
   highlights: { icon: LucideIcon; label: string; value: string }[];
   keyFeatures: { icon: LucideIcon; label: string }[];
   outcomes: string[];
@@ -94,7 +94,8 @@ export interface ProgramData {
   curriculum: { title: string; icon: LucideIcon; items: string[] }[];
   whoItsFor: string[];
   details: { duration: string; mode: string; level: string; language: string };
-  mentor: { initials: string; name: string; role: string };
+  /** Course category (Course.category) the Enroll button filters Browse Courses by; omit to show all. */
+  enrollCategory?: string;
   faqs: { q: string; a: string }[];
 }
 
@@ -113,8 +114,8 @@ export const PROGRAMS: ProgramData[] = [
     accent: "navy",
     highlights: [
       { icon: Timer, label: "Duration", value: "12 / 24 Months" },
-      { icon: FilePen, label: "Mock Tests", value: "60+ Full-Length" },
-      { icon: Users, label: "Batch Size", value: "Small Batches" },
+      { icon: Target, label: "Focus", value: "Main & Advanced" },
+      { icon: Video, label: "Includes", value: "Daily Live Classes" },
     ],
     keyFeatures: [
       { icon: Video, label: "Daily Live Classes" },
@@ -183,7 +184,7 @@ export const PROGRAMS: ProgramData[] = [
       level: "Class 11, 12 & Droppers",
       language: "English / Hindi",
     },
-    mentor: { initials: "RK", name: "Dr. R. Kapoor", role: "Lead Physics Mentor, 15+ yrs" },
+    enrollCategory: "JEE",
     faqs: [
       {
         q: "Do you cover both JEE Main and JEE Advanced?",
@@ -216,8 +217,8 @@ export const PROGRAMS: ProgramData[] = [
     accent: "navy",
     highlights: [
       { icon: Timer, label: "Duration", value: "12 / 24 Months" },
-      { icon: BarChart3, label: "Mock Tests", value: "40+ Full-Length" },
       { icon: Dna, label: "Focus", value: "NCERT-First" },
+      { icon: Video, label: "Includes", value: "Daily Live Classes" },
     ],
     keyFeatures: [
       { icon: Dna, label: "NCERT-Focused Biology" },
@@ -286,7 +287,7 @@ export const PROGRAMS: ProgramData[] = [
       level: "Class 11, 12 & Droppers",
       language: "English / Hindi",
     },
-    mentor: { initials: "SM", name: "Dr. S. Mehta", role: "Lead Biology Mentor, MBBS, MD" },
+    enrollCategory: "NEET",
     faqs: [
       {
         q: "How much of the programme is based on NCERT?",
@@ -321,8 +322,8 @@ export const PROGRAMS: ProgramData[] = [
     accent: "orange",
     highlights: [
       { icon: Timer, label: "Duration", value: "Full Academic Year" },
+      { icon: Target, label: "Focus", value: "Strong Fundamentals" },
       { icon: Trophy, label: "Includes", value: "NTSE & Olympiad" },
-      { icon: Users, label: "Batch Size", value: "Small Batches" },
     ],
     keyFeatures: [
       { icon: Presentation, label: "Interactive Concept Classes" },
@@ -391,7 +392,7 @@ export const PROGRAMS: ProgramData[] = [
       level: "Class 9 – 10",
       language: "English / Hindi",
     },
-    mentor: { initials: "AN", name: "A. Nair", role: "Foundation Programme Head" },
+    enrollCategory: "Foundation (Class 6–10)",
     faqs: [
       {
         q: "Will this clash with school studies?",
@@ -490,7 +491,6 @@ export const PROGRAMS: ProgramData[] = [
       level: "Class 11 – 12",
       language: "English / Hindi",
     },
-    mentor: { initials: "AN", name: "A. Nair", role: "Foundation Programme Head" },
     faqs: [
       {
         q: "Which boards do you cover?",
@@ -521,8 +521,8 @@ export const PROGRAMS: ProgramData[] = [
     accent: "green",
     highlights: [
       { icon: Timer, label: "Structure", value: "Semester-wise" },
-      { icon: ClipboardList, label: "Includes", value: "Question Bank" },
       { icon: Stethoscope, label: "Focus", value: "Clinical Cases" },
+      { icon: ClipboardList, label: "Includes", value: "Question Bank" },
     ],
     keyFeatures: [
       { icon: BookMarked, label: "University Subject Coverage" },
@@ -591,7 +591,7 @@ export const PROGRAMS: ProgramData[] = [
       level: "MBBS 1st – Final Year",
       language: "English",
     },
-    mentor: { initials: "DV", name: "Dr. D. Verma", role: "Clinical Faculty, MD" },
+    enrollCategory: "MBBS",
     faqs: [
       {
         q: "Is this aligned to my university's syllabus?",

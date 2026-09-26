@@ -1,26 +1,13 @@
 import { z } from "zod";
 import { MAX_COURSE_PRICE } from "@/lib/money";
+import { PROGRAM_CATEGORY_NAMES } from "@/lib/examsphere-taxonomy";
 
 export const courseLevels = ["Beginner", "Intermediate", "Advanced"] as const;
 
 export const courseStatus = ["Draft", "Pending", "Published", "Archived"] as const;
 
-export const courseCategories = [
-  "Development",
-  "Business",
-  "Finance",
-  "IT & Software",
-  "Office Productivity",
-  "Personal Development",
-  "Design",
-  "Marketing",
-  "Health & Fitness",
-  "Music",
-  "Teaching & Academics",
-  "Language Learning",
-  "Photography",
-  "Lifestyle",
-] as const;
+// ExamSphere's programmes — the built-in fallback when the Category table is empty.
+export const courseCategories = PROGRAM_CATEGORY_NAMES;
 
 export const languages = [
   "English",

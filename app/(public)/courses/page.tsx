@@ -3,21 +3,19 @@ import { CourseComparisonProvider } from "@/components/marketing/CourseCompariso
 import { PublicCourseCardSkeleton } from "../_components/PublicCourseCard";
 import { CourseFilters } from "../_components/CourseFilters";
 import { Suspense } from "react";
-import {
-  Code, Palette, BarChart3, TrendingUp, Target, Lightbulb
-} from "lucide-react";
 import Link from "next/link";
 import { FadeIn } from "@/components/ui/fade-in";
 import { AnimatedCoursesGrid } from "@/components/marketing/AnimatedCoursesGrid";
 import { getAllCategories } from "@/app/data/marketing/get-marketing-data";
 import { getSessionWithRole } from "@/app/data/auth/require-roles"; // Added for localization - Author: Sanket
 import { Metadata } from "next";
+import { PROGRAM_CATEGORY_NAMES } from "@/lib/examsphere-taxonomy";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Explore Premium Courses - EXAMSPHERE",
-  description: "Browse our extensive collection of expert-led courses in Programming, Design, Business, and more. Start learning today.",
+  title: "Courses - EXAMSPHERE",
+  description: "Browse ExamSphere courses for JEE, NEET, Foundation (Class 6–10) and MBBS, and enroll online.",
 };
 
 interface SearchParams {
@@ -30,12 +28,6 @@ interface SearchParams {
 interface Props {
   searchParams: Promise<SearchParams>;
 }
-
-const trendingTopics = [
-  "React & Next.js", "AI & Machine Learning", "Python Programming",
-  "UI/UX Design", "Digital Marketing", "Data Analytics",
-  "Cloud Computing", "Cybersecurity"
-];
 
 export default async function PublicCoursesRoute({ searchParams }: Props) {
   const session = await getSessionWithRole();
@@ -96,19 +88,19 @@ export default async function PublicCoursesRoute({ searchParams }: Props) {
           <div className="container mx-auto px-4 relative z-10 text-center">
             <FadeIn>
               <h1 className="text-4xl lg:text-6xl font-extrabold tracking-tight mb-6 text-[#011E21] dark:text-white">
-                Explore Premium <span className="text-primary">Courses</span>
+                Explore <span className="text-primary">Courses</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-                Unlock your potential with our extensive library of expert-led courses. From coding to design, find the perfect path for your career.
+                Structured courses for JEE, NEET, Foundation (Class 6–10) and MBBS. Pick your programme, check the fee and enroll.
               </p>
 
               {/* Trending Tags */}
               <div className="flex flex-wrap justify-center gap-2 items-center">
-                <span className="text-sm font-semibold text-foreground mr-2">Trending:</span>
-                {trendingTopics.slice(0, 5).map((topic, index) => (
+                <span className="text-sm font-semibold text-foreground mr-2">Programmes:</span>
+                {PROGRAM_CATEGORY_NAMES.map((topic) => (
                   <Link
-                    key={index}
-                    href={`/courses?search=${encodeURIComponent(topic)}`}
+                    key={topic}
+                    href={`/courses?category=${encodeURIComponent(topic)}`}
                     className="px-3 py-1 rounded-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-700 hover:border-primary text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-all"
                   >
                     {topic}

@@ -6,7 +6,7 @@ import {
   PROGRAMS,
   type ProgramData,
 } from "@/app/(public)/_data/programs-content";
-import { EnquireButton } from "./EnquireButton";
+import { EnrollButton } from "./EnrollButton";
 
 const accentMap: Record<
   CourseAccent,
@@ -96,7 +96,8 @@ export function ProgramDetail({ program }: { program: ProgramData }) {
               </p>
 
               <div className="flex flex-wrap gap-3.5 mt-8">
-                <EnquireButton
+                <EnrollButton
+                  category={program.enrollCategory}
                   withArrow
                   className={`inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 cursor-pointer ${a.btn}`}
                 />
@@ -139,99 +140,92 @@ export function ProgramDetail({ program }: { program: ProgramData }) {
         </div>
       </section>
 
-      {/* ───────────────────── Features + sidebar ───────────────────── */}
+      {/* ─────────────────────── Overview ─────────────────────── */}
+      {/* Two aligned rows, same on every programme: What's Included | Who This Is For, then
+          Program Details | Learning Outcomes (BUG-0003). */}
       <section className="max-w-[1240px] mx-auto px-6 py-14 md:py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-8 items-start">
-          <div className="space-y-8">
-            {/* Key features */}
-            <div className="bg-card border border-border rounded-3xl p-7 md:p-8 shadow-[var(--shadow-es-sm)]">
-              <h2 className="font-display text-xl font-extrabold text-navy-950 dark:text-white mb-5">
-                What&apos;s Included
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {program.keyFeatures.map((f) => {
-                  const Icon = f.icon;
-                  return (
-                    <div
-                      key={f.label}
-                      className="flex items-center gap-2.5 text-sm font-semibold text-ink-900 dark:text-foreground bg-bg-soft dark:bg-muted/40 px-3.5 py-3 rounded-xl"
-                    >
-                      <Icon className={`h-4 w-4 shrink-0 ${a.iconText}`} />
-                      <span>{f.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Outcomes */}
-            <div className="bg-card border border-border rounded-3xl p-7 md:p-8 shadow-[var(--shadow-es-sm)]">
-              <h2 className="font-display text-xl font-extrabold text-navy-950 dark:text-white mb-5">
-                Learning Outcomes
-              </h2>
-              <ul className="space-y-3">
-                {program.outcomes.map((o) => (
-                  <li
-                    key={o}
-                    className="flex items-start gap-2.5 text-sm text-ink-700 dark:text-muted-foreground"
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Key features */}
+          <div className="bg-card border border-border rounded-3xl p-7 md:p-8 shadow-[var(--shadow-es-sm)]">
+            <h2 className="font-display text-xl font-extrabold text-navy-950 dark:text-white mb-5">
+              What&apos;s Included
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {program.keyFeatures.map((f) => {
+                const Icon = f.icon;
+                return (
+                  <div
+                    key={f.label}
+                    className="flex items-center gap-2.5 text-sm font-semibold text-ink-900 dark:text-foreground bg-bg-soft dark:bg-muted/40 px-3.5 py-3 rounded-xl"
                   >
-                    <CheckCircle2 className={`h-4 w-4 mt-0.5 shrink-0 ${a.iconText}`} />
-                    <span>{o}</span>
-                  </li>
-                ))}
-              </ul>
+                    <Icon className={`h-4 w-4 shrink-0 ${a.iconText}`} />
+                    <span>{f.label}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Sidebar */}
-          <aside className="flex flex-col gap-5 lg:sticky lg:top-24">
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-[var(--shadow-es-sm)]">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-ink-500 dark:text-muted-foreground mb-3.5">
-                Program Details
-              </h2>
-              {(
-                [
-                  ["Duration", program.details.duration],
-                  ["Mode", program.details.mode],
-                  ["Level", program.details.level],
-                  ["Language", program.details.language],
-                ] as const
-              ).map(([k, v], i, arr) => (
-                <div
-                  key={k}
-                  className={`flex justify-between items-center gap-4 py-2.5 text-sm ${
-                    i < arr.length - 1 ? "border-b border-dashed border-border" : ""
-                  }`}
+          {/* Who it's for */}
+          <div className="bg-card border border-border rounded-3xl p-7 md:p-8 shadow-[var(--shadow-es-sm)]">
+            <h2 className="font-display text-xl font-extrabold text-navy-950 dark:text-white mb-5">
+              Who This Is For
+            </h2>
+            <ul className="space-y-3">
+              {program.whoItsFor.map((w) => (
+                <li
+                  key={w}
+                  className="flex items-start gap-2.5 text-sm text-ink-700 dark:text-muted-foreground"
                 >
-                  <span className="text-ink-500 dark:text-muted-foreground font-semibold">{k}</span>
-                  <span className="text-ink-900 dark:text-foreground font-bold text-right">{v}</span>
-                </div>
+                  <UserCheck className={`h-4 w-4 mt-0.5 shrink-0 ${a.iconText}`} />
+                  <span>{w}</span>
+                </li>
               ))}
-            </div>
+            </ul>
+          </div>
 
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-[var(--shadow-es-sm)]">
-              <div className="flex items-center gap-3.5 mb-4">
-                <div className="w-[52px] h-[52px] shrink-0 rounded-full bg-navy-900 text-white flex items-center justify-center font-display font-bold">
-                  {program.mentor.initials}
-                </div>
-                <div className="min-w-0">
-                  <div className="font-bold text-sm text-foreground">{program.mentor.name}</div>
-                  <div className="text-xs text-ink-500 dark:text-muted-foreground">
-                    {program.mentor.role}
-                  </div>
-                </div>
+          {/* Program details */}
+          <div className="bg-card border border-border rounded-3xl p-7 md:p-8 shadow-[var(--shadow-es-sm)]">
+            <h2 className="font-display text-xl font-extrabold text-navy-950 dark:text-white mb-3">
+              Program Details
+            </h2>
+            {(
+              [
+                ["Duration", program.details.duration],
+                ["Mode", program.details.mode],
+                ["Level", program.details.level],
+                ["Language", program.details.language],
+              ] as const
+            ).map(([k, v], i, arr) => (
+              <div
+                key={k}
+                className={`flex justify-between items-center gap-4 py-3 text-sm ${
+                  i < arr.length - 1 ? "border-b border-dashed border-border" : ""
+                }`}
+              >
+                <span className="text-ink-500 dark:text-muted-foreground font-semibold">{k}</span>
+                <span className="text-ink-900 dark:text-foreground font-bold text-right">{v}</span>
               </div>
-              <p className="text-sm text-ink-600 dark:text-muted-foreground my-4 leading-relaxed">
-                Personalised fees &amp; batches — share your details and our team will get in touch.
-              </p>
-              <EnquireButton
-                className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 cursor-pointer ${a.btn}`}
-              />
-              <p className="text-xs text-center text-ink-500 dark:text-muted-foreground mt-2.5">
-                No payment now — just an enquiry.
-              </p>
-            </div>
-          </aside>
+            ))}
+          </div>
+
+          {/* Outcomes */}
+          <div className="bg-card border border-border rounded-3xl p-7 md:p-8 shadow-[var(--shadow-es-sm)]">
+            <h2 className="font-display text-xl font-extrabold text-navy-950 dark:text-white mb-5">
+              Learning Outcomes
+            </h2>
+            <ul className="space-y-3">
+              {program.outcomes.map((o) => (
+                <li
+                  key={o}
+                  className="flex items-start gap-2.5 text-sm text-ink-700 dark:text-muted-foreground"
+                >
+                  <CheckCircle2 className={`h-4 w-4 mt-0.5 shrink-0 ${a.iconText}`} />
+                  <span>{o}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -284,26 +278,9 @@ export function ProgramDetail({ program }: { program: ProgramData }) {
         </div>
       </section>
 
-      {/* ───────────────────── Who it's for + FAQ ───────────────────── */}
+      {/* ───────────────────────── FAQ ───────────────────────── */}
       <section className="max-w-[1240px] mx-auto px-6 py-14 md:py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10">
-          <div>
-            <h2 className="font-display text-2xl md:text-3xl font-extrabold text-navy-950 dark:text-white tracking-tight">
-              Who This Is For
-            </h2>
-            <ul className="mt-6 space-y-3.5">
-              {program.whoItsFor.map((w) => (
-                <li
-                  key={w}
-                  className="flex items-start gap-3 bg-card border border-border rounded-2xl px-5 py-4 shadow-[var(--shadow-es-sm)]"
-                >
-                  <UserCheck className={`h-[18px] w-[18px] mt-0.5 shrink-0 ${a.iconText}`} />
-                  <span className="text-sm text-ink-700 dark:text-muted-foreground">{w}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
+        <div className="max-w-3xl">
           <div>
             <h2 className="font-display text-2xl md:text-3xl font-extrabold text-navy-950 dark:text-white tracking-tight">
               Frequently Asked Questions
@@ -383,11 +360,12 @@ export function ProgramDetail({ program }: { program: ProgramData }) {
             Ready to start {program.navLabel}?
           </h2>
           <p className="text-ink-700 dark:text-muted-foreground mt-3 max-w-xl mx-auto">
-            Share your details and our team will get in touch with batch timings, fees and the
+            Enroll to see the available courses and fees, or contact us for help choosing the
             right plan for your target year.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3.5">
-            <EnquireButton
+            <EnrollButton
+              category={program.enrollCategory}
               withArrow
               className={`inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 cursor-pointer ${a.btn}`}
             />

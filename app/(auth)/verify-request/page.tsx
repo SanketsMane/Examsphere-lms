@@ -14,6 +14,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { authClient } from "@/lib/auth-client";
+import { safeCallbackUrl } from "@/lib/callback-url";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useTransition } from "react";
@@ -33,6 +34,7 @@ function VerifyRequest() {
   const [emailPending, startTranstion] = useTransition();
   const params = useSearchParams();
   const email = params.get("email") as string;
+  const callbackUrl = safeCallbackUrl(params.get("callbackUrl"));
   const isOtpCompleted = otp.length === 6;
 
   function verifyOtp() {
@@ -52,7 +54,7 @@ function VerifyRequest() {
             } else if (role === "teacher") {
               router.push("/teacher");
             } else {
-              router.push("/dashboard");
+              router.push(callbackUrl ?? "/dashboard");
             }
           },
           onError: () => {

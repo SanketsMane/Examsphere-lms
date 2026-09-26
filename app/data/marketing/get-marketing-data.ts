@@ -119,7 +119,7 @@ export async function getAllCategories(): Promise<FeaturedCategory[]> {
                 select: { courses: true }
             }
         },
-        orderBy: { name: 'asc' }
+        orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }]
     });
 
     return categories.map(c => ({

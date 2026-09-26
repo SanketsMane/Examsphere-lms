@@ -7,7 +7,8 @@ import { COURSE_SECTIONS } from "@/app/(public)/_data/courses-content";
  */
 
 export const CONTACT = {
-  phone: process.env.CONTACT_PHONE || "+91 00000 00000",
+  // No placeholder number: the bot must never hand out a fake phone. Set CONTACT_PHONE to show one.
+  phone: process.env.CONTACT_PHONE || "",
   email: process.env.CONTACT_EMAIL || process.env.EMAIL_USER || "support@examsphere.online",
   address: process.env.CONTACT_ADDRESS || "India",
 };
@@ -21,7 +22,6 @@ function courseSummary(id: string) {
     c.description,
     `• Key features: ${features}`,
     `• Duration: ${c.details.duration} | Mode: ${c.details.mode} | Level: ${c.details.level} | Language: ${c.details.language}`,
-    `• Mentor: ${c.mentor.name} — ${c.mentor.role}`,
     `• Fees: shared personally on enquiry — our counselling team will reach out with the details.`,
   ].join("\n");
 }
@@ -30,7 +30,7 @@ function courseSummary(id: string) {
 export function buildKnowledgeText(): string {
   const courses = COURSE_SECTIONS.map((c) => courseSummary(c.id)).join("\n\n");
   return `You are the ExamSphere Assistant on the ExamSphere website. ExamSphere is an online
-coaching platform in India for JEE, NEET, Foundation (Class 9–12) and MBBS students.
+coaching platform in India for JEE, NEET, Foundation (Class 6–10) and MBBS students.
 Tagline: "Learn • Compete • Succeed".
 
 STRICT SCOPE — you may ONLY discuss:
@@ -60,13 +60,12 @@ RULES:
 ${courses}
 
 === ADMISSIONS / ENQUIRY ===
-To join: tap "Enquire Now" on any course section of the homepage (it opens this chat to collect the
-student's details), or use the "Have a Query?" form in the footer. Our counselling team then reaches
-out personally to guide course selection, batches, fees and the next steps.
+To join: tap "Enroll Now" on a programme page, log in or sign up, then choose a course on the Courses
+page (fees are shown there) and enroll. For help choosing, share your details here or use the
+"Have a Query?" form in the footer and our counselling team will reach out.
 
 === CONTACT ===
-Phone: ${CONTACT.phone}
-Email: ${CONTACT.email}
+${CONTACT.phone ? `Phone: ${CONTACT.phone}\n` : ""}Email: ${CONTACT.email}
 Address: ${CONTACT.address}
 You can also use the "Have a Query?" form in the website footer.`;
 }
@@ -112,11 +111,25 @@ const STRONG_ON_TOPIC = [
   "enroll", "enrol", "batch", "syllabus", "scholarship", "demo",
 ];
 
+// Match whole words/phrases only. Plain substring matching refused real enquiries ("promo code"
+// hit "code", "subscription" hit "script", "history" hit "story") and let almost anything through
+// ("which"/"this" hit "hi").
+const termPatterns = new Map<string, RegExp>();
+function hasTerm(text: string, term: string): boolean {
+  let re = termPatterns.get(term);
+  if (!re) {
+    const escaped = term.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    re = new RegExp(`(^|[^a-z0-9+])${escaped}($|[^a-z0-9+])`);
+    termPatterns.set(term, re);
+  }
+  return re.test(text);
+}
+
 export function isOnTopic(message: string): boolean {
-  const t = ` ${message.toLowerCase()} `;
-  const strong = STRONG_ON_TOPIC.some((k) => t.includes(k));
-  if (!strong && OFF_TOPIC.some((k) => t.includes(k))) return false;
-  return strong || ON_TOPIC.some((k) => t.includes(k));
+  const t = message.toLowerCase();
+  const strong = STRONG_ON_TOPIC.some((k) => hasTerm(t, k));
+  if (!strong && OFF_TOPIC.some((k) => hasTerm(t, k))) return false;
+  return strong || ON_TOPIC.some((k) => hasTerm(t, k));
 }
 
 /* ============================ Deterministic FAQ engine ============================ */
@@ -129,7 +142,7 @@ interface Intent {
 
 const courseAnswer = (id: string) => () => {
   const s = courseSummary(id);
-  return `${s}\n\nInterested? Our counselling team will reach out to you with fees, batches & next steps — just ask here, or tap **Enquire Now** on the ${COURSE_SECTIONS.find((c) => c.id === id)?.title} section.`;
+  return `${s}\n\nInterested? Our counselling team will reach out to you with fees, batches & next steps — just ask here, or tap **Enroll Now** on the ${COURSE_SECTIONS.find((c) => c.id === id)?.title} programme page.`;
 };
 
 const intents: Intent[] = [
@@ -167,17 +180,17 @@ const intents: Intent[] = [
       `We keep our fees personalised, so we don't list them publicly. 😊\n\n` +
       `Our counselling team will reach out to you with the exact fees, current offers and batch ` +
       `details — which program are you interested in: **JEE, NEET, Foundation or MBBS**?\n\n` +
-      `You can also reach us directly at ${CONTACT.email} or ${CONTACT.phone}.`,
+      `You can also reach us directly at ${CONTACT.email}${CONTACT.phone ? ` or ${CONTACT.phone}` : ""}.`,
   },
   {
     keywords: ["enroll", "enrol", "admission", "admissions", "join", "register", "sign up", "how to apply", "apply"],
     answer: () =>
-      `Getting started is easy:\n\n1. Pick a program (JEE, NEET, Foundation or MBBS).\n2. Tap **Enquire Now** or just share your query here.\n3. Our team calls you back to help you pick a batch and join.\n\nNeed help choosing? Tell me your target exam and I'll guide you.`,
+      `Getting started is easy:\n\n1. Pick a program (JEE, NEET, Foundation or MBBS).\n2. Tap **Enroll Now**, then log in or sign up.\n3. Choose your course on the Courses page and enroll — or share your query here and our team will help you pick.\n\nNeed help choosing? Tell me your target exam and I'll guide you.`,
   },
   {
     keywords: ["contact", "phone", "call", "email", "reach", "address", "location", "support", "talk to"],
     answer: () =>
-      `You can reach ExamSphere here:\n\n• 📞 Phone: ${CONTACT.phone}\n• ✉️ Email: ${CONTACT.email}\n• 📍 ${CONTACT.address}\n\nYou can also use the **"Have a Query?"** form at the bottom of the page and we'll get back to you.`,
+      `You can reach ExamSphere here:\n\n${CONTACT.phone ? `• 📞 Phone: ${CONTACT.phone}\n` : ""}• ✉️ Email: ${CONTACT.email}\n• 📍 ${CONTACT.address}\n\nYou can also use the **"Have a Query?"** form at the bottom of the page and we'll get back to you.`,
   },
   {
     keywords: ["about", "who are you", "what is examsphere", "why examsphere"],

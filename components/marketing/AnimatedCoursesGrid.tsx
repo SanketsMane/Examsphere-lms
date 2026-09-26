@@ -9,9 +9,11 @@ import Link from "next/link";
 interface Props {
     courses: PublicCourseType[];
     userCountry?: string | null; // Added for localization - Author: Sanket
+    /** Where "Clear Filters" goes when nothing matches. */
+    clearHref?: string;
 }
 
-export function AnimatedCoursesGrid({ courses, userCountry }: Props) {
+export function AnimatedCoursesGrid({ courses, userCountry, clearHref = "/courses" }: Props) {
     if (courses.length === 0) {
         return (
             <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-muted-foreground bg-card rounded-xl border border-dashed border-border">
@@ -25,7 +27,7 @@ export function AnimatedCoursesGrid({ courses, userCountry }: Props) {
                     We couldn't find any courses matching your criteria. Try adjusting your filters or search terms.
                 </p>
                 <Link
-                    href="/courses"
+                    href={clearHref}
                     className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
                 >
                     Clear Filters

@@ -21,8 +21,9 @@ export type CourseCategoryOption = { id: string; name: string };
 /** Options for the form. DB rows first; built-in list when the table is empty. */
 export async function getCourseCategoryOptions(): Promise<CourseCategoryOption[]> {
   const rows = await prisma.category.findMany({
+    where: { isActive: true },
     select: { id: true, name: true },
-    orderBy: { name: "asc" },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
   });
 
   if (rows.length > 0) return rows;
