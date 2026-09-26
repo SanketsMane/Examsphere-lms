@@ -84,6 +84,7 @@ export async function submitContact(
       to,
       subject: `Contact enquiry from ${name}${program ? ` — ${program}` : ""}`,
       html,
+      replyTo: email,
     });
 
     if (!ok) {

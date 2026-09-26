@@ -5,11 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, BookOpen, Clock, Calendar, Trophy, Target, Award } from "lucide-react";
+import { Loader2, BookOpen, Clock, Calendar, Target } from "lucide-react";
 import { ProgressCharts } from "./ProgressCharts";
 import { LearningGoals } from "./LearningGoals";
-import { AchievementShowcase } from "./AchievementShowcase";
-import { CertificatesSection } from "./CertificatesSection";
 
 /**
  * Student Progress Dashboard Component
@@ -130,45 +128,9 @@ export function ProgressDashboard() {
                             <Progress value={(progress.points % 1000) / 10} className="h-2" />
                         </div>
 
-                        <div className="pt-4 border-t space-y-2">
-                            <h4 className="text-sm font-medium flex items-center gap-2">
-                                <Trophy className="h-4 w-4 text-yellow-500" />
-                                Recent Achievements
-                            </h4>
-                            <p className="text-xs text-muted-foreground italic">Complete tasks to unlock badges!</p>
-                        </div>
                     </CardContent>
                 </Card>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <Award className="h-5 w-5 text-primary" />
-                        <CardTitle>Certificates</CardTitle>
-                    </div>
-                    <CardDescription>Verified proof of your accomplishments.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <CertificatesSection 
-                        studentName={data.userName || "Student"} 
-                        completedCourses={[]} // Will be populated when course completion logic is added
-                    />
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-primary" />
-                        <CardTitle>Your Achievements</CardTitle>
-                    </div>
-                    <CardDescription>Badges earned throughout your learning journey.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <AchievementShowcase achievements={data.userAchievements || []} />
-                </CardContent>
-            </Card>
 
             <Card>
                 <CardHeader>

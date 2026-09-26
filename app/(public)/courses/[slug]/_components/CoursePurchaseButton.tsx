@@ -79,7 +79,7 @@ export const CoursePurchaseButton = ({
             if (!response.ok) {
                 if (response.status === 401) {
                     toast.error("Please login to purchase");
-                    window.location.href = "/login";
+                    window.location.href = `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
                     return;
                 }
                 const errorMsg = await response.text();
@@ -132,7 +132,7 @@ export const CoursePurchaseButton = ({
                 if (!response.ok) {
                     if (response.status === 401) {
                         toast.error("Please login to enroll");
-                        window.location.href = "/login";
+                        window.location.href = `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
                         return;
                     }
                     throw new Error("Enrollment failed");

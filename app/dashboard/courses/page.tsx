@@ -3,10 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Clock, BarChart3, PlayCircle } from "lucide-react";
+import { BookOpen, Clock, BarChart3, PlayCircle, FileText, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { CertificateButton } from "./_components/CertificateButton";
 import { constructS3Url } from "@/lib/s3-helper";
 
 export const dynamic = "force-dynamic";
@@ -24,10 +23,10 @@ export default async function DashboardCoursesPage() {
           <div>
             <h2 className="text-2xl font-bold mb-2">No Enrolled Courses</h2>
             <p className="text-muted-foreground mb-6">
-              You haven't enrolled in any courses yet. Browse our course catalog to get started.
+              You haven't enrolled in any courses yet. Browse ExamSphere courses to get started.
             </p>
             <Button asChild>
-              <Link href="/courses">Browse Courses</Link>
+              <Link href="/dashboard/browse">Browse Courses</Link>
             </Button>
           </div>
         </div>
@@ -41,7 +40,7 @@ export default async function DashboardCoursesPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">My Courses</h1>
         <p className="text-muted-foreground">
-          Continue your learning journey with your enrolled courses
+          Your enrolled courses, your progress and each course&apos;s resources
         </p>
       </div>
 
@@ -126,13 +125,35 @@ export default async function DashboardCoursesPage() {
                       {completedLessons} of {totalLessons} lessons completed
                     </p>
                   </div>
+
+                  <div className="space-y-2 border-t pt-4">
+                    <p className="text-sm font-semibold">Course Resources</p>
+                    {course.resources.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No resources shared yet.</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {course.resources.map((resource) => (
+                          <li key={resource.id}>
+                            <a
+                              href={resource.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-sm text-primary hover:underline"
+                            >
+                              <FileText className="h-4 w-4 shrink-0" />
+                              <span className="truncate">{resource.title}</span>
+                              <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               </CardContent>
 
               <CardFooter className="p-6 pt-0 gap-2">
-                {progressPercentage === 100 ? (
-                  <CertificateButton courseId={course.id} />
-                ) : nextLessonId ? (
+                {nextLessonId ? (
                   <Button asChild className="flex-1">
                     <Link href={`/dashboard/${course.slug}/${nextLessonId}`}>
                       <PlayCircle className="mr-2 h-4 w-4" />

@@ -11,18 +11,15 @@ import {
 } from "lucide-react";
 import { constructS3Url } from "@/lib/s3-utils";
 import { getSiteSettings } from "@/app/data/settings/get-site-settings";
+import { getContactDetails } from "@/app/data/settings/get-contact-details";
 import { FooterQueryForm } from "./FooterQueryForm";
 
-// Fallback contact details — replace with the client's real details (or set them in Site Settings).
-const FALLBACK = {
-  phone: "+91 00000 00000",
-  email: "support@examsphere.online",
-  address: "India",
-  facebook: "#",
-  instagram: "#",
-  linkedin: "#",
-  youtube: "#",
-  twitter: "#",
+const socialIcons = {
+  instagram: Instagram,
+  facebook: Facebook,
+  linkedin: Linkedin,
+  youtube: Youtube,
+  x: Twitter,
 };
 
 const quickLinks = [
@@ -42,17 +39,9 @@ const legalLinks = [
 export async function Footer() {
   const settings = await getSiteSettings();
 
-  const phone = settings?.contactPhone?.trim() || FALLBACK.phone;
-  const email = settings?.contactEmail?.trim() || FALLBACK.email;
-  const address = settings?.contactAddress?.trim() || FALLBACK.address;
-
-  const socials = [
-    { name: "Instagram", href: settings?.instagram?.trim() || FALLBACK.instagram, Icon: Instagram },
-    { name: "Facebook", href: settings?.facebook?.trim() || FALLBACK.facebook, Icon: Facebook },
-    { name: "LinkedIn", href: settings?.linkedin?.trim() || FALLBACK.linkedin, Icon: Linkedin },
-    { name: "YouTube", href: settings?.youtube?.trim() || FALLBACK.youtube, Icon: Youtube },
-    { name: "Twitter", href: settings?.twitter?.trim() || FALLBACK.twitter, Icon: Twitter },
-  ];
+  // Unset details are hidden, never shown as placeholders (BUG-0002).
+  const { phone, email, address, socials: socialLinks } = await getContactDetails();
+  const socials = socialLinks.map((s) => ({ ...s, Icon: socialIcons[s.network] }));
 
   const logoSrc =
     settings?.logo && settings.logo.trim() !== "" ? constructS3Url(settings.logo) : "/logo.png";
@@ -79,38 +68,44 @@ export async function Footer() {
             </p>
 
             <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-3">
-                <Phone className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />
-                <a href={`tel:${phone.replace(/\s+/g, "")}`} className="hover:text-white transition-colors">
-                  {phone}
-                </a>
-              </li>
+              {phone && (
+                <li className="flex items-start gap-3">
+                  <Phone className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />
+                  <a href={`tel:${phone.replace(/[^+\d]/g, "")}`} className="hover:text-white transition-colors">
+                    {phone}
+                  </a>
+                </li>
+              )}
               <li className="flex items-start gap-3">
                 <Mail className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />
                 <a href={`mailto:${email}`} className="hover:text-white transition-colors break-all">
                   {email}
                 </a>
               </li>
-              <li className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />
-                <span>{address}</span>
-              </li>
+              {address && (
+                <li className="flex items-start gap-3">
+                  <MapPin className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />
+                  <span>{address}</span>
+                </li>
+              )}
             </ul>
 
-            <div className="flex gap-2.5 pt-1">
-              {socials.map(({ name, href, Icon }) => (
-                <a
-                  key={name}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={name}
-                  className="h-9 w-9 rounded-full bg-white/[0.08] flex items-center justify-center text-white hover:bg-orange-500 hover:-translate-y-0.5 transition-all"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
+            {socials.length > 0 && (
+              <div className="flex gap-2.5 pt-1">
+                {socials.map(({ name, href, Icon }) => (
+                  <a
+                    key={name}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={name}
+                    className="h-9 w-9 rounded-full bg-white/[0.08] flex items-center justify-center text-white hover:bg-orange-500 hover:-translate-y-0.5 transition-all"
+                  >
+                    <Icon className="h-4 w-4" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Quick Links */}

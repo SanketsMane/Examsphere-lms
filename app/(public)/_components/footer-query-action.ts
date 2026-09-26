@@ -61,6 +61,7 @@ export async function submitFooterQuery(_prev: QueryResult | null, formData: For
       to,
       subject: `New website query from ${name}`,
       html,
+      replyTo: email,
     });
 
     if (!ok) {

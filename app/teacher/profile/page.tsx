@@ -10,7 +10,6 @@ import { TeacherProfileForm } from "@/components/teacher/teacher-profile-form";
 import {
   MapPin,
   Clock,
-  DollarSign,
   Star,
   Users,
   BookOpen,
@@ -312,19 +311,6 @@ export default function TeacherProfilePage() {
               <CardTitle className="text-lg">Teaching Details</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
-              {profile.hourlyRate && (
-                <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white dark:bg-blue-900/30 rounded-full text-blue-600">
-                      <DollarSign className="h-5 w-5" />
-                    </div>
-                    <span className="text-sm font-medium">Hourly Rate</span>
-                  </div>
-                  <span className="font-bold text-lg text-blue-700 dark:text-blue-300">
-                    ${profile.hourlyRate}
-                  </span>
-                </div>
-              )}
               {profile.experience !== undefined && (
                 <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/10 rounded-lg">
                   <div className="flex items-center gap-3">
@@ -411,7 +397,6 @@ function calculateProfileCompletion(profile: TeacherProfile): number {
     profile.bio,
     profile.expertise?.length > 0,
     profile.languages?.length > 0,
-    profile.hourlyRate,
     profile.timezone,
     (profile.qualifications?.length ?? 0) > 0,
     (profile.certifications?.length ?? 0) > 0,

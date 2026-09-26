@@ -7,9 +7,7 @@ import {
   IconLayoutDashboard,
   IconBook,
   IconBooks,
-  IconFolder,
   IconVideo,
-  IconCertificate,
   IconSparkles,
   IconCompass,
   IconUserSearch,
@@ -53,17 +51,16 @@ const navGroups: NavGroup[] = [
   {
     label: "Learning",
     items: [
+      // Browse = every course; My Courses = enrolled only, with progress and resources (BUG-0005).
+      { title: "Browse Courses", url: "/dashboard/browse", icon: IconBooks },
       { title: "My Courses", url: "/dashboard/courses", icon: IconBook },
-      { title: "Course Resources", url: "/dashboard/resources", icon: IconFolder },
       { title: "Live Sessions", url: "/dashboard/sessions", icon: IconVideo },
-      { title: "Certificates", url: "/dashboard/certificates", icon: IconCertificate },
       { title: "ExamSphere AI", url: "/dashboard/ai", icon: IconSparkles },
     ],
   },
   {
     label: "Explore",
     items: [
-      { title: "Browse Courses", url: "/courses", icon: IconBooks },
       { title: "Find a Mentor", url: "/find-teacher", icon: IconUserSearch },
       { title: "My Groups", url: "/dashboard/groups", icon: IconUsersGroup },
     ],

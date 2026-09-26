@@ -4,6 +4,19 @@ import { teacherProfileSchema } from "@/lib/zodSchemas";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+// Teachers no longer set an hourly rate at signup. Treat a blank/null/NaN rate from an older
+// client as "not set" instead of letting z.coerce turn it into 0 and fail validation.
+function withoutBlankRate(body: any) {
+  if (body && typeof body === "object") {
+    const rate = body.hourlyRate;
+    if (rate === "" || rate === null || (typeof rate === "number" && Number.isNaN(rate))) {
+      const { hourlyRate: _omit, ...rest } = body;
+      return rest;
+    }
+  }
+  return body;
+}
+
 export const dynamic = "force-dynamic";
 
 export async function GET() {
@@ -57,7 +70,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("Teacher Profile Post Session User:", session.user);
 
     // Allow students to apply/register as teachers
     // Check for "user" role as well, just in case default is "user"
@@ -66,8 +78,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Access denied.Role: ${(session.user as any).role} ` }, { status: 403 });
     }
 
-    const body = await req.json();
-    const validatedData = teacherProfileSchema.parse(body);
+    const validatedData = teacherProfileSchema.parse(withoutBlankRate(await req.json()));
 
     // Check if profile already exists
     const existingProfile = await prisma.teacherProfile.findUnique({
@@ -155,9 +166,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Profile already exists" }, { status: 409 });
     }
 
-    // Return the actual error message for debugging purposes (in dev) 
-    // or a generic one in prod. Since we are in dev/debugging mode:
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Could not save your profile. Please try again." }, { status: 500 });
   }
 }
 
@@ -175,8 +184,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const body = await req.json();
-    const validatedData = teacherProfileSchema.parse(body);
+    const validatedData = teacherProfileSchema.parse(withoutBlankRate(await req.json()));
 
     const profile = await prisma.teacherProfile.update({
       where: { userId: session.user.id },
@@ -195,6 +203,9 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ profile });
   } catch (error) {
     console.error("Error updating teacher profile:", error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

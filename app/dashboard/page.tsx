@@ -12,7 +12,8 @@ import { ActivityFeed } from "./_components/ActivityFeed";
 import { ChartAreaInteractive } from "@/components/sidebar/chart-area-interactive";
 import { getStudentSchedule } from "../data/student/get-student-schedule";
 import { PageHeader, StatCard, Panel, ProgressBar } from "@/components/dashboard/es/dashboard-kit";
-import { BookOpen, Target, Sparkles, Award, Activity, LineChart, ArrowRight } from "lucide-react";
+import { studentProfileChecklist } from "@/lib/student-profile";
+import { BookOpen, Target, Sparkles, Library, Activity, LineChart, ArrowRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -20,23 +21,24 @@ export default async function DashboardPage() {
   const session = await getSessionWithRole();
   if (!session) redirect("/login");
   if (session.user.role === "admin") redirect("/admin");
+  // Teachers belong in the Teacher Portal; /teacher sends them on to finish their profile or to
+  // the verification screen as needed.
+  if (session.user.role === "teacher") redirect("/teacher");
 
   const userId = session?.user?.id || "";
   const analytics = await getUserAnalytics(userId);
   const enrolledCourses = await getEnrolledCourses();
   const scheduleItems = await getStudentSchedule(userId);
   const freeUsage = await prisma.freeClassUsage.findUnique({ where: { studentId: userId } });
+  const studentProfile = await prisma.studentProfile.findUnique({ where: { userId } });
 
   const firstName = session.user.name?.split(" ")[0] || "there";
 
-  const profileFields = [
-    { label: "Avatar", value: !!session.user.image },
-    { label: "Name", value: !!session.user.name },
-    { label: "Role Set", value: !!session.user.role },
-    { label: "Email Verified", value: true },
-  ];
-  const completedFields = profileFields.filter((f) => f.value).length;
-  const completionPercentage = Math.round((completedFields / profileFields.length) * 100);
+  // ExamSphere details (programme, class, target year…) rather than avatar/role flags (BUG-0007).
+  const { items: profileFields, percentage: completionPercentage } = studentProfileChecklist(
+    session.user,
+    studentProfile
+  );
 
   return (
     <div className="space-y-8">
@@ -57,7 +59,7 @@ export default async function DashboardPage() {
         }
       >
         <Link
-          href="/courses"
+          href="/dashboard/browse"
           className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-orange-600"
         >
           Browse Courses <ArrowRight className="size-4" />
@@ -69,7 +71,7 @@ export default async function DashboardPage() {
         <StatCard icon={BookOpen} accent="navy" label="Lessons Done" value={analytics.stats.totalLessonsCompleted.toString()} hint="Keep learning!" />
         <StatCard icon={Target} accent="orange" label="Courses Completed" value={analytics.stats.completedCourses.toString()} hint={`of ${analytics.stats.enrollmentCount} enrolled`} />
         <StatCard icon={Sparkles} accent="green" label="Sessions Attended" value={analytics.stats.completedSessions.toString()} hint={`${analytics.stats.totalSessionsBooked} booked`} />
-        <StatCard icon={Award} accent="violet" label="Certificates" value={analytics.stats.certificatesCount.toString()} hint="Earned" />
+        <StatCard icon={Library} accent="violet" label="Enrolled Courses" value={analytics.stats.enrollmentCount.toString()} hint="In My Courses" />
       </div>
 
       {/* Main grid */}
@@ -90,10 +92,10 @@ export default async function DashboardPage() {
                 </div>
                 <h4 className="font-display font-bold text-navy-950 dark:text-white">Start your journey</h4>
                 <p className="mb-4 mt-1 max-w-md text-sm text-ink-500 dark:text-muted-foreground">
-                  You haven&apos;t enrolled in any courses yet. Browse our library to find the perfect course.
+                  You haven&apos;t enrolled in any courses yet. Browse ExamSphere courses to get started.
                 </p>
                 <Link
-                  href="/courses"
+                  href="/dashboard/browse"
                   className="inline-flex items-center gap-2 rounded-full bg-navy-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-navy-950"
                 >
                   Browse Library
@@ -124,7 +126,7 @@ export default async function DashboardPage() {
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
               {profileFields.map((field) => (
                 <div key={field.label} className="flex items-center gap-1.5">
-                  <span className={`size-1.5 rounded-full ${field.value ? "bg-es-green-600" : "bg-ink-500/40"}`} />
+                  <span className={`size-1.5 rounded-full ${field.done ? "bg-es-green-600" : "bg-ink-500/40"}`} />
                   <span className="text-[11px] font-medium text-ink-700 dark:text-muted-foreground">{field.label}</span>
                 </div>
               ))}

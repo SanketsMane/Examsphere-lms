@@ -10,13 +10,11 @@ import {
     BookOpen,
     Clock,
     Globe,
-    Award,
     BarChart,
     CheckCircle2,
     PlayCircle,
     Lock,
     Star,
-    User,
 } from "lucide-react";
 import { CoursePurchaseButton } from "./_components/CoursePurchaseButton";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
@@ -123,20 +121,6 @@ export default async function CourseDetailsPage({
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4 pt-4">
-                            <div className="flex items-center gap-2">
-                                <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border-2 border-slate-600">
-                                    {course.user.image ? (
-                                        <Image src={course.user.image} alt={course.user.name || "Instructor"} width={40} height={40} />
-                                    ) : (
-                                        <User className="h-5 w-5" />
-                                    )}
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-white drop-shadow-sm">Created by <span className="text-primary hover:underline cursor-pointer font-bold">{course.user.name || "Instructor"}</span></p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -250,10 +234,6 @@ export default async function CourseDetailsPage({
                                     <li className="flex items-center gap-2">
                                         <Smartphone className="h-4 w-4" />
                                         Access on mobile and TV
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                        <Award className="h-4 w-4" />
-                                        Certificate of completion
                                     </li>
                                 </ul>
                             </div>

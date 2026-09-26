@@ -2,27 +2,18 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Loader2, 
-  Users, 
-  Award, 
-  IndianRupee, 
-  Globe, 
-  ArrowLeft, 
-  CheckCircle2, 
-  Sparkles,
-  Trophy,
-  Rocket,
+import {
+  Loader2,
+  Award,
+  ArrowLeft,
   ShieldCheck,
   X
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -35,44 +26,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
-import { getCurrencyConfig, formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 export const dynamic = "force-dynamic";
-
-// Benefits list will be localized inside the component - Author: Sanket
 
 export default function TeacherRegisterPage() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
   
-  const userCountry = (session?.user as any)?.country || "India";
-  const config = getCurrencyConfig(userCountry);
-  const s = config.symbol;
-  const rate = config.exchangeRate;
-
-  const benefits = [
-    {
-      title: "High Earnings",
-      description: `Earn up to ${s}${Math.round(4000 * rate)}/hour teaching what you love.`,
-      icon: IndianRupee,
-    },
-    {
-      title: "Global Reach",
-      description: "Connect with students from across the globe.",
-      icon: Globe,
-    },
-    {
-      title: "Total Flexibility",
-      description: "Set your own schedule and work from anywhere.",
-      icon: Rocket,
-    },
-    {
-      title: "Growth & Support",
-      description: "Access professional tools and marketing help.",
-      icon: Sparkles,
-    },
-  ];
-
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [selectedExpertise, setSelectedExpertise] = useState("");
@@ -80,7 +40,6 @@ export default function TeacherRegisterPage() {
     bio: "",
     expertiseAreas: [] as string[],
     languages: [] as string[],
-    hourlyRate: "",
   });
   const [metadata, setMetadata] = useState<{ expertise: { id: string, name: string }[], languages: { id: string, name: string }[] }>({ expertise: [], languages: [] });
   const [loadingMetadata, setLoadingMetadata] = useState(true);
@@ -88,8 +47,8 @@ export default function TeacherRegisterPage() {
   useEffect(() => {
     async function loadMetadata() {
       try {
-        const { getMetadata } = await import("@/app/actions/metadata");
-        const data = await getMetadata();
+        const { getTeacherSignupOptions } = await import("@/app/actions/metadata");
+        const data = await getTeacherSignupOptions();
         setMetadata(data);
       } catch (error) {
         console.error("Failed to load metadata:", error);
@@ -149,10 +108,9 @@ export default function TeacherRegisterPage() {
     e.preventDefault();
 
     const missingFields = [];
-    if (!formData.bio.trim()) missingFields.push("Bio");
+    if (formData.bio.trim().length < 10) missingFields.push("Bio (at least 10 characters)");
     if (formData.expertiseAreas.length === 0) missingFields.push("Expertise Areas");
     if (formData.languages.length === 0) missingFields.push("Languages");
-    if (!formData.hourlyRate) missingFields.push("Hourly Rate");
 
     if (missingFields.length > 0) {
       toast.error(`Please fill in: ${missingFields.join(", ")}`);
@@ -171,7 +129,6 @@ export default function TeacherRegisterPage() {
           bio: formData.bio,
           expertise: formData.expertiseAreas,
           languages: formData.languages,
-          hourlyRate: parseInt(formData.hourlyRate),
         }),
       });
 
@@ -206,89 +163,10 @@ export default function TeacherRegisterPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      {/* Left Wall - Hero Section */}
-      <div className="hidden lg:flex flex-col relative bg-zinc-950 overflow-hidden">
-        <Image
-          src="/images/registration/teacher-hero.png"
-          alt="Become a Teacher"
-          fill
-          className="object-cover opacity-60 mix-blend-luminosity grayscale hover:grayscale-0 transition-all duration-1000"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
-        
-        <div className="relative z-10 p-12 flex flex-col h-full">
-          <Link href="/" className="flex items-center gap-2 group w-fit">
-            <div className="p-2 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors">
-              <ArrowLeft className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-sm font-medium text-zinc-400 group-hover:text-white transition-colors">Back to Home</span>
-          </Link>
-
-          <div className="mt-auto max-w-xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <Badge className="mb-4 bg-primary/20 text-primary border-primary/20 hover:bg-primary/30 py-1 px-3">
-                Teacher Partnership Program
-              </Badge>
-              <h1 className="text-5xl font-bold text-white tracking-tight mb-6 leading-[1.1]">
-                Inspire the next generation of <span className="text-primary italic">global learners.</span>
-              </h1>
-              <p className="text-xl text-zinc-400 mb-12 leading-relaxed">
-                Join our elite community of educators and transform how the world learns languages.
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-2 gap-8">
-              {benefits.map((benefit, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + i * 0.1 }}
-                  className="flex gap-4"
-                >
-                  <div className="mt-1 p-2 bg-primary/10 rounded-lg shrink-0">
-                    <benefit.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-semibold mb-1">{benefit.title}</h3>
-                    <p className="text-xs text-zinc-500 leading-relaxed">{benefit.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            <div className="mt-16 flex items-center gap-8 border-t border-white/10 pt-8">
-              <div>
-                <p className="text-2xl font-bold text-white">50K+</p>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Active Students</p>
-              </div>
-              <div className="w-px h-8 bg-white/10" />
-              <div>
-                <p className="text-2xl font-bold text-white">{s}{Math.round(2000000 * rate)}+</p>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Teacher Earnings</p>
-              </div>
-              <div className="w-px h-8 bg-white/10" />
-              <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="size-8 rounded-full border-2 border-zinc-950 bg-zinc-800 flex items-center justify-center text-[10px] text-white overflow-hidden ring-2 ring-zinc-950">
-                    <Image src={`https://i.pravatar.cc/100?u=${i}`} alt="Avatar" width={32} height={32} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950">
       {/* Right Wall - Registration Form */}
-      <div className="flex flex-col bg-slate-50 dark:bg-zinc-950 overflow-y-auto">
-        <div className="lg:hidden p-4 border-b bg-background sticky top-0 z-50">
+      <div className="flex flex-col">
+        <div className="p-4 border-b bg-background sticky top-0 z-50">
            <Link href="/" className="flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm font-medium">Exit Registration</span>
@@ -297,9 +175,9 @@ export default function TeacherRegisterPage() {
 
         <div className="flex-1 px-6 py-12 lg:px-16 flex items-center justify-center">
           <div className="w-full max-w-xl">
-            <div className="mb-10 lg:hidden">
+            <div className="mb-10">
               <h1 className="text-3xl font-bold mb-2">Become a Teacher</h1>
-              <p className="text-muted-foreground">Join ExamSphere and start teaching today.</p>
+              <p className="text-muted-foreground">Tell us what you teach. Our team reviews every application before your Teacher Portal opens.</p>
             </div>
 
             <Card className="border-0 shadow-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
@@ -333,8 +211,8 @@ export default function TeacherRegisterPage() {
 
                   <div className="h-px bg-gradient-to-r from-transparent via-muted-foreground/10 to-transparent" />
 
-                  {/* Expertise & Details */}
-                  <div className="grid md:grid-cols-2 gap-8">
+                  {/* Expertise */}
+                  <div>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <Label className="text-base font-semibold">Expertise Areas</Label>
@@ -373,23 +251,6 @@ export default function TeacherRegisterPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <Label htmlFor="hourlyRate" className="text-base font-semibold">Hourly Rate ({s})</Label>
-                      <div className="relative">
-                        <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          id="hourlyRate"
-                          type="number"
-                          min={Math.round(100 * rate)}
-                          required
-                          value={formData.hourlyRate}
-                          onChange={(e) => setFormData(prev => ({ ...prev, hourlyRate: e.target.value }))}
-                          placeholder={Math.round(1000 * rate).toString()}
-                          className="pl-10 h-14 bg-slate-50/50 dark:bg-zinc-950/50 border-muted-foreground/10 rounded-xl focus-visible:ring-primary transition-all pr-4 text-lg font-medium"
-                        />
-                      </div>
-                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Avg: {s}{Math.round(500 * rate)} - {s}{Math.round(2500 * rate)} per hr</p>
-                    </div>
                   </div>
 
                   {/* Languages Section */}

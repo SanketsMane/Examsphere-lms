@@ -136,7 +136,7 @@ export function NavUser() {
                 <Tv2 />
                 Courses
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleNavigation(role === "admin" ? "/admin/settings" : "/dashboard/settings")}>
+              <DropdownMenuItem onClick={() => handleNavigation(role === "admin" ? "/admin/settings" : role === "teacher" ? "/teacher/settings" : "/dashboard/settings")}>
                 <IconSettings />
                 Settings & Profile
               </DropdownMenuItem>

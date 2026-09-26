@@ -41,6 +41,7 @@ model User {
   reviewsGiven                Review[]                  @relation("UserReviews")
   sessionBookings             SessionBooking[]          @relation("StudentBookings")
   teacherProfile              TeacherProfile?
+  studentProfile              StudentProfile?
   accounts                    Account[]
   recommendations             CourseRecommendation[]
   learningPathEnrollments     LearningPathEnrollment[]
@@ -88,6 +89,28 @@ model User {
   @@map("user")
 }
 
+// ExamSphere student details, collected on the Settings page and used for profile completion
+// (BUG-0007). Kept apart from User so auth-managed columns stay untouched.
+model StudentProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  targetProgram String? // JEE | NEET | Foundation | MBBS
+  currentClass  String? // "Class 6" … "Class 12", "12th Pass (Dropper)", "MBBS 1st Year" …
+  targetYear    Int? // Year of the target exam / MBBS professional exam
+  board         String? // CBSE | ICSE | State Board | IB | Other (school students)
+  institution   String? // School, coaching institute or medical college
+  city          String?
+  state         String?
+  contactPhone  String?
+  guardianName  String? // Parent/guardian, for school students
+  guardianPhone String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("student_profiles")
+}
+
 // AI Chat History Models - Author: Sanket
 model AiConversation {
   id        String      @id @default(uuid())
@@ -106,7 +129,7 @@ model AiMessage {
   id             String         @id @default(uuid())
   conversationId String
   role           String // "user" or "assistant"
-  content        String
+  content        String         @db.Text // Replies run far past VARCHAR(191); saving them failed every chat (BUG-0006)
   attachments    Json // URLs to uploaded files - Refactored for MySQL - Author: Sanket
   createdAt      DateTime       @default(now())
   conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

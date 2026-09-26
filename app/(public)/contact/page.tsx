@@ -8,8 +8,14 @@ import {
   ChevronRight,
   MessageSquare,
   GraduationCap,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Facebook,
+  Youtube,
+  Share2,
 } from "lucide-react";
-import { getSiteSettings } from "@/app/data/settings/get-site-settings";
+import { getContactDetails } from "@/app/data/settings/get-contact-details";
 import { PROGRAMS } from "@/app/(public)/_data/programs-content";
 import { ContactForm } from "./ContactForm";
 
@@ -20,24 +26,16 @@ export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
 };
 
-// Same fallbacks the footer uses, so both stay consistent until Site Settings are filled in.
-const FALLBACK = {
-  phone: "+91 00000 00000",
-  email: "support@examsphere.online",
-  address: "India",
-};
+const socialIcons = { instagram: Instagram, linkedin: Linkedin, x: Twitter, facebook: Facebook, youtube: Youtube };
 
 export default async function ContactPage() {
-  const settings = await getSiteSettings();
-
-  const phone = settings?.contactPhone?.trim() || FALLBACK.phone;
-  const email = settings?.contactEmail?.trim() || FALLBACK.email;
-  const address = settings?.contactAddress?.trim() || FALLBACK.address;
+  // Phone, address and social links come from Admin → Settings; unset ones are hidden (BUG-0002).
+  const { phone, email, address, socials } = await getContactDetails();
 
   const programs = PROGRAMS.map((p) => ({ slug: p.slug, label: p.navLabel }));
 
   const cards = [
-    {
+    phone && {
       icon: Phone,
       label: "Call us",
       value: phone,
@@ -51,14 +49,14 @@ export default async function ContactPage() {
       href: `mailto:${email}`,
       hint: "We reply within one working day",
     },
-    {
+    address && {
       icon: MapPin,
       label: "Visit us",
       value: address,
       href: null,
       hint: "Our office location",
     },
-  ];
+  ].filter((c) => !!c);
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,7 +87,7 @@ export default async function ContactPage() {
 
       {/* Contact cards */}
       <section className="max-w-[1240px] mx-auto px-6 pt-12 md:pt-14">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className={`grid grid-cols-1 gap-5 ${cards.length === 3 ? "sm:grid-cols-3" : cards.length === 2 ? "sm:grid-cols-2" : ""}`}>
           {cards.map((c) => {
             const Icon = c.icon;
             const inner = (
@@ -141,6 +139,37 @@ export default async function ContactPage() {
           </div>
 
           <aside className="flex flex-col gap-5 lg:sticky lg:top-24">
+            {socials.length > 0 && (
+              <div className="bg-card border border-border rounded-2xl p-6 shadow-[var(--shadow-es-sm)]">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="w-10 h-10 rounded-xl bg-bg-soft dark:bg-muted flex items-center justify-center text-navy-700 dark:text-blue-300">
+                    <Share2 className="h-[18px] w-[18px]" />
+                  </span>
+                  <h2 className="font-display font-extrabold text-lg text-navy-950 dark:text-white">
+                    Follow us
+                  </h2>
+                </div>
+                <ul className="space-y-1.5">
+                  {socials.map((s) => {
+                    const Icon = socialIcons[s.network];
+                    return (
+                      <li key={s.network}>
+                        <a
+                          href={s.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 text-sm font-semibold text-ink-700 dark:text-foreground hover:text-navy-900 dark:hover:text-white py-1.5 transition-colors"
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          {s.name}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
             <div className="bg-card border border-border rounded-2xl p-6 shadow-[var(--shadow-es-sm)]">
               <div className="flex items-center gap-3 mb-4">
                 <span className="w-10 h-10 rounded-xl bg-bg-soft dark:bg-muted flex items-center justify-center text-navy-700 dark:text-blue-300">

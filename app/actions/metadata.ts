@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/action-security";
+import { EXPERTISE_AREAS, TEACHING_LANGUAGES } from "@/lib/examsphere-taxonomy";
 
 // --- Expertise Actions ---
 
@@ -125,4 +126,28 @@ export async function getMetadata() {
         }),
     ]);
     return { expertise, languages };
+}
+
+// Options for the teacher signup form: the admin-managed lists, falling back to ExamSphere's
+// defaults when a list is empty or unreadable. Signup requires at least one of each, so an
+// empty list must never reach the form — it made registration impossible (BUG-0008).
+export async function getTeacherSignupOptions() {
+    const [expertise, languages] = await Promise.all([
+        prisma.expertise
+            .findMany({ orderBy: { name: "asc" }, where: { isActive: true }, select: { id: true, name: true } })
+            .catch((error) => {
+                console.error("Error loading expertise:", error);
+                return [];
+            }),
+        prisma.language
+            .findMany({ orderBy: { name: "asc" }, where: { isActive: true }, select: { id: true, name: true } })
+            .catch((error) => {
+                console.error("Error loading languages:", error);
+                return [];
+            }),
+    ]);
+    return {
+        expertise: expertise.length ? expertise : EXPERTISE_AREAS.map((name) => ({ id: name, name })),
+        languages: languages.length ? languages : TEACHING_LANGUAGES.map((name) => ({ id: name, name })),
+    };
 }
