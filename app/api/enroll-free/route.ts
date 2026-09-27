@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
             where: { id: courseId },
         });
 
-        if (!course) {
-            return NextResponse.json({ error: "Course not found" }, { status: 404 });
+        if (!course || course.status !== "Published") {
+            return NextResponse.json({ error: "This course is not available for enrollment" }, { status: 404 });
         }
 
         // --- Feature Gating: Subscription Enrollment Limit ---
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
         // Direct Access Mode: Enforce strict price check - author: Sanket
         if (course.price !== 0) {
-            return NextResponse.json({ error: "Course is not free" }, { status: 400 });
+            return NextResponse.json({ error: "This course is not free. Please purchase it to enroll." }, { status: 400 });
         }
 
         const existingEnrollment = await prisma.enrollment.findUnique({
@@ -49,16 +49,19 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        if (existingEnrollment) {
+        if (existingEnrollment?.status === "Active") {
             return NextResponse.json({ message: "Already enrolled" }, { status: 200 });
         }
 
-        const enrollment = await prisma.enrollment.create({
-            data: {
+        // A leftover Pending row (e.g. from when the course was paid) must not block enrollment.
+        await prisma.enrollment.upsert({
+            where: { userId_courseId: { userId: session.user.id, courseId } },
+            update: { amount: 0, status: "Active" },
+            create: {
                 userId: session.user.id,
                 courseId: courseId,
                 amount: 0,
-                status: "Active", // Directly active for free courses
+                status: "Active",
             },
         });
 
@@ -77,6 +80,6 @@ export async function POST(req: NextRequest) {
 
     } catch (error) {
         console.error("[ENROLL_FREE]", error);
-        return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+        return NextResponse.json({ error: "Could not enroll you right now. Please try again." }, { status: 500 });
     }
 }

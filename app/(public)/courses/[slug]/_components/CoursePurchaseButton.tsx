@@ -142,8 +142,8 @@ export const CoursePurchaseButton = ({
                         window.location.href = `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
                         return;
                     }
-                    const errorMsg = await response.text();
-                    throw new Error(errorMsg || "Could not enroll in this course");
+                    const body = await response.json().catch(() => null);
+                    throw new Error(body?.error || "Could not enroll in this course");
                 }
 
                 toast.success("Enrolled successfully! Redirecting...");
