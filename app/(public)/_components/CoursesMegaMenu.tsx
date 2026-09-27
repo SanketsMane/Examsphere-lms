@@ -39,7 +39,7 @@ export function CoursesMegaMenu() {
         className="flex items-center gap-1.5 px-4 py-2 rounded font-semibold text-[15px] text-ink-700 dark:text-foreground hover:text-navy-900 dark:hover:text-white transition-colors"
         aria-expanded={open}
       >
-        Courses
+        Programs
         <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
       </Link>
 
@@ -94,7 +94,7 @@ export function CoursesMobileGroup({ onNavigate }: { onNavigate?: () => void }) 
         onClick={() => setExpanded((e) => !e)}
         aria-expanded={expanded}
       >
-        Courses
+        Programs
         <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
       {expanded && (
