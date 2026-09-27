@@ -19,7 +19,7 @@ export function AuthHeroPanel({ heading }: { heading: React.ReactNode }) {
 
       <div className="relative z-10">
         <Link href="/" className="inline-flex items-center gap-2 mb-10">
-          <span className="text-2xl font-bold tracking-tight">EXAMSPHERE</span>
+          <span className="text-2xl font-bold tracking-tight">ExamSphere</span>
         </Link>
         <h1 className="font-display text-4xl font-extrabold tracking-tight leading-tight max-w-lg">
           {heading}
