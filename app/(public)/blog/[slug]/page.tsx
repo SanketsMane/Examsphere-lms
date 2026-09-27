@@ -108,7 +108,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <div className="font-semibold">{post.author.name}</div>
                 {post.author.teacherProfile && (
                   <div className="text-sm text-muted-foreground">
-                    Instructor • {post.author.teacherProfile.expertise?.slice(0, 2).join(", ")}
+                    Mentor • {((post.author.teacherProfile.expertise as string[] | null) ?? []).slice(0, 2).join(", ")}
                   </div>
                 )}
               </div>
@@ -177,7 +177,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 {post.author.teacherProfile?.expertise && (
                   <div className="flex flex-wrap gap-2">
                     <span className="text-sm font-medium text-muted-foreground">Expertise:</span>
-                    {post.author.teacherProfile.expertise.map((skill: any, index: number) => (
+                    {((post.author.teacherProfile.expertise as string[] | null) ?? []).map((skill, index) => (
                       <Badge key={index} variant="secondary" className="text-xs">
                         {skill}
                       </Badge>

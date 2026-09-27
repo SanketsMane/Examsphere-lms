@@ -29,6 +29,10 @@ export default async function TeacherProfilePage({ params }: PageProps) {
         return notFound();
     }
 
+    // expertise / languages are JSON string arrays in MySQL.
+    const expertise = (teacherProfile.expertise as string[] | null) ?? [];
+    const languages = (teacherProfile.languages as string[] | null) ?? [];
+
     // 2. Check current user (for booking)
     const session = await getSessionWithRole();
 
@@ -60,7 +64,7 @@ export default async function TeacherProfilePage({ params }: PageProps) {
                                         <CheckCircle2 className="text-green-500 w-6 h-6" />
                                     )}
                                 </div>
-                                <p className="text-xl text-primary font-medium mb-4">{teacherProfile.expertise.join(", ")}</p>
+                                <p className="text-xl text-primary font-medium mb-4">{expertise.join(", ")}</p>
                                 <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
                                     {teacherProfile.bio}
                                 </p>
@@ -72,7 +76,7 @@ export default async function TeacherProfilePage({ params }: PageProps) {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Globe className="w-4 h-4" />
-                                        <span>{teacherProfile.languages.join(", ") || "English"}</span>
+                                        <span>{languages.join(", ") || "English"}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Video className="w-4 h-4" />
@@ -98,7 +102,7 @@ export default async function TeacherProfilePage({ params }: PageProps) {
                     <section>
                         <h2 className="text-2xl font-bold mb-4">Expertise</h2>
                         <div className="flex flex-wrap gap-2">
-                            {teacherProfile.expertise.map(skill => (
+                            {expertise.map(skill => (
                                 <span key={skill} className="px-4 py-2 bg-secondary rounded-lg font-medium">
                                     {skill}
                                 </span>

@@ -30,6 +30,10 @@ export default async function TeacherProfilePage({ params }: Props) {
         notFound();
     }
 
+    // expertise / languages are JSON string arrays in MySQL.
+    const expertise = (teacher.expertise as string[] | null) ?? [];
+    const languages = (teacher.languages as string[] | null) ?? [];
+
     // availability is stored as { monday: ["09:00-10:00", …], … }; show nothing rather than a placeholder.
     const availability = Object.entries((teacher.availability ?? {}) as Record<string, unknown>)
         .filter((entry): entry is [string, string[]] => Array.isArray(entry[1]) && entry[1].length > 0)
@@ -58,7 +62,7 @@ export default async function TeacherProfilePage({ params }: Props) {
                             </div>
 
                             <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-1">{teacher.user.name}</h1>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{teacher.expertise[0] || "Mentor"}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{expertise[0] || "Mentor"}</p>
 
                             <div className="flex items-center justify-center gap-2 mb-6">
                                 {teacher.totalReviews > 0 && teacher.rating ? (
@@ -93,7 +97,7 @@ export default async function TeacherProfilePage({ params }: Props) {
                                             id: teacher.id,
                                             name: teacher.user.name || "Mentor",
                                             image: teacher.user.image ? constructS3Url(teacher.user.image) : "",
-                                            headline: teacher.expertise[0] || "ExamSphere Mentor",
+                                            headline: expertise[0] || "ExamSphere Mentor",
                                             hourlyRate: teacher.hourlyRate
                                         }}
                                     />
@@ -133,7 +137,7 @@ export default async function TeacherProfilePage({ params }: Props) {
                             <div className="mt-8">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Expertise</h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {teacher.expertise.map((skill) => (
+                                    {expertise.map((skill) => (
                                         <Badge key={skill} variant="secondary" className="px-3 py-1 text-sm bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                                             {skill}
                                         </Badge>
@@ -144,7 +148,7 @@ export default async function TeacherProfilePage({ params }: Props) {
                             <div className="mt-8">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Languages</h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {teacher.languages.map((lang) => (
+                                    {languages.map((lang) => (
                                         <span key={lang} className="text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 px-3 py-1 rounded-lg text-sm">
                                             {lang}
                                         </span>
