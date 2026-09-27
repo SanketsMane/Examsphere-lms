@@ -66,7 +66,7 @@ export async function redeemGiftCard(code: string) {
         if (!giftCard) return { error: "Invalid gift card code" };
         if (giftCard.isRedeemed) return { error: "Gift card already redeemed" };
 
-        const { creditToWallet } = await import("@/app/actions/wallet");
+        const { creditToWallet } = await import("@/lib/wallet-internal");
 
         await prisma.$transaction(async (tx) => {
             // 1. Mark as redeemed

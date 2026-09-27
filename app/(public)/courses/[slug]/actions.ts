@@ -218,7 +218,7 @@ export async function enrollInCourseWithWallet(courseId: string, couponCode?: st
 
             // Wallet Deduction
             if (finalPrice > 0) {
-                 const { deductFromWallet } = await import("@/app/actions/wallet");
+                 const { deductFromWallet } = await import("@/lib/wallet-internal");
                  await deductFromWallet(
                     user.id,
                     finalPrice,

@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
 
                     // 1b. Trigger Referral Reward (Author: Sanket)
                     try {
-                        const { rewardReferrer } = await import("@/app/actions/referrals");
+                        const { rewardReferrer } = await import("@/lib/wallet-internal");
                         await rewardReferrer(enrollment.userId);
                     } catch (e) {
                         console.error("Failed to trigger referral reward for enrollment", e);
@@ -379,7 +379,7 @@ export async function POST(req: NextRequest) {
 
                            // 3c. Trigger Referral Reward (Author: Sanket)
                            try {
-                               const { rewardReferrer } = await import("@/app/actions/referrals");
+                               const { rewardReferrer } = await import("@/lib/wallet-internal");
                                await rewardReferrer(booking.studentId);
                            } catch (e) {
                                console.error("Failed to trigger referral reward for session booking", e);
@@ -450,7 +450,7 @@ export async function POST(req: NextRequest) {
 
                     // 4c. Trigger Referral Reward (Author: Sanket)
                     try {
-                        const { rewardReferrer } = await import("@/app/actions/referrals");
+                        const { rewardReferrer } = await import("@/lib/wallet-internal");
                         await rewardReferrer(groupEnrollment.studentId);
                     } catch (e) {
                         console.error("Failed to trigger referral reward for group enrollment", e);

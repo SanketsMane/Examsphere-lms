@@ -230,7 +230,7 @@ export async function joinGroupClass(groupId: string, paymentMethod: "online" | 
                 
                 // Wallet Deduction (Atomic)
                 if (finalPrice > 0) {
-                     const { deductFromWallet } = await import("./wallet");
+                     const { deductFromWallet } = await import("@/lib/wallet-internal");
                      await deductFromWallet(
                         (user as any).id,
                         finalPrice,

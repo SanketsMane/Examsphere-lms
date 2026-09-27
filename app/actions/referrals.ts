@@ -2,7 +2,6 @@
 
 import { prisma } from "@/lib/db";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
-import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 
 /**
@@ -69,53 +68,5 @@ export async function linkReferral(referralCode: string, refereeId: string) {
     } catch (error) {
         logger.error("Link Referral Error", { error });
         return { error: "Failed to link referral" };
-    }
-}
-
-/**
- * Marks referral as rewarded - Protected (Internal use only)
- * Author: Sanket
- */
-export async function rewardReferrer(refereeId: string) {
-    try {
-        const referral = await prisma.referral.findUnique({
-            where: { refereeId },
-            include: { referrer: true }
-        });
-
-        if (!referral || referral.status === "completed") return;
-
-        const { creditToWallet } = await import("@/app/actions/wallet");
-
-        // Perform in transaction for atomicity
-        await prisma.$transaction(async (tx) => {
-            // Award $10 credit to referrer - author: Sanket
-            await tx.referralReward.create({
-                data: {
-                    userId: referral.referrerId,
-                    amount: 10,
-                    type: "CREDITS",
-                }
-            });
-
-            // Standardized wallet credit with audit trail - author: Sanket
-            await creditToWallet(
-                referral.referrerId,
-                10,
-                "ADMIN_CREDIT", 
-                `Referral Reward for user: ${referral.refereeId}`,
-                { refereeId: referral.refereeId, referralId: referral.id },
-                tx as any
-            );
-
-            await tx.referral.update({
-                where: { id: referral.id },
-                data: { status: "completed" }
-            });
-        });
-
-        logger.info("Referral reward issued", { referrerId: referral.referrerId, refereeId });
-    } catch (error) {
-        logger.error("Reward Referrer Error", { error });
     }
 }

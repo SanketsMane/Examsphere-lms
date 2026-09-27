@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/app/data/user/require-user";
 import { prisma } from "@/lib/db";
-import { deductFromWallet } from "@/app/actions/wallet";
+import { deductFromWallet } from "@/lib/wallet-internal";
 import { paiseToRupees } from "@/lib/money";
 
 // ... imports

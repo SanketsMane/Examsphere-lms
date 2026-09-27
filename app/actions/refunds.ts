@@ -86,7 +86,7 @@ export async function updateRefundStatus(
     }
 
     try {
-        const { creditToWallet } = await import("@/app/actions/wallet");
+        const { creditToWallet } = await import("@/lib/wallet-internal");
 
         const result = await prisma.$transaction(async (tx) => {
             // 1. Fetch Refund with User Data
