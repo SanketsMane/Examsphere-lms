@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma as db } from "@/lib/db";
 import { headers } from "next/headers";
 import { differenceInHours } from "date-fns";
+import { creditToWallet } from "@/lib/wallet-internal";
+import { formatMoney } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -78,55 +80,92 @@ export async function POST(
       refundPercentage = 0; // No refund
     }
 
-    const refundAmount = Math.round(booking.amount * refundPercentage);
+    const paidViaRazorpay = Boolean(booking.razorpayPaymentId);
 
-    // Process refund via Razorpay if applicable (Author: Sanket)
-    let razorpayRefundId = null;
-    if (refundAmount > 0 && booking.razorpayPaymentId) {
+    // Wallet bookings have been written in both paise and rupees over time, so
+    // refund from the actual wallet debit rather than from booking.amount.
+    let walletRefundRupees = 0;
+    if (!paidViaRazorpay && refundPercentage > 0 && booking.amount > 0) {
+      const debit = await findWalletDebitForBooking(userId, booking.sessionId, booking.createdAt);
+      if (debit) {
+        walletRefundRupees = Math.round(Math.abs(debit.amount) * refundPercentage);
+      }
+    }
+
+    // refundAmount stays in booking.amount's unit (what the dashboards display).
+    const refundAmount = paidViaRazorpay || walletRefundRupees > 0
+      ? Math.round(booking.amount * refundPercentage)
+      : 0;
+    const refundLabel = paidViaRazorpay
+      ? formatMoney(refundAmount / 100, { showDecimals: true })
+      : formatMoney(walletRefundRupees);
+
+    // Claim the booking first so a double-click can't refund twice.
+    const claimed = await db.sessionBooking.updateMany({
+      where: { id: booking.id, status: { notIn: ['cancelled', 'refunded'] } },
+      data: { status: 'cancelled', cancelledAt: new Date(), cancellationReason: reason },
+    });
+    if (claimed.count !== 1) {
+      return NextResponse.json({ error: "Booking already cancelled" }, { status: 400 });
+    }
+
+    if (refundAmount > 0 && paidViaRazorpay) {
       try {
         const { getRazorpayInstance } = await import("@/lib/razorpay");
         const razorpay = await getRazorpayInstance();
-        const refund = await razorpay.payments.refund(booking.razorpayPaymentId, {
+        await razorpay.payments.refund(booking.razorpayPaymentId!, {
           amount: refundAmount,
           notes: {
             reason: reason || 'requested_by_customer',
             bookingId: booking.id
           }
         });
-        razorpayRefundId = refund.id;
       } catch (rzpError: any) {
         console.error('Razorpay refund error:', rzpError);
+        // Undo the claim: a booking must never read as cancelled/refunded
+        // when the money has not gone back.
+        await db.sessionBooking.update({
+          where: { id: booking.id },
+          data: { status: booking.status, cancelledAt: null, cancellationReason: null },
+        });
         return NextResponse.json(
-          { 
-            error: "Refund processing failed via Razorpay. Please contact support.",
-            details: rzpError.message 
-          },
+          { error: "Refund processing failed via Razorpay. Your booking was not cancelled. Please contact support." },
           { status: 500 }
         );
       }
     }
 
-    // Update booking
-    const cancelledBooking = await db.sessionBooking.update({
-      where: { id: booking.id },
-      data: {
-        status: refundAmount > 0 ? 'refunded' : 'cancelled',
-        cancelledAt: new Date(),
-        cancellationReason: reason,
-        refundAmount: refundAmount,
-        refundedAt: refundAmount > 0 ? new Date() : null
-      }
-    });
+    await db.$transaction(async (tx) => {
+      await tx.sessionBooking.update({
+        where: { id: booking.id },
+        data: {
+          status: refundAmount > 0 ? 'refunded' : 'cancelled',
+          refundAmount: refundAmount,
+          refundedAt: refundAmount > 0 ? new Date() : null
+        }
+      });
 
-    // Update session status (Assuming 1-on-1 for now, as per existing logic)
-    await db.liveSession.update({
-      where: { id: booking.sessionId },
-      data: {
-        status: 'cancelled',
-        cancelledBy: 'student',
-        cancellationReason: reason,
-        refundAmount: refundAmount
+      if (walletRefundRupees > 0) {
+        await creditToWallet(
+          userId,
+          walletRefundRupees,
+          "REFUND",
+          `Refund for cancelled session: ${booking.session.title}`,
+          { bookingId: booking.id, sessionId: booking.sessionId, refundPercentage },
+          tx
+        );
       }
+
+      // Update session status (Assuming 1-on-1 for now, as per existing logic)
+      await tx.liveSession.update({
+        where: { id: booking.sessionId },
+        data: {
+          status: 'cancelled',
+          cancelledBy: 'student',
+          cancellationReason: reason,
+          refundAmount: refundAmount
+        }
+      });
     });
 
     // Handle Commission Reversal (Negative Commission)
@@ -169,7 +208,7 @@ export async function POST(
             data: {
               userId: booking.session.teacher.userId,
               title: 'Commission Reversal - Insufficient Balance',
-              message: `A refund of $${(refundAmount / 100).toFixed(2)} requires commission reversal, but your available balance is insufficient. This will be deducted from future earnings.`,
+              message: `A refund of ${refundLabel} requires commission reversal, but your available balance is insufficient. This will be deducted from future earnings.`,
               type: 'Payment'
             }
           });
@@ -202,7 +241,7 @@ export async function POST(
       sessionDate: sessionDateStr,
       reason: reason || 'Requested by customer',
       introMessage: "Your booking cancellation has been processed successfully.",
-      refundAmount: (refundAmount / 100).toFixed(2)
+      refundAmount: refundLabel
     });
 
     // To Teacher
@@ -217,7 +256,7 @@ export async function POST(
         sessionDate: sessionDateStr,
         reason: reason || 'Student cancelled the session',
         introMessage: `Student ${session.user.name} has cancelled their booking for your session.`,
-        refundAmount: (refundAmount / 100).toFixed(2)
+        refundAmount: refundLabel
       });
     }
 
@@ -229,8 +268,30 @@ export async function POST(
   } catch (error: any) {
     console.error('Cancellation error:', error);
     return NextResponse.json(
-      { error: error.message || "Failed to cancel booking" },
+      { error: "Could not cancel the booking. Please try again or contact support." },
       { status: 500 }
     );
   }
+}
+
+async function findWalletDebitForBooking(userId: string, sessionId: string, bookedAt: Date) {
+  const wallet = await db.wallet.findUnique({ where: { userId }, select: { id: true } });
+  if (!wallet) return null;
+
+  const debits = await db.walletTransaction.findMany({
+    where: {
+      walletId: wallet.id,
+      type: "SESSION_BOOKING",
+      amount: { lt: 0 },
+      createdAt: { gte: new Date(bookedAt.getTime() - 5 * 60_000), lte: new Date(bookedAt.getTime() + 5 * 60_000) },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Prefer the debit tagged with this session; the older booking action only
+  // tagged the teacher, so fall back to the debit made alongside the booking.
+  return (
+    debits.find((d) => (d.metadata as any)?.sessionId === sessionId) ??
+    (debits.length === 1 ? debits[0] : null)
+  );
 }
