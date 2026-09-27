@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Find Expert Tutors - EXAMSPHERE",
-    description: "Connect with verified tutors for personalized 1-on-1 learning sessions. Master any subject with expert guidance.",
+    title: "Find a Mentor | ExamSphere",
+    description: "Book 1-on-1 sessions with ExamSphere-approved mentors for JEE, NEET, Foundation (Class 6–10) and MBBS.",
 };
 
 export default async function FindTeacherPage() {
@@ -29,12 +29,13 @@ export default async function FindTeacherPage() {
             isApproved: true
         },
         include: {
+            // Only what the public card shows — never the whole user row (email, phone…).
             user: {
-                include: {
-                    teacherProfile: true, // Redundant but harmless, explicit
+                select: {
+                    name: true,
+                    image: true,
                     subscription: {
-                         where: { status: "active" },
-                         include: { plan: true }
+                        select: { status: true, plan: { select: { metadata: true } } }
                     }
                 }
             }
@@ -48,7 +49,7 @@ export default async function FindTeacherPage() {
             status: "Scheduled",
             scheduledAt: { gt: new Date() } // Only future classes
         },
-        include: { teacher: { include: { user: true } } },
+        include: { teacher: { include: { user: { select: { name: true, image: true } } } } },
         orderBy: { scheduledAt: 'asc' }
     });
 
@@ -56,25 +57,25 @@ export default async function FindTeacherPage() {
 
     const formattedTeachers = teachers.map(t => ({
         id: t.id,
-        name: t.user.name || "Instructor",
-        image: constructS3Url(t.user.image || "") || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.user.name || "Instructor")}&background=random&color=fff&size=128`,
-        headline: t.bio ? t.bio.substring(0, 50) + "..." : "Expert Instructor",
-        rating: t.rating || 5.0,
+        name: t.user.name || "Mentor",
+        image: constructS3Url(t.user.image || "") || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.user.name || "Mentor")}&background=random&color=fff&size=128`,
+        headline: t.bio ? t.bio.substring(0, 50) + "..." : "ExamSphere Mentor",
+        // No reviews yet means no rating — don't invent a 5.0.
+        rating: t.rating || 0,
         reviewCount: t.totalReviews,
         hourlyRate: t.hourlyRate || 0,
         teaches: t.expertise,
         speaks: t.languages,
         description: t.bio || "No description available.",
-        // @ts-ignore
-        country: t.user.country || "Global",
-        // @ts-ignore
-        gender: t.user.gender || "Not Specified",
+        country: "",
+        gender: "",
         experience: t.experience || 0,
         isVerified: t.isVerified,
         availability: t.availability || {},
         // Internal sorting flags (not sent to client usually, but helpful if we used client side sort)
         // We will sort the array here.
-        searchBoost: (t.user as any).subscription?.plan?.metadata?.searchBoost === true
+        searchBoost: t.user.subscription?.status === "active" &&
+            (t.user.subscription.plan?.metadata as any)?.searchBoost === true
     }));
 
     // Sort: Boosted first, then by rating, then by review count
