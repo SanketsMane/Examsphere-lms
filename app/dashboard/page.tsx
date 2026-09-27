@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 import { getEnrolledCourses } from "../data/user/get-enrolled-courses";
 import { CourseProgressCard } from "./_components/CourseProgressCard";
 import { FreeClassWidget } from "./_components/FreeClassWidget";
-import { ActivityFeed } from "./_components/ActivityFeed";
+import { ActivityFeed, buildActivities } from "./_components/ActivityFeed";
 import { ChartAreaInteractive } from "@/components/sidebar/chart-area-interactive";
 import { getStudentSchedule } from "../data/student/get-student-schedule";
 import { PageHeader, StatCard, Panel, ProgressBar } from "@/components/dashboard/es/dashboard-kit";
@@ -31,6 +31,9 @@ export default async function DashboardPage() {
   const scheduleItems = await getStudentSchedule(userId);
   const freeUsage = await prisma.freeClassUsage.findUnique({ where: { studentId: userId } });
   const studentProfile = await prisma.studentProfile.findUnique({ where: { userId } });
+  // Free trials can only be redeemed with an approved mentor, so hide the widget until one exists
+  const approvedTeachers = await prisma.teacherProfile.count({ where: { isApproved: true, isVerified: true } });
+  const hasActivity = buildActivities(analytics.recentActivity).length > 0;
 
   const firstName = session.user.name?.split(" ")[0] || "there";
 
@@ -104,9 +107,11 @@ export default async function DashboardPage() {
             )}
           </Panel>
 
-          <Panel title="Recent Activity" icon={Activity}>
-            <ActivityFeed activities={analytics.recentActivity} />
-          </Panel>
+          {hasActivity && (
+            <Panel title="Recent Activity" icon={Activity}>
+              <ActivityFeed activities={analytics.recentActivity} />
+            </Panel>
+          )}
 
           <Panel title="Learning Consistency" icon={LineChart} bodyClassName="p-2 sm:p-4">
             <ChartAreaInteractive data={analytics.activityData} dataKey="lessons" label="Lessons Completed" color="#FF7A1A" />
@@ -141,7 +146,7 @@ export default async function DashboardPage() {
             )}
           </Panel>
 
-          <FreeClassWidget usage={freeUsage} />
+          {approvedTeachers > 0 && <FreeClassWidget usage={freeUsage} />}
 
           <ScheduleWidget items={scheduleItems} />
         </div>

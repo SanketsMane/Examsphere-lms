@@ -40,13 +40,16 @@ export function NavUser() {
     return null;
   }
 
-  const role = session?.user.role;
+  const role = (session?.user as { role?: string | null } | undefined)?.role;
+  const rawImage = session?.user.image?.trim();
+  // Fall back to initials rather than sending the user's email to a third-party avatar service
+  const avatarSrc = rawImage
+    ? (rawImage.startsWith("http") ? rawImage : constructS3Url(rawImage))
+    : undefined;
   const dashboardLink = role === "admin" ? "/admin" : role === "teacher" ? "/teacher" : "/dashboard";
   const coursesLink = role === "admin" ? "/admin/courses" : role === "teacher" ? "/teacher/courses" : "/dashboard/courses";
 
-  // Navigation handler - Author: Sanket
   const handleNavigation = (path: string) => {
-    console.log("Navigating to:", path);
     router.push(path);
   };
 
@@ -60,14 +63,7 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg ">
-                <AvatarImage
-                  src={
-                    session?.user.image && session.user.image.trim() !== ""
-                      ? (session.user.image.startsWith('http') ? session.user.image : constructS3Url(session.user.image))
-                      : `https://avatar.vercel.sh/${session?.user.email}`
-                  }
-                  alt={session?.user.name}
-                />
+                <AvatarImage src={avatarSrc} alt={session?.user.name} />
                 <AvatarFallback className="rounded-lg">
                   {session?.user.name && session.user.name.length > 0
                     ? session.user.name.charAt(0).toUpperCase()
@@ -96,14 +92,7 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage
-                    src={
-                      session?.user.image && session.user.image.trim() !== ""
-                        ? (session.user.image.startsWith('http') ? session.user.image : constructS3Url(session.user.image))
-                        : `https://avatar.vercel.sh/${session?.user.email}`
-                    }
-                    alt={session?.user.name}
-                  />
+                  <AvatarImage src={avatarSrc} alt={session?.user.name} />
                   <AvatarFallback className="rounded-lg">
                     {session?.user.name && session.user.name.length > 0
                       ? session.user.name.charAt(0).toUpperCase()

@@ -106,12 +106,12 @@ export function MobileNavbar() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Link href="/sign-in">
+                    <Link href="/login">
                       <Button className="w-full" onClick={() => setIsOpen(false)}>
                         Sign In
                       </Button>
                     </Link>
-                    <Link href="/register">
+                    <Link href="/login">
                       <Button variant="outline" className="w-full" onClick={() => setIsOpen(false)}>
                         Register
                       </Button>
@@ -177,7 +177,7 @@ export function MobileNavbar() {
                     {/* User Actions */}
                     <div className="space-y-1">
                       <Link
-                        href={session.user.role === "teacher" ? "/teacher/profile" : "/dashboard/settings"}
+                        href={(session.user as { role?: string | null }).role === "teacher" ? "/teacher/profile" : "/dashboard/settings"}
                         onClick={() => setIsOpen(false)}
                         className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
                       >
@@ -185,7 +185,7 @@ export function MobileNavbar() {
                         <span>Profile</span>
                       </Link>
                       <Link
-                        href="/settings"
+                        href={(session.user as { role?: string | null }).role === "teacher" ? "/teacher/settings" : "/dashboard/settings"}
                         onClick={() => setIsOpen(false)}
                         className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
                       >
@@ -235,14 +235,16 @@ export function MobileBottomNavigation() {
 
   if (!session) return null;
 
+  const role = (session.user as { role?: string | null }).role;
+
   const bottomNavItems = [
     { name: "Home", href: "/dashboard", icon: Home },
-    { name: "Courses", href: "/courses", icon: BookOpen },
+    { name: "Courses", href: role === "teacher" ? "/teacher/courses" : "/dashboard/browse", icon: BookOpen },
     { name: "Sessions", href: "/dashboard/sessions", icon: Video },
     { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
     {
       name: "Profile",
-      href: session.user.role === "teacher" ? "/teacher/profile" : "/dashboard/settings",
+      href: role === "teacher" ? "/teacher/profile" : "/dashboard/settings",
       icon: User
     },
   ];

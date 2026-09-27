@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { PlusCircle } from "lucide-react";
+import { IssueStatusBadge } from "./_components/issue-status-badge";
 
 export default async function IssuesPage() {
     const session = await auth.api.getSession({
@@ -22,23 +23,23 @@ export default async function IssuesPage() {
     });
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">My Issues</h1>
-                    <p className="text-muted-foreground">Track your reported issues and support tickets.</p>
+                    <h1 className="text-3xl font-bold">Support Tickets</h1>
+                    <p className="text-muted-foreground">Raise a ticket and track its status here.</p>
                 </div>
-                <Link href="/dashboard/issues/new">
-                    <Button>
+                <Button asChild>
+                    <Link href="/dashboard/issues/new">
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Report Issue
-                    </Button>
-                </Link>
+                        New Ticket
+                    </Link>
+                </Button>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>History</CardTitle>
+                    <CardTitle>Your tickets</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -55,20 +56,24 @@ export default async function IssuesPage() {
                             {issues.map(issue => (
                                 <TableRow key={issue.id}>
                                     <TableCell>{formatDate(issue.createdAt)}</TableCell>
-                                    <TableCell className="font-medium">{issue.subject}</TableCell>
+                                    <TableCell className="font-medium">
+                                        <Link href={`/dashboard/issues/${issue.id}`} className="hover:underline">
+                                            {issue.subject}
+                                        </Link>
+                                    </TableCell>
                                     <TableCell>{issue.category}</TableCell>
                                     <TableCell>
                                         <Badge variant="outline">{issue.priority}</Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <StatusBadge status={issue.status} />
+                                        <IssueStatusBadge status={issue.status} />
                                     </TableCell>
                                 </TableRow>
                             ))}
                             {issues.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                                        No issues found.
+                                        No support tickets yet.
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -78,15 +83,4 @@ export default async function IssuesPage() {
             </Card>
         </div>
     );
-}
-
-function StatusBadge({ status }: { status: string }) {
-    const styles: Record<string, string> = {
-        Open: "bg-blue-100 text-blue-800",
-        InProgress: "bg-yellow-100 text-yellow-800",
-        Resolved: "bg-green-100 text-green-800",
-        Closed: "bg-gray-100 text-gray-800",
-        Escalated: "bg-red-100 text-red-800",
-    };
-    return <Badge variant="secondary" className={styles[status]}>{status}</Badge>;
 }

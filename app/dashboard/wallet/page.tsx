@@ -3,19 +3,26 @@ import { getWallet, getTransactionHistory } from "@/app/actions/wallet";
 import { getSiteSettings } from "@/app/actions/settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, Plus, ArrowUpRight, ArrowDownRight, RefreshCw } from "lucide-react";
-import { formatPriceSimple, formatPrice } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { Wallet, Plus, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
+import { formatMoney } from "@/lib/money"; // wallet amounts are whole rupees
 import { RechargeDialog } from "./_components/RechargeDialog";
+import { RefreshButton } from "./_components/RefreshButton";
 import { Badge } from "@/components/ui/badge";
-import { Suspense } from "react";
+import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function WalletPage() {
     const user = await requireUser();
+    if (!user) return null;
     const wallet = await getWallet(user.id);
     const transactions = await getTransactionHistory(50);
     const settings = await getSiteSettings();
+    // Same check getRazorpayInstance() makes; without keys a top-up can only fail
+    const gateway = await prisma.siteSettings.findFirst({
+        select: { razorpayKeyId: true, razorpayKeySecret: true },
+    });
+    const canTopUp = Boolean(gateway?.razorpayKeyId && gateway?.razorpayKeySecret);
     const userCountry = (user as any).country || "India";
 
     return (
@@ -35,25 +42,34 @@ export default async function WalletPage() {
             <Card className="mb-8 bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-none shadow-lg">
                 <CardHeader>
                     <CardDescription className="text-blue-100">Available Balance</CardDescription>
-                    <CardTitle className="text-5xl font-bold">{formatPriceSimple(wallet.balance, userCountry)}</CardTitle>
+                    <CardTitle className="text-5xl font-bold">{formatMoney(wallet.balance)}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex gap-3">
-                        <RechargeDialog 
-                            minRecharge={settings?.minWalletRecharge ?? undefined} 
-                            currencyCode={settings?.currencyCode}
-                            userCountry={userCountry}
-                        >
-                            <Button className="bg-white text-blue-600 hover:bg-blue-50">
+                    <div className="flex flex-wrap gap-3">
+                        {canTopUp ? (
+                            <RechargeDialog
+                                minRecharge={settings?.minWalletRecharge ?? undefined}
+                                currencyCode={settings?.currencyCode}
+                                userCountry={userCountry}
+                            >
+                                <Button className="bg-white text-blue-600 hover:bg-blue-50">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Money
+                                </Button>
+                            </RechargeDialog>
+                        ) : (
+                            <Button className="bg-white text-blue-600" disabled>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Money
                             </Button>
-                        </RechargeDialog>
-                        <Button variant="outline" className="border-white text-white hover:bg-white/10">
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Refresh
-                        </Button>
+                        )}
+                        <RefreshButton />
                     </div>
+                    {!canTopUp && (
+                        <p className="mt-3 text-sm text-blue-100">
+                            Online top-up is not available yet.
+                        </p>
+                    )}
                 </CardContent>
             </Card>
 
@@ -68,11 +84,15 @@ export default async function WalletPage() {
                         <div className="text-center py-12 text-muted-foreground">
                             <Wallet className="h-16 w-16 mx-auto mb-4 opacity-20" />
                             <p>No transactions yet</p>
-                            <p className="text-sm">Add money to your wallet to get started</p>
+                            {canTopUp && <p className="text-sm">Add money to your wallet to get started</p>}
                         </div>
                     ) : (
                         <div className="space-y-3">
                             {transactions.map((txn) => {
+                                // Recharges are written before payment and only credited by the
+                                // gateway webhook, so an unconfirmed one hasn't changed the balance
+                                const txnStatus = (txn.metadata as { status?: string } | null)?.status;
+                                const isPending = txn.type === "RECHARGE" && (txnStatus === "pending" || txnStatus === "failed");
                                 const isCredit = txn.amount > 0;
                                 const typeLabels: Record<string, string> = {
                                     RECHARGE: "Wallet Recharge",
@@ -90,8 +110,10 @@ export default async function WalletPage() {
                                         className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className={`p-2 rounded-full ${isCredit ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                                {isCredit ? (
+                                            <div className={`p-2 rounded-full ${isPending ? 'bg-muted text-muted-foreground' : isCredit ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                {isPending ? (
+                                                    <Clock className="h-5 w-5" />
+                                                ) : isCredit ? (
                                                     <ArrowDownRight className="h-5 w-5" />
                                                 ) : (
                                                     <ArrowUpRight className="h-5 w-5" />
@@ -101,17 +123,30 @@ export default async function WalletPage() {
                                                 <p className="font-semibold">{typeLabels[txn.type] || txn.type}</p>
                                                 <p className="text-sm text-muted-foreground">{txn.description}</p>
                                                 <p className="text-xs text-muted-foreground mt-1">
-                                                    {new Date(txn.createdAt).toLocaleString()}
+                                                    {new Date(txn.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`text-lg font-bold ${isCredit ? 'text-green-600' : 'text-red-600'}`}>
-                                                {isCredit ? '+' : ''}{formatPriceSimple(Math.abs(txn.amount), userCountry)}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Balance: {formatPriceSimple(txn.balanceAfter, userCountry)}
-                                            </p>
+                                            {isPending ? (
+                                                <>
+                                                    <p className="text-lg font-bold text-muted-foreground">
+                                                        {formatMoney(Math.abs(txn.amount))}
+                                                    </p>
+                                                    <Badge variant="secondary">
+                                                        {txnStatus === "failed" ? "Failed" : "Pending"}
+                                                    </Badge>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <p className={`text-lg font-bold ${isCredit ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {isCredit ? '+' : '-'}{formatMoney(Math.abs(txn.amount))}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Balance: {formatMoney(txn.balanceAfter)}
+                                                    </p>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 );

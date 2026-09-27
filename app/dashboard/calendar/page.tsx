@@ -5,19 +5,30 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarIcon, Clock, User, Video, BookOpen, Users } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
 
 export const dynamic = "force-dynamic";
+
+// Server renders in UTC on prod; students are in India
+const IST = "Asia/Kolkata";
+const formatIstDate = (d: Date) =>
+  d.toLocaleDateString("en-IN", { timeZone: IST, weekday: "short", day: "numeric", month: "long", year: "numeric" });
+const formatIstTime = (d: Date) =>
+  d.toLocaleTimeString("en-IN", { timeZone: IST, hour: "numeric", minute: "2-digit", hour12: true });
 
 async function getUpcomingSessions(userId: string) {
   const now = new Date();
   
   const sessions = await prisma.liveSession.findMany({
     where: {
-      studentId: userId,
       scheduledAt: {
         gte: now
-      }
+      },
+      status: { not: "cancelled" },
+      // 1:1 sessions set studentId; group sessions only have a booking row
+      OR: [
+        { studentId: userId },
+        { bookings: { some: { studentId: userId, status: "confirmed" } } }
+      ]
     },
     include: {
       teacher: {
@@ -91,6 +102,7 @@ async function getGroupClasses(userId: string) {
 
 export default async function DashboardCalendarPage() {
   const user = await requireUser();
+  if (!user) return null;
   const [upcomingSessions, groupClasses] = await Promise.all([
     getUpcomingSessions(user.id),
     getGroupClasses(user.id)
@@ -108,16 +120,11 @@ export default async function DashboardCalendarPage() {
           <div>
             <h2 className="text-2xl font-bold mb-2">No Upcoming Sessions</h2>
             <p className="text-muted-foreground mb-6">
-              You don't have any scheduled live sessions or group classes. Book a session to get started.
+              Live classes will appear here once scheduled.
             </p>
-            <div className="space-x-4">
-              <Button asChild>
-                <Link href="/live-sessions">Book Live Session</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/marketplace">Browse Group Classes</Link>
-              </Button>
-            </div>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/sessions">Go to Live Sessions</Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -164,14 +171,14 @@ export default async function DashboardCalendarPage() {
                       <div className="flex items-center gap-2">
                         <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {format(new Date(session.scheduledAt), 'PPP')}
+                          {formatIstDate(new Date(session.scheduledAt))}
                         </span>
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {format(new Date(session.scheduledAt), 'p')} • {session.duration} min
+                          {formatIstTime(new Date(session.scheduledAt))} IST • {session.duration} min
                         </span>
                       </div>
                       
@@ -199,7 +206,7 @@ export default async function DashboardCalendarPage() {
                         </Button>
                       )}
                       <Button size="sm" variant="outline" asChild>
-                        <Link href={`/dashboard/sessions/${session.id}`}>
+                        <Link href="/dashboard/sessions">
                           View Details
                         </Link>
                       </Button>
@@ -242,14 +249,14 @@ export default async function DashboardCalendarPage() {
                         <div className="flex items-center gap-2">
                           <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {format(new Date(classItem.scheduledAt), 'PPP')}
+                            {formatIstDate(new Date(classItem.scheduledAt))}
                           </span>
                         </div>
                         
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            {format(new Date(classItem.scheduledAt), 'p')} • {classItem.duration} min
+                            {formatIstTime(new Date(classItem.scheduledAt))} IST • {classItem.duration} min
                           </span>
                         </div>
                         
@@ -286,7 +293,7 @@ export default async function DashboardCalendarPage() {
                           </Button>
                         )}
                         <Button size="sm" variant="outline" asChild>
-                          <Link href={`/marketplace/classes/${classItem.id}`}>
+                          <Link href="/dashboard/groups">
                             View Details
                           </Link>
                         </Button>

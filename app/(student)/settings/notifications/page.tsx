@@ -1,14 +1,6 @@
-import NotificationSettings from "@/components/notifications/NotificationSettings";
+import { redirect } from "next/navigation";
 
-/**
- * Settings - Notifications Page
- * Author: Sanket
- */
-
-export default function NotificationsPage() {
-    return (
-        <div className="max-w-3xl mx-auto py-8 px-4">
-            <NotificationSettings />
-        </div>
-    );
+// Legacy path outside the portal layout; notification settings live in-portal.
+export default function NotificationSettingsRedirect() {
+  redirect("/dashboard/settings/notifications");
 }

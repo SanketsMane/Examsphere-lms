@@ -41,8 +41,9 @@ export async function getStudentSchedule(userId: string) {
     return sessions.map(session => ({
         id: session.id,
         title: session.title,
-        time: session.scheduledAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        date: session.scheduledAt.toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        // Rendered on the server (UTC on prod), so pin to IST explicitly
+        time: session.scheduledAt.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit", hour12: true }),
+        date: session.scheduledAt.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", day: "numeric" }),
         type: "class" as const,
         user: session.teacher.user.name || "Instructor",
         image: session.teacher.user.image || undefined,

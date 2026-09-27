@@ -14,6 +14,10 @@ const MESSAGE_TYPES = {
     TYPING_STOP: 'typing_stop'
 };
 
+const BASE_RECONNECT_DELAY_MS = 3000;
+const MAX_RECONNECT_DELAY_MS = 60000;
+const MAX_RECONNECT_ATTEMPTS = 8;
+
 export const useChatWebSocket = () => {
     const { data: session } = useAuth();
     const [isConnected, setIsConnected] = useState(false);
@@ -23,29 +27,36 @@ export const useChatWebSocket = () => {
     const [typingUsers, setTypingUsers] = useState<Record<string, string[]>>({}); // { convId: [userIds] }
 
     const wsRef = useRef<WebSocket | null>(null);
+    const unmountedRef = useRef(false);
+    const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const attemptsRef = useRef(0);
 
     // Event listeners
     const onMessageReceivedRef = useRef<((message: any) => void) | null>(null);
     const onReadReceiptReceivedRef = useRef<((receipt: any) => void) | null>(null);
 
+    const userId = session?.user?.id;
+
     const connect = useCallback(() => {
-        /**
-         * Establishes WebSocket connection with dynamic host fallback for production.
-         * Author: Sanket
-         */
-        if (!session?.user) return;
+        if (!session?.user || unmountedRef.current) return;
+
+        // No realtime server is deployed unless a host is configured; messaging still
+        // works over HTTP, so skip the socket instead of retrying a dead endpoint forever.
+        const host = process.env.NEXT_PUBLIC_WS_HOST;
+        if (!host) return;
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = process.env.NEXT_PUBLIC_WS_HOST || `${window.location.hostname}:8080`;
-        const wsUrl = `${protocol}//${host}`;
-
-        const ws = new WebSocket(wsUrl);
+        let ws: WebSocket;
+        try {
+            ws = new WebSocket(`${protocol}//${host}`);
+        } catch {
+            return;
+        }
 
         ws.onopen = () => {
-            console.log('Chat WebSocket connected');
+            attemptsRef.current = 0;
             setIsConnected(true);
 
-            // Join chat
             // @ts-ignore
             const token = session?.token || 'anonymous';
             ws.send(JSON.stringify({
@@ -59,14 +70,10 @@ export const useChatWebSocket = () => {
                 const { type, payload } = JSON.parse(event.data);
                 switch (type) {
                     case MESSAGE_TYPES.CHAT_MESSAGE:
-                        if (onMessageReceivedRef.current) {
-                            onMessageReceivedRef.current(payload);
-                        }
+                        onMessageReceivedRef.current?.(payload);
                         break;
                     case MESSAGE_TYPES.READ_RECEIPT:
-                        if (onReadReceiptReceivedRef.current) {
-                            onReadReceiptReceivedRef.current(payload);
-                        }
+                        onReadReceiptReceivedRef.current?.(payload);
                         break;
 
                     // Presence
@@ -107,65 +114,65 @@ export const useChatWebSocket = () => {
                         });
                         break;
                 }
-            } catch (e) {
-                console.error("WS Parse Error", e);
+            } catch {
+                // Ignore malformed frames
             }
         };
 
         ws.onclose = () => {
             setIsConnected(false);
-            console.log('Chat WebSocket disconnected');
-            // Auto reconnect
-            setTimeout(connect, 3000);
+            if (wsRef.current === ws) wsRef.current = null;
+            if (unmountedRef.current || attemptsRef.current >= MAX_RECONNECT_ATTEMPTS) return;
+
+            const delay = Math.min(BASE_RECONNECT_DELAY_MS * 2 ** attemptsRef.current, MAX_RECONNECT_DELAY_MS);
+            attemptsRef.current += 1;
+            reconnectTimerRef.current = setTimeout(connect, delay);
         };
 
         wsRef.current = ws;
-    }, [session]);
+        // Reconnect only when the signed-in user changes, not on every session object refresh
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId]);
 
     useEffect(() => {
-        if (session?.user) {
+        unmountedRef.current = false;
+        attemptsRef.current = 0;
+        if (userId) {
             connect();
         }
         return () => {
+            unmountedRef.current = true;
+            if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
             wsRef.current?.close();
-        }
-    }, [session, connect]);
+            wsRef.current = null;
+        };
+    }, [userId, connect]);
 
-    const sendChatMessage = (receiverId: string, message: string, conversationId: string, messageId?: string) => {
+    const send = (type: string, payload: unknown) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-                type: MESSAGE_TYPES.CHAT_MESSAGE,
-                payload: { receiverId, message, conversationId, messageId }
-            }));
+            wsRef.current.send(JSON.stringify({ type, payload }));
         }
     };
 
-    const sendReadReceipt = (senderId: string, conversationId: string) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-                type: MESSAGE_TYPES.READ_RECEIPT,
-                payload: { senderId, conversationId }
-            }));
-        }
-    };
+    const sendChatMessage = (receiverId: string, message: string, conversationId: string, messageId?: string) =>
+        send(MESSAGE_TYPES.CHAT_MESSAGE, { receiverId, message, conversationId, messageId });
 
-    const sendTypingStart = (receiverId: string, conversationId: string) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-                type: MESSAGE_TYPES.TYPING_START,
-                payload: { receiverId, conversationId }
-            }));
-        }
-    };
+    const sendReadReceipt = (senderId: string, conversationId: string) =>
+        send(MESSAGE_TYPES.READ_RECEIPT, { senderId, conversationId });
 
-    const sendTypingStop = (receiverId: string, conversationId: string) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-                type: MESSAGE_TYPES.TYPING_STOP,
-                payload: { receiverId, conversationId }
-            }));
-        }
-    };
+    const sendTypingStart = (receiverId: string, conversationId: string) =>
+        send(MESSAGE_TYPES.TYPING_START, { receiverId, conversationId });
+
+    const sendTypingStop = (receiverId: string, conversationId: string) =>
+        send(MESSAGE_TYPES.TYPING_STOP, { receiverId, conversationId });
+
+    const setOnMessageReceived = useCallback((cb: (msg: any) => void) => {
+        onMessageReceivedRef.current = cb;
+    }, []);
+
+    const setOnReadReceiptReceived = useCallback((cb: (receipt: any) => void) => {
+        onReadReceiptReceivedRef.current = cb;
+    }, []);
 
     return {
         isConnected,
@@ -175,7 +182,7 @@ export const useChatWebSocket = () => {
         sendReadReceipt,
         sendTypingStart,
         sendTypingStop,
-        setOnMessageReceived: (cb: (msg: any) => void) => { onMessageReceivedRef.current = cb },
-        setOnReadReceiptReceived: (cb: (receipt: any) => void) => { onReadReceiptReceivedRef.current = cb }
+        setOnMessageReceived,
+        setOnReadReceiptReceived
     };
 };

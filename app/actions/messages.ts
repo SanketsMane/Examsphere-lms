@@ -13,7 +13,7 @@ import { headers } from "next/headers";
 export async function getOrCreateConversation(participantId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const currentUserId = (session.user as any).id;
@@ -33,10 +33,19 @@ export async function getOrCreateConversation(participantId: string) {
       ]
     }
   }) || await prisma.liveSession.findFirst({
+    // teacherId is a TeacherProfile id, so match on the profile's userId
     where: {
       OR: [
-        { studentId: currentUserId, teacherId: participantId },
-        { studentId: participantId, teacherId: currentUserId }
+        { studentId: currentUserId, teacher: { userId: participantId } },
+        { studentId: participantId, teacher: { userId: currentUserId } }
+      ]
+    }
+  }) || await prisma.sessionBooking.findFirst({
+    // Group sessions record students on SessionBooking, not LiveSession.studentId
+    where: {
+      OR: [
+        { studentId: currentUserId, session: { teacher: { userId: participantId } } },
+        { studentId: participantId, session: { teacher: { userId: currentUserId } } }
       ]
     }
   });
@@ -120,7 +129,7 @@ export async function getOrCreateConversation(participantId: string) {
 export async function sendMessage(conversationId: string, content: string, messageType: "Text" | "Image" | "File" | "Video" | "Audio" = "Text") {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const currentUserId = (session.user as any).id;
@@ -213,7 +222,7 @@ export async function sendMessage(conversationId: string, content: string, messa
 export async function getConversationMessages(conversationId: string, page: number = 1, limit: number = 50) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const currentUserId = (session.user as any).id;
@@ -265,7 +274,7 @@ export async function getConversationMessages(conversationId: string, page: numb
 export async function getUserConversations(userId?: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   let currentUserId = (session.user as any).id;
@@ -312,7 +321,7 @@ export async function getUserConversations(userId?: string) {
       },
       _count: {
         select: {
-          messages: true,
+          messages: { where: { isRead: false, senderId: { not: currentUserId } } },
         },
       },
     },
@@ -352,7 +361,7 @@ export async function getUserConversations(userId?: string) {
 export async function markMessagesAsRead(conversationId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const currentUserId = (session.user as any).id;
@@ -394,7 +403,7 @@ export async function markMessagesAsRead(conversationId: string) {
 export async function searchUsersForChat(query: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const currentUserId = (session.user as any).id;
@@ -405,8 +414,9 @@ export async function searchUsersForChat(query: string) {
         { id: { not: currentUserId } },
         {
           OR: [
-            { name: { contains: query, mode: "insensitive" } },
-            { email: { contains: query, mode: "insensitive" } },
+            // MySQL collation is already case-insensitive; `mode` is Postgres-only
+            { name: { contains: query } },
+            { email: { contains: query } },
           ],
         },
       ],

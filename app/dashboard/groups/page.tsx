@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { MessageSquare } from "lucide-react";
 import { createGroupChat } from "@/app/actions/groups";
-import { toast } from "sonner"; // Server component, cannot toast directly, need client component for interactivity or form
 
 export default async function StudentGroupsPage() {
     const session = await auth.api.getSession({
@@ -21,7 +20,7 @@ export default async function StudentGroupsPage() {
         where: { studentId: session.user.id },
         include: {
             class: {
-                include: { teacher: { include: { user: true } } }
+                include: { teacher: { include: { user: { select: { name: true, image: true } } } } }
             }
         },
         orderBy: { enrolledAt: "desc" }
@@ -80,9 +79,9 @@ export default async function StudentGroupsPage() {
                 })}
                 {enrollments.length === 0 && (
                     <div className="col-span-full text-center p-12 text-muted-foreground border border-dashed rounded-lg">
-                        You haven't joined any group classes yet.
+                        You haven&apos;t joined any group classes yet.
                         <br />
-                        <Link href="/find-teacher" className="text-primary hover:underline">Find a Mentor</Link> to browse packages!
+                        Group classes you join will appear here.
                     </div>
                 )}
             </div>
@@ -91,10 +90,11 @@ export default async function StudentGroupsPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
+    // Keys mirror the EnrollmentStatus enum (Pending | Active | Cancelled)
     const styles: Record<string, string> = {
         Pending: "bg-yellow-100 text-yellow-800",
-        Approved: "bg-green-100 text-green-800",
-        Rejected: "bg-red-100 text-red-800",
+        Active: "bg-green-100 text-green-800",
+        Cancelled: "bg-red-100 text-red-800",
     };
     return <Badge variant="secondary" className={styles[status] || styles.Pending}>{status}</Badge>;
 }
