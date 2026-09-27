@@ -116,7 +116,8 @@ export async function getAllCategories(): Promise<FeaturedCategory[]> {
         where: { isActive: true },
         include: {
             _count: {
-                select: { courses: true }
+                // Drafts and pending courses aren't listed, so they mustn't inflate the counts.
+                select: { courses: { where: { status: "Published" } } }
             }
         },
         orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }]
