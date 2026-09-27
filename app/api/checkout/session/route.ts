@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { env } from "@/lib/env";
 import { protectGeneral, getClientIP } from "@/lib/security";
 import { logger } from "@/lib/logger";
-import { getRazorpayInstance } from "@/lib/razorpay";
+import { getRazorpayInstance, PAYMENTS_UNAVAILABLE_MESSAGE, RazorpayNotConfiguredError } from "@/lib/razorpay";
 import { sendTemplatedEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,6 @@ export async function POST(req: Request) {
         const user = session?.user;
         userId = user?.id;
 
-        console.log("[Checkout] User:", user?.id, user?.email);
 
         if (!user || !user.id || !user.email) {
             console.warn("[Checkout] Unauthorized access attempt");
@@ -26,7 +25,6 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        console.log("[Checkout] Request Body:", JSON.stringify(body));
         const { teacherProfileId, dateTime, couponCode } = body;
 
         if (!teacherProfileId || !dateTime) {
@@ -54,7 +52,6 @@ export async function POST(req: Request) {
         const hourlyRate = teacher.hourlyRate || 0;
         const duration = 60; // Standard duration
         
-        console.log("[Checkout] Teacher:", teacher.id, "Rate:", hourlyRate, "Time:", scheduledAt);
 
         // ----------------------------------------------------------------
         // QA-004: Check for Student Scheduling Overlaps
@@ -94,7 +91,6 @@ export async function POST(req: Request) {
         let couponId: string | undefined;
 
         if (couponCode) {
-             console.log("[Checkout] Validating coupon:", couponCode);
              const coupon = await prisma.coupon.findUnique({
                 where: { code: couponCode, isActive: true }
             });
@@ -109,7 +105,6 @@ export async function POST(req: Request) {
                         finalPrice = Math.max(0, hourlyRate - coupon.value);
                     }
                     couponId = coupon.id;
-                    console.log("[Checkout] Coupon applied. Final Price:", finalPrice);
                  } else {
                      console.warn("[Checkout] Invalid coupon:", couponCode);
                  }
@@ -119,7 +114,6 @@ export async function POST(req: Request) {
         }
 
         // Razorpay Initialization
-        console.log("[Checkout] Initializing Razorpay...");
         const razorpay = await getRazorpayInstance();
         if (!razorpay) throw new Error("Razorpay Failed to Initialize");
 
@@ -128,7 +122,6 @@ export async function POST(req: Request) {
 
         const isFree = amountInPaisa === 0;
 
-        console.log("[Checkout] Creating LiveSession in DB...");
         
         const liveSession = await prisma.liveSession.create({
             data: {
@@ -159,7 +152,6 @@ export async function POST(req: Request) {
             }
         });
         
-        console.log("[Checkout] LiveSession Created:", liveSession.id);
 
         const bookingId = liveSession.bookings[0].id;
         
@@ -193,7 +185,6 @@ export async function POST(req: Request) {
                     sessionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/teacher/sessions/${liveSession.id}`
                 });
 
-                console.log(`[Email] Booking confirmation sent to ${user.email} and ${liveSession.teacher.user.email}`);
             }
         } catch (emailError) {
             console.error("[Email] Failed to send booking confirmation emails:", emailError);
@@ -201,7 +192,6 @@ export async function POST(req: Request) {
         }
 
         if (isFree) {
-            console.log("[Checkout] Free session confirmed (skipping Razorpay):", bookingId);
             return NextResponse.json({
                 orderId: "free_" + bookingId,
                 amount: 0,
@@ -231,9 +221,7 @@ export async function POST(req: Request) {
             }
         };
 
-        console.log("[Checkout] Creating Razorpay Order with options:", options);
         const order = await razorpay.orders.create(options);
-        console.log("[Checkout] Razorpay Order Created:", order.id);
 
         return NextResponse.json({
             orderId: order.id,
@@ -251,7 +239,10 @@ export async function POST(req: Request) {
         });
 
     } catch (error) {
+        if (error instanceof RazorpayNotConfiguredError) {
+            return new NextResponse(PAYMENTS_UNAVAILABLE_MESSAGE, { status: 503 });
+        }
         console.error("Session Checkout Error Full Stack:", error);
-        return new NextResponse("Internal Error: " + (error instanceof Error ? error.message : "Unknown"), { status: 500 });
+        return new NextResponse("Could not start the payment. Please try again in a moment.", { status: 500 });
     }
 }

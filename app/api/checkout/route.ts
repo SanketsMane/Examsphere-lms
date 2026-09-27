@@ -1,11 +1,17 @@
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { env } from "@/lib/env";
 import { protectGeneral, getClientIP } from "@/lib/security";
-import { getCurrencyData } from "@/lib/currency";
 import { logger } from "@/lib/logger";
-import { getRazorpayInstance } from "@/lib/razorpay";
+import {
+    getRazorpayInstance,
+    getRazorpayKeyId,
+    isRazorpayConfigured,
+    PAYMENTS_UNAVAILABLE_MESSAGE,
+    RazorpayNotConfiguredError,
+} from "@/lib/razorpay";
+import { toPaise } from "@/lib/money";
+import { validateCourseCoupon } from "@/lib/course-purchase";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +33,10 @@ export async function POST(req: Request) {
              return new NextResponse("Too many checkout attempts", { status: 429 });
         }
 
+        if (!(await isRazorpayConfigured())) {
+            return new NextResponse(PAYMENTS_UNAVAILABLE_MESSAGE, { status: 503 });
+        }
+
         const { courseId, couponCode } = await req.json();
 
         if (!courseId) {
@@ -37,13 +47,13 @@ export async function POST(req: Request) {
             where: {
                 id: courseId,
             },
+            include: { user: { select: { teacherProfile: { select: { id: true } } } } },
         });
 
-        if (!course) {
-            return new NextResponse("Not Found", { status: 404 });
+        if (!course || course.status !== "Published") {
+            return new NextResponse("This course is not available for purchase", { status: 404 });
         }
 
-        // Check if already purchased
         const purchase = await prisma.enrollment.findUnique({
             where: {
                 userId_courseId: {
@@ -53,60 +63,36 @@ export async function POST(req: Request) {
             },
         });
 
-        if (purchase) {
-            // Check if status is completed, if pending we might want to allow retry or resume
-            if (purchase.status === "Active") {
-                return new NextResponse("Already purchased", { status: 400 });
-            }
+        if (purchase?.status === "Active") {
+            return new NextResponse("You are already enrolled in this course", { status: 400 });
         }
 
-        // Coupon Logic
         let finalPrice = course.price;
         let couponId: string | undefined;
 
         if (couponCode) {
-            const coupon = await prisma.coupon.findUnique({
-                where: { code: couponCode, isActive: true }
+            const coupon = await validateCourseCoupon(prisma, {
+                code: couponCode,
+                userId: user.id,
+                course: { price: course.price, userId: course.userId, teacherProfileId: course.user.teacherProfile?.id },
             });
-
-            if (coupon) {
-                const now = new Date();
-                const isValid = 
-                    (!coupon.expiryDate || now <= coupon.expiryDate) &&
-                    (coupon.usedCount < coupon.usageLimit);
-                
-                // Check if global or teacher-specific
-                const isApplicableForTeacher = !coupon.teacherId || coupon.teacherId === course.userId;
-                // Check if applicable on FULL course
-                const isApplicableOnType = coupon.applicableOn.includes("FULL");
-
-                if (isValid && isApplicableForTeacher && isApplicableOnType) {
-                    let discount = 0;
-                    if (coupon.type === "PERCENTAGE") {
-                        discount = Math.round((course.price * coupon.value) / 100);
-                    } else {
-                        discount = coupon.value;
-                    }
-                    finalPrice = Math.max(0, course.price - discount);
-                    couponId = coupon.id;
-                }
+            if (!coupon.ok) {
+                return new NextResponse(coupon.message, { status: 400 });
             }
+            finalPrice = coupon.finalPrice;
+            couponId = coupon.couponId;
         }
 
-        // 1. Initialize Razorpay
+        if (finalPrice <= 0) {
+            return new NextResponse("This coupon makes the course free. Please pay with your wallet to apply it.", { status: 400 });
+        }
+
         const razorpay = await getRazorpayInstance();
+        const currencyCode = "INR";
+        const amountInPaisa = toPaise(finalPrice);
 
-        // 2. Resolve Currency
-        // Force INR for Razorpay if using Indian account, or dynamic if supported. 
-        // For simpler integration consistent with "INR" default plan, we use INR.
-        const currencyCode = "INR"; 
-        
-        // Since we updated default factor to 1 for INR in lib/currency, finalPrice is already in INR unit.
-        // Razorpay expects amount in PAISA (smallest currency unit), so multiply by 100.
-        const amountInPaisa = Math.round(finalPrice * 100);
-
-        // 3. Create Pending Enrollment (or update existing pending)
-        // We'll upsert to handle retries cleanly
+        // Enrollment.amount is whole rupees (what finance pages read); only the
+        // Razorpay order is in paise.
         const enrollment = await prisma.enrollment.upsert({
             where: {
                 userId_courseId: {
@@ -115,33 +101,30 @@ export async function POST(req: Request) {
                 }
             },
             update: {
-                amount: amountInPaisa,
+                amount: finalPrice,
                 status: "Pending",
             },
             create: {
                 userId: user.id,
                 courseId: courseId,
-                amount: amountInPaisa,
+                amount: finalPrice,
                 status: "Pending",
             }
         });
 
-        // 4. Create Razorpay Order
-        const options = {
-            amount: amountInPaisa.toString(),
+        const order = await razorpay.orders.create({
+            amount: amountInPaisa,
             currency: currencyCode,
             receipt: enrollment.id,
             notes: {
+                type: "COURSE_ENROLLMENT",
                 courseId: course.id,
                 userId: user.id,
                 enrollmentId: enrollment.id,
                 couponId: couponId || "",
             }
-        };
+        });
 
-        const order = await razorpay.orders.create(options);
-
-        // Update enrollment with Razorpay Order ID for tracking
         await prisma.enrollment.update({
             where: { id: enrollment.id },
             data: { razorpayOrderId: order.id }
@@ -151,23 +134,22 @@ export async function POST(req: Request) {
             orderId: order.id,
             amount: amountInPaisa,
             currency: currencyCode,
-            keyId: await import("@/lib/razorpay").then(m => m.getRazorpayKeyId()),
+            keyId: await getRazorpayKeyId(),
             courseName: course.title,
+            courseSlug: course.slug,
             courseDescription: course.smallDescription,
             user: {
                 name: user.name,
                 email: user.email,
-                contact: "", // If we had phone number we'd pass it here
+                contact: "",
             }
         });
 
     } catch (error) {
-        // If razorpay credentials missing
-        if (error instanceof Error && error.message.includes("Razorpay credentials")) {
-             return new NextResponse("Payment Gateway Configuration Error", { status: 503 });
+        if (error instanceof RazorpayNotConfiguredError) {
+            return new NextResponse(PAYMENTS_UNAVAILABLE_MESSAGE, { status: 503 });
         }
         logger.error("COURSE_CHECKOUT_ERROR", error as Error, userId);
-        console.error(error);
-        return new NextResponse("Internal Error", { status: 500 });
+        return new NextResponse("Could not start the payment. Please try again in a moment.", { status: 500 });
     }
 }
