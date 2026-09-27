@@ -9,7 +9,7 @@ import {
   CheckCircle, 
   XCircle,
   Eye,
-  DollarSign,
+  IndianRupee,
   Calendar,
   TrendingUp,
   Download,
@@ -20,6 +20,7 @@ import { requireAdmin } from "@/app/data/auth/require-roles";
 import { getPendingPayouts } from "@/app/data/admin/verification-data";
 import { prisma } from "@/lib/db";
 import { constructS3Url } from "@/lib/s3-utils";
+import { formatMoney } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -99,7 +100,7 @@ export default async function PayoutSystemPage() {
             <TrendingUp className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${Number(monthlyStats._sum.requestedAmount || 0).toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatMoney(Number(monthlyStats._sum.requestedAmount || 0))}</div>
             <p className="text-xs text-muted-foreground">
               This month's payouts
             </p>
@@ -112,7 +113,7 @@ export default async function PayoutSystemPage() {
             <Clock className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${Number(monthlyStats._avg.requestedAmount || 0).toFixed(0)}</div>
+            <div className="text-2xl font-bold">{formatMoney(Math.round(Number(monthlyStats._avg.requestedAmount || 0)))}</div>
             <p className="text-xs text-muted-foreground">
               Average request amount
             </p>
@@ -165,7 +166,7 @@ export default async function PayoutSystemPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-green-600">
-                            ${Number(payout.requestedAmount).toLocaleString()}
+                            {formatMoney(Number(payout.requestedAmount))}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             Requested Amount
@@ -238,10 +239,10 @@ export default async function PayoutSystemPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-green-600">
-                            ${Number(payout.requestedAmount).toLocaleString()}
+                            {formatMoney(Number(payout.requestedAmount))}
                           </div>
                           <Button size="sm" className="mt-2">
-                            <DollarSign className="h-4 w-4 mr-2" />
+                            <IndianRupee className="h-4 w-4 mr-2" />
                             Process Payment
                           </Button>
                         </div>

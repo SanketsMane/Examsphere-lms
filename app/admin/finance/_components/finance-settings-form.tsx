@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LucideWallet, LucidePercent, LucideDollarSign, Loader2, CreditCard, Coins } from "lucide-react";
+import { LucideWallet, LucidePercent, LucideIndianRupee, Loader2, CreditCard, Coins } from "lucide-react";
 import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 interface FinanceSettingsFormProps {
@@ -67,7 +67,7 @@ export function FinanceSettingsForm({ initialData }: FinanceSettingsFormProps) {
                 <Card className="border-orange-100 shadow-sm">
                     <CardHeader className="bg-orange-50/50 rounded-t-xl">
                         <CardTitle className="flex items-center gap-2 text-orange-700">
-                            <LucideDollarSign className="h-5 w-5" />
+                            <LucideIndianRupee className="h-5 w-5" />
                             Taxation (GST)
                         </CardTitle>
                         <CardDescription>Manage tax rates for your region (Inclusive logic)</CardDescription>

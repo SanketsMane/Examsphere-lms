@@ -2,6 +2,8 @@
 
 import { sendEmail } from "@/lib/email";
 import { getSiteSettings } from "@/app/data/settings/get-site-settings";
+import { prisma } from "@/lib/db";
+import { headers } from "next/headers";
 
 export interface ContactResult {
   success: boolean;
@@ -50,6 +52,35 @@ export async function submitContact(
     return { success: false, message: "That message is too long. Please shorten it." };
   }
 
+  // Record the enquiry in Admin → Inquiries so it isn't lost if email delivery fails
+  // or the contact inbox isn't configured yet.
+  let saved = false;
+  try {
+    const h = await headers();
+    await prisma.chatInquiry.create({
+      data: {
+        name,
+        email,
+        phone, // column is non-null; the form's phone field is optional
+        source: "contact_form",
+        ipAddress: h.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+        userAgent: h.get("user-agent"),
+        notes: program ? `Program of interest: ${program}` : null,
+        messageCount: 1,
+        lastMessageAt: new Date(),
+        messages: { create: { role: "user", content: message } },
+      },
+    });
+    saved = true;
+  } catch (err) {
+    console.error("Failed to save contact enquiry:", err);
+  }
+
+  const savedResult: ContactResult = {
+    success: true,
+    message: "Thanks! Your enquiry has been received — our team will get back to you shortly.",
+  };
+
   try {
     const settings = await getSiteSettings();
     const to =
@@ -58,6 +89,7 @@ export async function submitContact(
       process.env.EMAIL_USER?.trim();
 
     if (!to) {
+      if (saved) return savedResult;
       return {
         success: false,
         message: "Our contact inbox isn't configured yet. Please email us directly.",
@@ -88,6 +120,7 @@ export async function submitContact(
     });
 
     if (!ok) {
+      if (saved) return savedResult;
       return {
         success: false,
         message: "Couldn't send your message right now. Please email us directly.",
@@ -100,6 +133,7 @@ export async function submitContact(
     };
   } catch (err) {
     console.error("Contact submit failed:", err);
+    if (saved) return savedResult;
     return { success: false, message: "Something went wrong. Please try again later." };
   }
 }

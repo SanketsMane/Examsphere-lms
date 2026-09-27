@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditCourseForm } from "./_components/EditCourseForm";
 import { CourseStructure } from "./_components/CourseStructure";
 import { requireAdmin } from "@/app/data/auth/require-roles";
+import { getCourseCategoryOptions } from "@/lib/course-categories";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,14 @@ type Params = Promise<{ courseId: string }>;
 export default async function EditRoute({ params }: { params: Params }) {
   await requireAdmin();
   const { courseId } = await params;
-  const data = await adminGetCourse(courseId);
+  const [data, categoryOptions] = await Promise.all([
+    adminGetCourse(courseId),
+    getCourseCategoryOptions(),
+  ]);
+  // Keep a legacy/inactive category selectable so opening the form doesn't blank it.
+  const categories = categoryOptions.some((c) => c.name === data.category)
+    ? categoryOptions
+    : [{ id: `current:${data.category}`, name: data.category }, ...categoryOptions];
   return (
     <div>
       <h1 className="text-3xl font-bold mb-8">
@@ -40,7 +48,7 @@ export default async function EditRoute({ params }: { params: Params }) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <EditCourseForm data={data} />
+              <EditCourseForm data={data} categories={categories} />
             </CardContent>
           </Card>
         </TabsContent>

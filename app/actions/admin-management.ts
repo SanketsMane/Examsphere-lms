@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { sendTemplatedEmail } from "@/lib/email";
+import { decideTeacher } from "@/app/admin/_lib/teacher-approval";
+import { checkAccountChange, normaliseRole } from "@/app/admin/_lib/role-safety";
 import { requireAdmin } from "@/lib/action-security";
 import { logger } from "@/lib/logger";
 
@@ -10,14 +11,22 @@ import { logger } from "@/lib/logger";
 
 export async function suspendUser(userId: string, reason?: string) {
     try {
-        await requireAdmin();
-        await prisma.user.update({
-            where: { id: userId },
-            data: {
-                banned: true,
-                banReason: reason || "Suspended by admin",
-            },
-        });
+        const session = await requireAdmin();
+        const blocked = await checkAccountChange(session.user.id, userId, "suspend");
+        if (blocked) return { success: false, message: blocked };
+
+        // Deleting sessions logs the user out everywhere; a ban flag alone left
+        // existing sessions working until they expired.
+        await prisma.$transaction([
+            prisma.user.update({
+                where: { id: userId },
+                data: {
+                    banned: true,
+                    banReason: reason?.trim() || "Suspended by admin",
+                },
+            }),
+            prisma.session.deleteMany({ where: { userId } }),
+        ]);
         revalidatePath("/admin/users");
         return { success: true, message: "User suspended successfully" };
     } catch (error) {
@@ -44,16 +53,22 @@ export async function unsuspendUser(userId: string) {
     }
 }
 
-export async function updateUserRole(userId: string, role: string) {
+export async function updateUserRole(userId: string, rawRole: string) {
     try {
-        await requireAdmin();
+        const session = await requireAdmin();
+        const role = normaliseRole(rawRole);
+        if (!role) return { success: false, message: "Role must be student, teacher or admin" };
+
+        const blocked = await checkAccountChange(session.user.id, userId, { role });
+        if (blocked) return { success: false, message: blocked };
+
         await prisma.user.update({
             where: { id: userId },
             data: { role },
         });
 
         // Initialize TeacherProfile if promoted to teacher and profile doesn't exist
-        if (role?.toLowerCase() === 'teacher') {
+        if (role === 'teacher') {
             await prisma.teacherProfile.upsert({
                 where: { userId },
                 create: {
@@ -95,15 +110,24 @@ export async function updateUserAndTeacherProfile(userId: string, data: {
     }
 }) {
     try {
-        await requireAdmin();
-        
+        const session = await requireAdmin();
+
+        let role: string | undefined;
+        if (data.role !== undefined) {
+            const normalised = normaliseRole(data.role);
+            if (!normalised) return { success: false, message: "Role must be student, teacher or admin" };
+            const blocked = await checkAccountChange(session.user.id, userId, { role: normalised });
+            if (blocked) return { success: false, message: blocked };
+            role = normalised;
+        }
+
         // Update User
         await prisma.user.update({
             where: { id: userId },
             data: {
                 name: data.name,
                 email: data.email,
-                role: data.role,
+                role,
                 bio: data.bio,
             },
         });
@@ -139,7 +163,10 @@ export async function updateUserAndTeacherProfile(userId: string, data: {
 
 export async function deleteUser(userId: string) {
     try {
-        await requireAdmin();
+        const session = await requireAdmin();
+        const blocked = await checkAccountChange(session.user.id, userId, "delete");
+        if (blocked) return { success: false, message: blocked };
+
         // Delete related data first to avoid constraint errors if cascade isn't perfect
         // Though schema has onDelete: Cascade, explicit cleanup is safer for major entities
         await prisma.user.delete({
@@ -172,113 +199,21 @@ export async function deleteCourse(courseId: string) {
 // --- Teacher Management ---
 
 export async function approveTeacher(teacherUserId: string) {
+    let adminId: string;
     try {
-        await requireAdmin();
-        const user = await prisma.user.findUnique({
-             where: { id: teacherUserId }
-        });
-
-        if (!user) {
-            throw new Error("User not found");
-        }
-
-        // Update Teacher Profile (Upsert to handle missing profiles for imported users)
-        await prisma.teacherProfile.upsert({
-            where: { userId: teacherUserId },
-            create: {
-                userId: teacherUserId,
-                isApproved: true,
-                isVerified: true,
-                expertise: [],
-                languages: [],
-                qualifications: [],
-                certifications: []
-            },
-            update: {
-                isApproved: true,
-                isVerified: true
-            }
-        });
-
-        // Send Email
-        await sendTemplatedEmail(
-            "teacherVerificationApproved", // Updated slug
-            user.email,
-            "Congratulations! Your Teacher Profile is Approved",
-            {
-                userName: user.name || "Teacher",
-                dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/teacher/dashboard`
-            }
-        );
-
-        revalidatePath("/admin/teachers");
-        return { success: true, message: "Teacher approved & email sent" };
-    } catch (error: any) {
-        logger.error("Failed to approve teacher", error as Error, teacherUserId);
-        return { success: false, message: error.message || "Failed to approve teacher" };
+        adminId = (await requireAdmin()).user.id;
+    } catch {
+        return { success: false, message: "Unauthorized" };
     }
+    return decideTeacher({ userId: teacherUserId }, { decision: "approve" }, adminId);
 }
 
 export async function rejectTeacher(teacherUserId: string, reason: string) {
+    let adminId: string;
     try {
-        await requireAdmin();
-        const user = await prisma.user.findUnique({
-             where: { id: teacherUserId }
-        });
-
-        if (!user) {
-             throw new Error("User not found");
-        }
-
-        // Use upsert for TeacherProfile
-        const profile = await prisma.teacherProfile.upsert({
-            where: { userId: teacherUserId },
-            create: {
-                userId: teacherUserId,
-                isApproved: false,
-                expertise: [],
-                languages: [],
-                qualifications: [],
-                certifications: []
-            },
-            update: {
-                isApproved: false
-            }
-        });
-
-        // Also update or create TeacherVerification
-        await prisma.teacherVerification.upsert({
-            where: { teacherId: profile.id },
-            create: {
-                teacherId: profile.id,
-                status: 'Rejected',
-                rejectionReason: reason,
-                rejectedAt: new Date(),
-                qualificationDocuments: [], // Added missing required field - Author: Sanket
-                experienceDocuments: [],    // Added missing required field - Author: Sanket
-            },
-            update: {
-                status: 'Rejected',
-                rejectionReason: reason,
-                rejectedAt: new Date(),
-            }
-        });
-
-        // Send Email
-        await sendTemplatedEmail(
-            "teacherVerificationRejected", // Updated slug
-            user.email,
-            "Update regarding your Teacher Application",
-            {
-                userName: user.name || "Applicant",
-                reason: reason
-            }
-        );
-
-        revalidatePath("/admin/teachers");
-        return { success: true, message: "Teacher application rejected & email sent" };
-    } catch (error: any) {
-        logger.error("Failed to reject teacher", { error, reason }, teacherUserId);
-        return { success: false, message: error.message || "Failed to reject teacher" };
+        adminId = (await requireAdmin()).user.id;
+    } catch {
+        return { success: false, message: "Unauthorized" };
     }
+    return decideTeacher({ userId: teacherUserId }, { decision: "reject", reason }, adminId);
 }

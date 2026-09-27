@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireAdmin } from "@/app/data/auth/require-roles";
+import { adminGuard } from "@/app/api/admin/_lib/guard";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    const guard = await adminGuard();
+    if (!guard.ok) return guard.response;
 
     const body = await request.json();
     const { status, reviewNotes, reviewedBy } = body;
@@ -98,7 +99,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    const guard = await adminGuard();
+    if (!guard.ok) return guard.response;
     const { id } = await params;
 
     const payout = await prisma.payoutRequest.findUnique({

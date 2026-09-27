@@ -7,22 +7,27 @@ import {
   Clock, 
   CheckCircle, 
   AlertTriangle,
-  DollarSign,
+  IndianRupee,
   Users,
   TrendingUp
 } from "lucide-react";
 import Link from "next/link";
 import { requireAdmin } from "@/app/data/auth/require-roles";
 import { getVerificationStats, getRecentVerificationActivity } from "@/app/data/admin/verification-data";
+import { pendingTeacherWhere } from "@/app/admin/_lib/teacher-approval";
+import { formatMoney } from "@/lib/money";
+import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function VerificationCenterPage() {
   await requireAdmin();
 
-  const [stats, recentActivity] = await Promise.all([
+  const [stats, recentActivity, pendingTeachers] = await Promise.all([
     getVerificationStats(),
-    getRecentVerificationActivity()
+    getRecentVerificationActivity(),
+    // Same queue as the Profile Verification page, incl. teachers with no record yet.
+    prisma.teacherProfile.count({ where: pendingTeacherWhere }),
   ]);
 
   const formatRelativeTime = (date: Date | null) => {
@@ -57,7 +62,7 @@ export default async function VerificationCenterPage() {
             <UserCheck className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingVerifications}</div>
+            <div className="text-2xl font-bold">{pendingTeachers}</div>
             <p className="text-xs text-muted-foreground">
               Awaiting review
             </p>
@@ -99,10 +104,10 @@ export default async function VerificationCenterPage() {
             <CardTitle className="text-sm font-medium">
               Monthly Payouts
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <IndianRupee className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.monthlyPayouts.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatMoney(Number(stats.monthlyPayouts) || 0)}</div>
             <p className="text-xs text-muted-foreground">
               This month's total
             </p>
@@ -126,7 +131,7 @@ export default async function VerificationCenterPage() {
                 </CardDescription>
               </div>
               <Badge variant="secondary" className="bg-orange-100 text-orange-700">
-                {stats.pendingVerifications} Pending
+                {pendingTeachers} Pending
               </Badge>
             </div>
           </CardHeader>
@@ -201,11 +206,11 @@ export default async function VerificationCenterPage() {
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Total Value</span>
-                  <span className="font-medium">${(stats.payoutBreakdown?.totalValue || 0).toLocaleString()}</span>
+                  <span className="font-medium">{formatMoney(Number(stats.payoutBreakdown?.totalValue) || 0)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Avg Request</span>
-                  <span className="font-medium">${Math.round(stats.payoutBreakdown?.avgRequest || 0).toLocaleString()}</span>
+                  <span className="font-medium">{formatMoney(Math.round(Number(stats.payoutBreakdown?.avgRequest) || 0))}</span>
                 </div>
               </div>
             </div>
@@ -252,7 +257,7 @@ export default async function VerificationCenterPage() {
                       <AlertTriangle className="h-4 w-4 text-red-600" />
                     )
                   ) : (
-                    <DollarSign className="h-4 w-4 text-blue-600" />
+                    <IndianRupee className="h-4 w-4 text-blue-600" />
                   )}
                 </div>
                 <div className="flex-1">
@@ -264,7 +269,7 @@ export default async function VerificationCenterPage() {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {activity.teacherName}
-                    {activity.amount && ` • $${activity.amount.toLocaleString()}`}
+                    {activity.amount ? ` • ${formatMoney(Number(activity.amount))}` : null}
                   </p>
                 </div>
                 <p className="text-sm text-muted-foreground">

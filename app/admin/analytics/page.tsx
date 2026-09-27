@@ -13,6 +13,7 @@ import {
   IconClock
 } from "@tabler/icons-react";
 import Link from "next/link";
+import { formatMoney } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,7 @@ export default async function AdminAnalyticsPage() {
             <IconTrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${analyticsData.totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatMoney(analyticsData.totalRevenue)}</div>
             <p className="text-xs text-muted-foreground">
               From {analyticsData.totalEnrollments} enrollments
             </p>

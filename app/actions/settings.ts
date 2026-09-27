@@ -35,107 +35,157 @@ export async function getSiteSettings() {
 }
 
 /**
- * Admin: Get all site settings including secrets
- * Author: Sanket
+ * Admin: settings for the settings form.
+ *
+ * Razorpay secrets never leave the server: the form only learns whether one is
+ * saved, and an empty submission keeps it.
  */
 export async function getAdminSiteSettings() {
     await requireAdmin();
-    return await prisma.siteSettings.findFirst();
+    const settings = await prisma.siteSettings.findFirst();
+    if (!settings) return null;
+
+    const { razorpayKeySecret, razorpayWebhookSecret, ...rest } = settings;
+    return {
+        ...rest,
+        hasRazorpayKeySecret: Boolean(razorpayKeySecret),
+        hasRazorpayWebhookSecret: Boolean(razorpayWebhookSecret),
+    };
 }
+
+export type AdminSiteSettings = NonNullable<Awaited<ReturnType<typeof getAdminSiteSettings>>>;
+
+const PHONE_RE = /^\+?[0-9 ()-]{7,20}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Trimmed value, or null when blank, so "" never lands in the DB. */
+function text(formData: FormData, key: string): string | null {
+    const value = formData.get(key);
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed === "" ? null : trimmed;
+}
+
+/** Accept "instagram.com/x" as well as full URLs; reject anything unparseable. */
+function normaliseUrl(value: string | null, label: string): string | null {
+    if (!value) return null;
+    const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    let parsed: URL;
+    try {
+        parsed = new URL(withScheme);
+    } catch {
+        throw new SettingsValidationError(`${label} must be a valid URL`);
+    }
+    if (!parsed.hostname.includes(".")) {
+        throw new SettingsValidationError(`${label} must be a valid URL`);
+    }
+    return parsed.toString();
+}
+
+function parseJsonField(formData: FormData, key: string): unknown | undefined {
+    const raw = formData.get(key);
+    if (typeof raw !== "string" || raw.trim() === "") return undefined;
+    try {
+        return JSON.parse(raw);
+    } catch {
+        throw new SettingsValidationError(`Invalid ${key} data`);
+    }
+}
+
+class SettingsValidationError extends Error {}
 
 export async function updateSiteSettings(prevState: any, formData: FormData) {
     try {
         await requireAdmin();
 
-        const siteName = formData.get("siteName") as string;
-        const siteUrl = formData.get("siteUrl") as string;
-        const logo = formData.get("logo") as string;
-        const favicon = formData.get("favicon") as string;
-        const logoSize = parseInt(formData.get("logoSize") as string) || 100;
+        const contactEmail = text(formData, "contactEmail");
+        if (contactEmail && !EMAIL_RE.test(contactEmail)) {
+            return { success: false, error: "Contact email is not a valid email address" };
+        }
 
-        // Localization
-        const currencyCode = formData.get("currencyCode") as string || "INR";
-        const currencySymbol = formData.get("currencySymbol") as string || "₹";
+        const contactPhone = text(formData, "contactPhone");
+        if (contactPhone && !PHONE_RE.test(contactPhone)) {
+            return { success: false, error: "Contact phone may only contain digits, spaces, ( ) - and a leading +" };
+        }
 
-        // Contact
-        const contactEmail = formData.get("contactEmail") as string;
-        const contactPhone = formData.get("contactPhone") as string;
-        const contactAddress = formData.get("contactAddress") as string;
+        const siteUrl = normaliseUrl(text(formData, "siteUrl"), "Site URL");
+        const facebook = normaliseUrl(text(formData, "facebook"), "Facebook link");
+        const twitter = normaliseUrl(text(formData, "twitter"), "X (Twitter) link");
+        const instagram = normaliseUrl(text(formData, "instagram"), "Instagram link");
+        const linkedin = normaliseUrl(text(formData, "linkedin"), "LinkedIn link");
+        const youtube = normaliseUrl(text(formData, "youtube"), "YouTube link");
 
-        // Social
-        const facebook = formData.get("facebook") as string;
-        const twitter = formData.get("twitter") as string;
-        const instagram = formData.get("instagram") as string;
-        const linkedin = formData.get("linkedin") as string;
-        const youtube = formData.get("youtube") as string;
-        const maxGroupClassSize = parseInt(formData.get("maxGroupClassSize") as string) || 12;
+        const logoSize = Math.min(100, Math.max(0, parseInt(formData.get("logoSize") as string) || 100));
+        const maxGroupClassSize = Math.max(1, parseInt(formData.get("maxGroupClassSize") as string) || 12);
 
-        const razorpayKeyId = formData.get("razorpayKeyId") as string;
-        const razorpayKeySecret = formData.get("razorpayKeySecret") as string;
+        const footerLinks = parseJsonField(formData, "footerLinks");
+        const currencyRates = parseJsonField(formData, "currencyRates");
 
-        const existing = await prisma.siteSettings.findFirst();
+        const razorpayKeyId = text(formData, "razorpayKeyId");
+        const razorpayKeySecret = text(formData, "razorpayKeySecret");
+        const razorpayWebhookSecret = text(formData, "razorpayWebhookSecret");
+        const clearRazorpaySecrets = formData.get("clearRazorpaySecrets") === "on";
 
-        /**
-         * Author: Sanket
-         */
+        const data = {
+            siteName: text(formData, "siteName") ?? "ExamSphere",
+            siteUrl: siteUrl ?? "",
+            logo: text(formData, "logo"),
+            favicon: text(formData, "favicon"),
+            logoSize,
+            // Prices, wallets and payouts are all stored and charged in rupees.
+            currencyCode: "INR",
+            currencySymbol: "₹",
+            contactEmail,
+            contactPhone,
+            contactAddress: text(formData, "contactAddress"),
+            facebook,
+            twitter,
+            instagram,
+            linkedin,
+            youtube,
+            maxGroupClassSize,
+            razorpayKeyId,
+        };
+
+        const existing = await prisma.siteSettings.findFirst({ select: { id: true } });
+
         if (existing) {
-            await (prisma.siteSettings as any).update({
+            await prisma.siteSettings.update({
                 where: { id: existing.id },
                 data: {
-                    siteName,
-                    siteUrl,
-                    logo,
-                    favicon,
-                    logoSize,
-                    currencyCode,
-                    currencySymbol,
-                    contactEmail,
-                    contactPhone,
-                    contactAddress,
-                    facebook,
-                    twitter,
-                    instagram,
-                    linkedin,
-                    youtube,
-                    footerLinks: formData.get("footerLinks") ? JSON.parse(formData.get("footerLinks") as string) : (existing.footerLinks || {}),
-                    maxGroupClassSize,
-                    razorpayKeyId: razorpayKeyId || existing.razorpayKeyId, // Keep existing if not provided - Author: Sanket
-                    razorpayKeySecret: razorpayKeySecret || existing.razorpayKeySecret, // Keep existing if not provided - Author: Sanket
-                    razorpayWebhookSecret: formData.get("razorpayWebhookSecret") as string || existing.razorpayWebhookSecret,
-                    currencyRates: formData.get("currencyRates") ? JSON.parse(formData.get("currencyRates") as string) : (existing.currencyRates || {}), // Author: Sanket
-                } as any,
+                    ...data,
+                    ...(footerLinks !== undefined ? { footerLinks: footerLinks as any } : {}),
+                    ...(currencyRates !== undefined ? { currencyRates: currencyRates as any } : {}),
+                    // Blank secret inputs mean "unchanged", so clearing needs an explicit flag.
+                    ...(clearRazorpaySecrets
+                        ? { razorpayKeySecret: null, razorpayWebhookSecret: null }
+                        : {
+                              ...(razorpayKeySecret ? { razorpayKeySecret } : {}),
+                              ...(razorpayWebhookSecret ? { razorpayWebhookSecret } : {}),
+                          }),
+                },
             });
         } else {
-            await (prisma.siteSettings as any).create({
+            await prisma.siteSettings.create({
                 data: {
-                    siteName: siteName || "ExamSphere LMS",
-                    siteUrl: siteUrl || "",
-                    logo,
-                    favicon,
-                    logoSize,
-                    currencyCode,
-                    currencySymbol,
-                    contactEmail,
-                    contactPhone,
-                    contactAddress,
-                    facebook,
-                    twitter,
-                    instagram,
-                    linkedin,
-                    youtube,
-                    footerLinks: JSON.parse(formData.get("footerLinks") as string || "{}"),
-                    maxGroupClassSize,
-                    razorpayKeyId, 
-                    razorpayKeySecret,
-                    razorpayWebhookSecret: formData.get("razorpayWebhookSecret") as string
-                } as any,
+                    ...data,
+                    footerLinks: (footerLinks ?? {}) as any,
+                    currencyRates: (currencyRates ?? {}) as any,
+                    razorpayKeySecret: clearRazorpaySecrets ? null : razorpayKeySecret,
+                    razorpayWebhookSecret: clearRazorpaySecrets ? null : razorpayWebhookSecret,
+                },
             });
         }
 
-        revalidatePath("/");
+        revalidatePath("/", "layout");
+        revalidatePath("/contact");
         revalidatePath("/admin/settings");
         return { success: true, message: "Settings updated successfully" };
     } catch (error: any) {
-        return { error: error.message || "Failed to update settings" };
+        if (error instanceof SettingsValidationError) {
+            return { success: false, error: error.message };
+        }
+        console.error("Failed to update site settings:", error);
+        return { success: false, error: "Failed to update settings" };
     }
 }

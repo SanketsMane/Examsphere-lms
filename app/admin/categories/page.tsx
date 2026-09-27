@@ -7,7 +7,7 @@ import { Layers } from "lucide-react";
 import { CategoryDialog } from "./_components/category-dialog";
 import { CategoryHelp } from "./_components/category-help";
 import { DeleteCategoryButton } from "./_components/delete-category-button";
-import { redirect } from "next/navigation";
+import { CategoryActiveToggle } from "./_components/category-active-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,8 @@ async function getCategories() {
                 select: { courses: true, children: true }
             }
         },
-        orderBy: { name: "asc" }
+        // Active first, then admin-defined order; inactive generic categories sink to the bottom.
+        orderBy: [{ isActive: "desc" }, { displayOrder: "asc" }, { name: "asc" }]
     });
     return categories;
 }
@@ -29,8 +30,9 @@ export default async function AdminCategoriesPage() {
 
     const categories = await getCategories();
 
-    // Filter top-level categories for the parent selector
+    // Only top-level categories can be parents (two-level hierarchy).
     const topLevelCategories = categories.filter(c => !c.parentId);
+    const activeCount = categories.filter(c => c.isActive).length;
 
     return (
         <div className="space-y-6">
@@ -44,7 +46,7 @@ export default async function AdminCategoriesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <CategoryHelp />
-                    <CategoryDialog parentCategories={categories} />
+                    <CategoryDialog parentCategories={topLevelCategories} />
                 </div>
             </div>
 
@@ -52,7 +54,7 @@ export default async function AdminCategoriesPage() {
                 <CardHeader>
                     <CardTitle>All Categories</CardTitle>
                     <CardDescription>
-                        List of all categories in the system.
+                        {activeCount} of {categories.length} active. Inactive categories are hidden from the public site and course forms.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -62,6 +64,8 @@ export default async function AdminCategoriesPage() {
                                 <TableHead>Name</TableHead>
                                 <TableHead>Slug</TableHead>
                                 <TableHead>Parent</TableHead>
+                                <TableHead>Order</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead>Courses</TableHead>
                                 <TableHead>Actions</TableHead>
                             </TableRow>
@@ -69,7 +73,7 @@ export default async function AdminCategoriesPage() {
                         <TableBody>
                             {categories.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                                         No categories found. Create one to get started.
                                     </TableCell>
                                 </TableRow>
@@ -81,8 +85,10 @@ export default async function AdminCategoriesPage() {
                                     parent,
                                     ...categories.filter(c => c.parentId === parent.id)
                                   ])
+                                  // Children whose parent row is missing still need to be listed.
+                                  .concat(categories.filter(c => c.parentId && !topLevelCategories.some(p => p.id === c.parentId)))
                                   .map((category) => (
-                                    <TableRow key={category.id} className={category.parentId ? "bg-muted/30" : ""}>
+                                    <TableRow key={category.id} className={`${category.parentId ? "bg-muted/30" : ""} ${category.isActive ? "" : "opacity-60"}`}>
                                         <TableCell className="font-medium">
                                             <div className="flex items-center gap-2">
                                                 {category.parentId && <span className="text-muted-foreground ml-4">↳</span>}
@@ -99,6 +105,15 @@ export default async function AdminCategoriesPage() {
                                                 <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Primary</span>
                                             )}
                                         </TableCell>
+                                        <TableCell className="text-sm text-muted-foreground">{category.displayOrder}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <CategoryActiveToggle id={category.id} name={category.name} isActive={category.isActive} />
+                                                <Badge variant={category.isActive ? "default" : "outline"} className="font-normal">
+                                                    {category.isActive ? "Active" : "Inactive"}
+                                                </Badge>
+                                            </div>
+                                        </TableCell>
                                         <TableCell>
                                             <span className="font-medium">{category._count.courses}</span> courses
                                             {!category.parentId && category._count.children > 0 && (
@@ -109,7 +124,10 @@ export default async function AdminCategoriesPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <CategoryDialog category={category as any} parentCategories={categories as any} />
+                                                <CategoryDialog
+                                                    category={category}
+                                                    parentCategories={category._count.children > 0 ? [] : topLevelCategories}
+                                                />
                                                 <DeleteCategoryButton id={category.id} name={category.name} />
                                             </div>
                                         </TableCell>

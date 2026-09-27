@@ -1,6 +1,6 @@
 import { getPlatformAnalytics } from "../actions/analytics";
 import { AdminChartSection } from "@/components/admin/AdminChartSection";
-import { formatPrice } from "@/lib/currency";
+import { formatMoney } from "@/lib/money";
 import { requireAdmin } from "@/app/data/auth/require-roles";
 import { PageHeader, StatCard, Panel } from "@/components/dashboard/es/dashboard-kit";
 import {
@@ -19,9 +19,8 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const session = await requireAdmin();
+  await requireAdmin();
   const { stats, revenueOverTime } = await getPlatformAnalytics();
-  const userCountry = (session?.user as any)?.country || "India";
   const serverTime = new Date().toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
@@ -31,8 +30,8 @@ export default async function AdminDashboardPage() {
   const secondary = [
     { icon: GraduationCap, label: "Enrollments", value: stats.totalEnrollments.toString(), accent: "green" as const },
     { icon: Radio, label: "Live Sessions", value: stats.liveSessions.toString(), hint: `${stats.totalSessions} total`, accent: "orange" as const },
-    { icon: TrendingUp, label: "Conversion", value: `${stats.conversionRate}%`, hint: "Visitors → enrolled", accent: "sky" as const },
-    { icon: FileText, label: "Blog Posts", value: stats.totalBlogPosts.toString(), hint: "Published", accent: "violet" as const },
+    { icon: TrendingUp, label: "Enrollment Ratio", value: `${stats.conversionRate}%`, hint: "Enrollments ÷ registered users", accent: "sky" as const },
+    { icon: FileText, label: "Blog Posts", value: stats.totalBlogPosts.toString(), hint: "All posts, incl. drafts", accent: "violet" as const },
   ];
 
   return (
@@ -41,10 +40,10 @@ export default async function AdminDashboardPage() {
 
       {/* Primary metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard icon={Wallet} accent="navy" label="Total Revenue" value={formatPrice(stats.totalRevenue, userCountry)} hint="Lifetime gross" />
+        <StatCard icon={Wallet} accent="navy" label="Total Revenue" value={formatMoney(Number(stats.totalRevenue))} hint="Lifetime gross" />
         <StatCard icon={Users} accent="sky" label="Total Users" value={stats.totalUsers.toString()} hint={`${stats.activeUsers} active`} />
         <StatCard icon={BookOpen} accent="orange" label="Total Courses" value={stats.totalCourses.toString()} hint={`${stats.totalEnrollments} enrollments`} />
-        <StatCard icon={CreditCard} accent="violet" label="Pending Payouts" value={formatPrice(Number(stats.pendingPayouts), userCountry)} hint="Awaiting release" />
+        <StatCard icon={CreditCard} accent="violet" label="Pending Payouts" value={formatMoney(Number(stats.pendingPayouts))} hint="Awaiting release" />
       </div>
 
       {/* Chart + side */}

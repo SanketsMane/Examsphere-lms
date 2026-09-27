@@ -81,7 +81,7 @@ export default async function AdminCouponsPage({
               <TableRow key={coupon.id}>
                 <TableCell className="font-mono font-medium">{coupon.code}</TableCell>
                 <TableCell>
-                  {coupon.type === "PERCENTAGE" ? `${coupon.value}%` : `$${coupon.value}`}
+                  {coupon.type === "PERCENTAGE" ? `${coupon.value}%` : `₹${coupon.value.toLocaleString("en-IN")}`}
                 </TableCell>
                 <TableCell className="capitalize text-xs text-muted-foreground">
                     {Array.isArray(coupon.applicableOn) && coupon.applicableOn.length > 0 

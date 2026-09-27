@@ -110,7 +110,7 @@ export function CategoryDialog({ category, parentCategories = [], trigger }: Cat
 
                     <div className="space-y-2">
                         <Label htmlFor="name">Name</Label>
-                        <Input id="name" name="name" defaultValue={category?.name} required placeholder="e.g. Web Development" />
+                        <Input id="name" name="name" defaultValue={category?.name} required placeholder="e.g. JEE" />
                     </div>
 
                     <div className="space-y-2">
@@ -124,6 +124,12 @@ export function CategoryDialog({ category, parentCategories = [], trigger }: Cat
                     </div>
 
                     <div className="space-y-2">
+                        <Label htmlFor="displayOrder">Display Order</Label>
+                        <Input id="displayOrder" name="displayOrder" type="number" defaultValue={category?.displayOrder ?? 0} />
+                        <p className="text-xs text-muted-foreground">Lower numbers appear first.</p>
+                    </div>
+
+                    <div className="space-y-2">
                         <Label htmlFor="parentId">Parent Category (Optional)</Label>
                         <Select name="parentId" defaultValue={category?.parentId || ""}>
                             <SelectTrigger>
@@ -132,7 +138,7 @@ export function CategoryDialog({ category, parentCategories = [], trigger }: Cat
                             <SelectContent>
                                 <SelectItem value="null">None (Top Level)</SelectItem>
                                 {parentCategories
-                                    .filter(c => c.id !== category?.id) // Prevent self-parenting
+                                    .filter(c => c.id !== category?.id && !c.parentId)
                                     .map((c) => (
                                         <SelectItem key={c.id} value={c.id}>
                                             {c.name}

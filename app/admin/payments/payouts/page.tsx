@@ -26,9 +26,12 @@ import { ConfirmAction, ActionButton } from "../_components/confirm-action";
 
 export const dynamic = "force-dynamic";
 
-/** Payout amounts are Decimal in the DB; render via the row's own currency column. */
-function payoutAmount(amount: unknown, currency: string) {
-  return formatMoney(Number(amount ?? 0), { currency: currency || "USD", showDecimals: true });
+/**
+ * Payout amounts are Decimal rupees. The row's currency column defaults to "USD" in
+ * the schema even though every wallet/payout is INR, so it is deliberately ignored.
+ */
+function payoutAmount(amount: unknown, _currency?: string) {
+  return formatMoney(Number(amount ?? 0), { currency: "INR", showDecimals: true });
 }
 
 function fullDate(d: Date) {
@@ -68,7 +71,7 @@ export default async function PayoutsPage() {
   const pending = payouts.filter((p) => p.status === "Pending");
   const approved = payouts.filter((p) => p.status === "Approved");
   const pendingTotal = pending.reduce((sum, p) => sum + Number(p.requestedAmount ?? 0), 0);
-  const currency = payouts[0]?.currency || "USD";
+  const currency = "INR";
 
   return (
     <div className="space-y-6">

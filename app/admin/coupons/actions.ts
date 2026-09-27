@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/action-security";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CouponType } from "@prisma/client";
@@ -16,7 +17,17 @@ const createCouponSchema = z.object({
   perUserLimit: z.number().min(1),
 });
 
+async function isAdmin() {
+  try {
+    await requireAdmin();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function createCoupon(formData: FormData) {
+  if (!(await isAdmin())) return { error: "Unauthorized" };
   try {
     const rawData = {
       code: formData.get("code") as string,
@@ -47,6 +58,7 @@ export async function createCoupon(formData: FormData) {
 }
 
 export async function toggleCouponStatus(id: string, isActive: boolean) {
+    if (!(await isAdmin())) return { error: "Unauthorized" };
     try {
         await prisma.coupon.update({
             where: { id },
@@ -60,6 +72,7 @@ export async function toggleCouponStatus(id: string, isActive: boolean) {
 }
 
 export async function deleteCoupon(id: string) {
+    if (!(await isAdmin())) return { error: "Unauthorized" };
     try {
         await prisma.coupon.delete({ where: { id } });
         revalidatePath("/admin/coupons");
