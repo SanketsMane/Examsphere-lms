@@ -20,13 +20,20 @@ export default async function TeacherProfilePage({ params }: Props) {
     const teacher = await prisma.teacherProfile.findUnique({
         where: { id },
         include: {
-            user: true,
+            // Public page: only the fields shown, never the full user row (email, phone…).
+            user: { select: { id: true, name: true, image: true } },
         }
     });
 
-    if (!teacher) {
+    // Unapproved applicants must not have a public profile.
+    if (!teacher || !teacher.isApproved) {
         notFound();
     }
+
+    // availability is stored as { monday: ["09:00-10:00", …], … }; show nothing rather than a placeholder.
+    const availability = Object.entries((teacher.availability ?? {}) as Record<string, unknown>)
+        .filter((entry): entry is [string, string[]] => Array.isArray(entry[1]) && entry[1].length > 0)
+        .map(([day, slots]) => `${day.charAt(0).toUpperCase()}${day.slice(1)}: ${slots.join(", ")}`);
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-24 pb-12">
@@ -39,7 +46,7 @@ export default async function TeacherProfilePage({ params }: Props) {
                             <div className="relative w-32 h-32 mx-auto mb-4">
                                 <Image
                                     src={teacher.user.image ? constructS3Url(teacher.user.image) : "https://github.com/shadcn.png"}
-                                    alt={teacher.user.name || "Instructor"}
+                                    alt={teacher.user.name || "Mentor"}
                                     fill
                                     className="object-cover rounded-full border-4 border-blue-50 dark:border-blue-900"
                                 />
@@ -51,14 +58,18 @@ export default async function TeacherProfilePage({ params }: Props) {
                             </div>
 
                             <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-1">{teacher.user.name}</h1>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{teacher.expertise[0] || "Instructor"}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{teacher.expertise[0] || "Mentor"}</p>
 
                             <div className="flex items-center justify-center gap-2 mb-6">
-                                <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-3 py-1 rounded-full text-sm font-semibold">
-                                    <IconStarFilled className="w-4 h-4" />
-                                    <span>{teacher.rating?.toFixed(1) || "5.0"}</span>
-                                    <span className="text-slate-400 font-normal">({teacher.totalReviews})</span>
-                                </div>
+                                {teacher.totalReviews > 0 && teacher.rating ? (
+                                    <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-3 py-1 rounded-full text-sm font-semibold">
+                                        <IconStarFilled className="w-4 h-4" />
+                                        <span>{teacher.rating.toFixed(1)}</span>
+                                        <span className="text-slate-400 font-normal">({teacher.totalReviews})</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-xs text-slate-400">New mentor</span>
+                                )}
                                 {teacher.experience && (
                                     <div className="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 text-green-600 px-3 py-1 rounded-full text-sm font-semibold">
                                         <IconVideo className="w-4 h-4" />
@@ -67,27 +78,26 @@ export default async function TeacherProfilePage({ params }: Props) {
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4 mb-6">
-                                <div className="text-center">
-                                    <span className="block text-lg font-bold text-slate-900 dark:text-white">{teacher.totalStudents}+</span>
+                            {teacher.totalStudents > 0 && (
+                                <div className="border-t border-slate-100 dark:border-slate-700 pt-4 mb-6 text-center">
+                                    <span className="block text-lg font-bold text-slate-900 dark:text-white">{teacher.totalStudents}</span>
                                     <span className="text-xs text-slate-500">Students</span>
                                 </div>
-                                <div className="text-center border-l border-slate-100 dark:border-slate-700">
-                                    <span className="block text-lg font-bold text-slate-900 dark:text-white">100%</span>
-                                    <span className="text-xs text-slate-500">Response</span>
-                                </div>
-                            </div>
+                            )}
 
                             <div className="space-y-3">
-                                <BookingWidget
-                                    teacher={{
-                                        id: teacher.id,
-                                        name: teacher.user.name || "Instructor",
-                                        image: teacher.user.image ? constructS3Url(teacher.user.image) : "",
-                                        headline: teacher.expertise[0] || "Expert Instructor",
-                                        hourlyRate: teacher.hourlyRate || 5000
-                                    }}
-                                />
+                                {/* No rate set yet: don't show an invented price, just the message option. */}
+                                {!!teacher.hourlyRate && (
+                                    <BookingWidget
+                                        teacher={{
+                                            id: teacher.id,
+                                            name: teacher.user.name || "Mentor",
+                                            image: teacher.user.image ? constructS3Url(teacher.user.image) : "",
+                                            headline: teacher.expertise[0] || "ExamSphere Mentor",
+                                            hourlyRate: teacher.hourlyRate
+                                        }}
+                                    />
+                                )}
                                 <Link href={`/dashboard/messages?createChatWith=${teacher.user.id}`} className="w-full">
                                     <Button variant="outline" className="w-full">
                                         <IconMessageCircle className="w-4 h-4 mr-2" />
@@ -97,16 +107,19 @@ export default async function TeacherProfilePage({ params }: Props) {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-                            <h3 className="font-bold text-slate-900 dark:text-white mb-4">Availability</h3>
-                            <div className="space-y-3">
-                                {/* Simple placeholder for availability */}
-                                <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-                                    <IconCalendar className="w-4 h-4 text-blue-500" />
-                                    <span>Mon - Fri, 9:00 AM - 5:00 PM</span>
+                        {availability.length > 0 && (
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                                <h3 className="font-bold text-slate-900 dark:text-white mb-4">Availability</h3>
+                                <div className="space-y-3">
+                                    {availability.map((line) => (
+                                        <div key={line} className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                                            <IconCalendar className="w-4 h-4 text-blue-500" />
+                                            <span>{line}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* Right Column: Main Content */}
@@ -146,7 +159,7 @@ export default async function TeacherProfilePage({ params }: Props) {
                 {/* Upcoming Live Sessions Section */}
                 <div className="md:col-span-3 mt-8">
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Upcoming Live Sessions</h2>
-                    
+
                     {/* Fetch sessions for this teacher */}
                     {await (async () => {
                         const upcomingSessions = await prisma.liveSession.findMany({
@@ -175,7 +188,7 @@ export default async function TeacherProfilePage({ params }: Props) {
                         // We need to import SessionCard here or create a simple version if imports are tricky in async block.
                         // Since this is a server component, we can layout the cards directly or use a client component wrapper.
                         // Let's use a server-friendly rendering of the session card style.
-                        
+
                         return (
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {upcomingSessions.map(session => (
@@ -203,7 +216,7 @@ export default async function TeacherProfilePage({ params }: Props) {
                                                         {session.description || "Join this interactive live session to learn and grow."}
                                                     </p>
                                                 </div>
-                                                
+
                                                 <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
                                                     <div className="flex items-center gap-2 text-sm text-slate-500">
                                                         <IconClock className="w-4 h-4" />
@@ -213,12 +226,11 @@ export default async function TeacherProfilePage({ params }: Props) {
                                                         {session.price === 0 ? (
                                                             <span className="text-green-600">Free</span>
                                                         ) : (
-                                                            // Simple formatting since we don't have helper here easily without importing
-                                                            `$${(session.price / 100).toFixed(2)}` 
+                                                            `₹${(session.price / 100).toFixed(0)}`
                                                         )}
                                                     </div>
                                                 </div>
-                                                
+
                                                 <Button className="w-full bg-slate-900 text-white hover:bg-blue-600 dark:bg-white dark:text-slate-900 dark:hover:bg-blue-100 rounded-xl font-bold">
                                                     Book Now
                                                 </Button>
