@@ -45,12 +45,10 @@ export const CoursePurchaseButton = ({
             setIsLoading(true);
             const result = await enrollInCourseWithWallet(courseId, couponCode);
 
-            if (result.status === "success") {
-                toast.success("Enrolled successfully via Wallet!");
-                window.location.reload();
-            } else if (result.status === "already_enrolled") {
-                toast.info("You are already enrolled.");
-                window.location.reload();
+            if (result.status === "success" || result.status === "already_enrolled") {
+                toast.success(result.status === "success" ? "Enrolled successfully via Wallet!" : "You are already enrolled.");
+                window.location.href = `/courses/${result.slug}?success=1`;
+                return;
             } else {
                 throw new Error(result.message || "Wallet enrollment failed");
             }
@@ -97,11 +95,20 @@ export const CoursePurchaseButton = ({
                 name: data.courseName,
                 description: data.courseDescription,
                 user: data.user,
-                onSuccess: (paymentId) => {
-                    toast.success("Payment successful! Redirecting...");
-                    window.location.href = `/courses/${data.courseName.toLowerCase().replace(/\s+/g, '-')}/?success=1`;
-                        // Fallback reload if slug construction is risky, but ideally backend provided URL or we reload
-                        window.location.reload(); 
+                onSuccess: async (_paymentId, rzp) => {
+                    const verify = await fetch("/api/checkout/verify", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(rzp),
+                    }).catch(() => null);
+                    if (verify?.ok) {
+                        toast.success("Payment successful! Redirecting...");
+                    } else {
+                        // Payment went through at Razorpay; the webhook will still
+                        // activate the enrollment, so don't tell the user it failed.
+                        toast.info("Payment received. Your access will be ready in a moment.");
+                    }
+                    window.location.href = `/courses/${data.courseSlug}?success=1`;
                 },
                 onError: (err) => {
                     console.error(err);
@@ -135,7 +142,8 @@ export const CoursePurchaseButton = ({
                         window.location.href = `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
                         return;
                     }
-                    throw new Error("Enrollment failed");
+                    const errorMsg = await response.text();
+                    throw new Error(errorMsg || "Could not enroll in this course");
                 }
 
                 toast.success("Enrolled successfully! Redirecting...");
