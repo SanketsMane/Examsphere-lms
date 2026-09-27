@@ -67,7 +67,7 @@ export default async function BookSessionPage(props: {
   const sessionAuth = await auth.api.getSession({ headers: await headers() });
 
   if (!sessionAuth?.user) {
-    redirect(`/login?redirect=/live-sessions/${params.id}/book`);
+    redirect(`/login?callbackUrl=${encodeURIComponent(`/live-sessions/${params.id}/book`)}`);
   }
 
   const session = await getSession(params.id);
