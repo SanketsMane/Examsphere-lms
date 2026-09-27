@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/app/data/user/require-user";
 import { prisma } from "@/lib/db";
-import { getRazorpayInstance } from "@/lib/razorpay";
+import { getRazorpayInstance, getRazorpayKeyId, isRazorpayConfigured, PAYMENTS_UNAVAILABLE_MESSAGE, RazorpayNotConfiguredError } from "@/lib/razorpay";
+import { toPaise } from "@/lib/money";
 
 /**
  * Create Razorpay Order for wallet recharge
@@ -10,6 +11,10 @@ import { getRazorpayInstance } from "@/lib/razorpay";
 export async function POST(req: NextRequest) {
     try {
         const user = await requireUser();
+
+        if (!(await isRazorpayConfigured())) {
+            return NextResponse.json({ error: PAYMENTS_UNAVAILABLE_MESSAGE }, { status: 503 });
+        }
         const { amount, currencySymbol: userCurrencySymbol } = await req.json(); // Accept user's currency symbol for better error messages
 
         // Fetch dynamic settings (Author: Sanket)
@@ -18,7 +23,10 @@ export async function POST(req: NextRequest) {
         const currencyCode = settings?.currencyCode || "INR";
         const currencySymbol = settings?.currencySymbol || "₹";
 
-        const localAmount = amount;
+        const localAmount = Number(amount);
+        if (!Number.isInteger(localAmount)) {
+            return NextResponse.json({ error: "Enter a whole rupee amount" }, { status: 400 });
+        }
         const maxRecharge = 100000; // 1 Lakh
 
         if (localAmount < minRecharge) {
@@ -39,7 +47,7 @@ export async function POST(req: NextRequest) {
         const razorpay = await getRazorpayInstance();
 
         // Razorpay expects amount in PAISA
-        const amountInPaisa = Math.round(localAmount * 100);
+        const amountInPaisa = toPaise(localAmount);
 
         // Create Wallet Transaction Entry (Pending)
         const wallet = await prisma.wallet.findUnique({
@@ -59,13 +67,17 @@ export async function POST(req: NextRequest) {
             data: {
                 walletId: walletId!,
                 type: "RECHARGE",
-                amount: localAmount, // Store in main unit
+                // Zero until the payment is captured: a positive pending row showed
+                // up as money received in the history. The webhook sets the real
+                // amount from metadata.requestedAmount when it credits the wallet.
+                amount: 0,
                 balanceBefore: wallet ? wallet.balance : 0,
-                balanceAfter: wallet ? wallet.balance : 0, // Will update on success
+                balanceAfter: wallet ? wallet.balance : 0,
                 description: "Wallet Recharge (Pending)",
                 metadata: {
                     status: "pending",
-                    provider: "razorpay"
+                    provider: "razorpay",
+                    requestedAmount: localAmount,
                 }
             }
         });
@@ -96,7 +108,7 @@ export async function POST(req: NextRequest) {
             orderId: order.id,
             amount: amountInPaisa,
             currency: currencyCode,
-            keyId: await import("@/lib/razorpay").then(m => m.getRazorpayKeyId()),
+            keyId: await getRazorpayKeyId(),
             user: {
                 name: user.name,
                 email: user.email,
@@ -104,12 +116,12 @@ export async function POST(req: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error("Wallet recharge error:", error);
-        if (error.message.includes("Razorpay credentials")) {
-             return NextResponse.json({ error: "Payment Gateway Configuration Error" }, { status: 503 });
+        if (error instanceof RazorpayNotConfiguredError) {
+            return NextResponse.json({ error: PAYMENTS_UNAVAILABLE_MESSAGE }, { status: 503 });
         }
+        console.error("Wallet recharge error:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to create order" },
+            { error: "Could not start the payment. Please try again in a moment." },
             { status: 500 }
         );
     }

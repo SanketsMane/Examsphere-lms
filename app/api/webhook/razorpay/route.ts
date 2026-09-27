@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { sendReceiptEmail, sendNotificationEmail } from "@/lib/email-notifications";
 import { getRazorpayConfig, getRazorpayInstance } from "@/lib/razorpay";
 import { activatePaidEnrollment } from "@/lib/course-purchase";
+import { toPaise } from "@/lib/money";
 import crypto from "crypto";
 import { calculatePlatformCommission } from "@/lib/finance";
 
@@ -103,10 +104,16 @@ export async function POST(req: NextRequest) {
             });
 
             if (transactionRecord) {
-                const metadata = transactionRecord.metadata as any;
-                
-                if (metadata?.status !== "success") {
-                    // Fetch wallet and user first
+                const metadata = (transactionRecord.metadata as any) || {};
+                // New rows keep amount 0 until capture; older rows stored it up front.
+                const creditAmount = Number(metadata.requestedAmount ?? transactionRecord.amount);
+
+                if (metadata.status !== "success" && Number.isInteger(creditAmount) && creditAmount > 0) {
+                    if (payment.amount < toPaise(creditAmount)) {
+                        console.error(`Wallet recharge ${transactionRecord.id} underpaid: ${payment.amount} paise`);
+                        return NextResponse.json({ status: "ignored" });
+                    }
+
                     const wallet = await prisma.wallet.findUnique({
                         where: { id: transactionRecord.walletId },
                         select: { userId: true }
@@ -116,40 +123,47 @@ export async function POST(req: NextRequest) {
                         return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
                     }
 
-                    // Update Transaction
-                    await prisma.walletTransaction.update({
-                        where: { id: transactionRecord.id },
-                        data: {
-                            description: "Wallet Recharge (Successful)",
-                            metadata: {
-                                ...metadata,
-                                status: "success",
-                                paymentId: payment.id
+                    await prisma.$transaction(async (tx) => {
+                        // Claim on the pending description so concurrent/retried
+                        // deliveries credit the wallet exactly once.
+                        const claimed = await tx.walletTransaction.updateMany({
+                            where: { id: transactionRecord.id, description: "Wallet Recharge (Pending)" },
+                            data: { description: "Wallet Recharge (Successful)" },
+                        });
+                        if (claimed.count !== 1) return;
+
+                        const updatedWallet = await tx.wallet.update({
+                            where: { id: transactionRecord.walletId },
+                            data: { balance: { increment: creditAmount } }
+                        });
+
+                        await tx.walletTransaction.update({
+                            where: { id: transactionRecord.id },
+                            data: {
+                                amount: creditAmount,
+                                balanceBefore: updatedWallet.balance - creditAmount,
+                                balanceAfter: updatedWallet.balance,
+                                metadata: {
+                                    ...metadata,
+                                    status: "success",
+                                    paymentId: payment.id
+                                }
                             }
-                        }
-                    });
+                        });
 
-                    // Update Wallet Balance
-                    await prisma.wallet.update({
-                        where: { id: transactionRecord.walletId },
-                        data: {
-                            balance: { increment: transactionRecord.amount }
-                        }
-                    });
-
-                    // Log System Transaction
-                    await prisma.systemTransaction.create({
-                        data: {
-                            amount: payment.amount, // in paisa
-                            currency: payment.currency,
-                            status: "SUCCESS",
-                            method: payment.method,
-                            providerOrderId: orderId,
-                            providerPaymentId: payment.id,
-                            type: "WALLET_RECHARGE",
-                            description: `Wallet Recharge for User`,
-                            userId: wallet.userId, 
-                        }
+                        await tx.systemTransaction.create({
+                            data: {
+                                amount: payment.amount, // in paisa
+                                currency: payment.currency,
+                                status: "SUCCESS",
+                                method: payment.method,
+                                providerOrderId: orderId,
+                                providerPaymentId: payment.id,
+                                type: "WALLET_RECHARGE",
+                                description: `Wallet Recharge for User`,
+                                userId: wallet.userId,
+                            }
+                        });
                     });
                 }
                 return NextResponse.json({ status: "ok" });
