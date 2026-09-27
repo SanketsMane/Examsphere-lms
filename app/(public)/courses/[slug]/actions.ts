@@ -3,9 +3,16 @@
 import { requireUser } from "@/app/data/user/require-user";
 import { protectEnrollmentAction } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
-import { getRazorpayInstance, getRazorpayKeyId } from "@/lib/razorpay";
+import {
+  getRazorpayInstance,
+  getRazorpayKeyId,
+  isRazorpayConfigured,
+  PAYMENTS_UNAVAILABLE_MESSAGE,
+} from "@/lib/razorpay";
 import { checkEnrollmentLimit } from "@/lib/subscription-limits";
 import { toPaise } from "@/lib/money";
+import { createCourseCommission, redeemCoupon, validateCourseCoupon } from "@/lib/course-purchase";
+import { logger } from "@/lib/logger";
 
 export async function enrollInCourseAction(
   courseId: string
@@ -31,6 +38,10 @@ export async function enrollInCourseAction(
         };
     }
 
+    if (!(await isRazorpayConfigured())) {
+      return { status: "error", message: PAYMENTS_UNAVAILABLE_MESSAGE };
+    }
+
     const course = await prisma.course.findUnique({
       where: {
         id: courseId,
@@ -40,109 +51,83 @@ export async function enrollInCourseAction(
         title: true,
         price: true,
         slug: true,
+        status: true,
       },
     });
 
-    if (!course) {
+    if (!course || course.status !== "Published") {
       return {
         status: "error",
-        message: "Course not found",
+        message: "This course is not available for purchase",
       };
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      const existingEnrollment = await tx.enrollment.findUnique({
-        where: {
-          userId_courseId: {
-            userId: user.id,
-            courseId: courseId,
-          },
-        },
-        select: {
-          status: true,
-          id: true,
-        },
-      });
+    if (course.price <= 0) {
+      return { status: "error", message: "This course is free. Use the Enroll for Free button." };
+    }
 
-      if (existingEnrollment?.status === "Active") {
-        return {
-          status: "already_enrolled",
-          message: "You are already enrolled in this Course",
-        };
-      }
-
-      let enrollment;
-
-      if (existingEnrollment) {
-        enrollment = await tx.enrollment.update({
-          where: {
-            id: existingEnrollment.id,
-          },
-          data: {
-            amount: course.price,
-            status: "Pending",
-            updatedAt: new Date(),
-          },
-        });
-      } else {
-        enrollment = await tx.enrollment.create({
-          data: {
-            userId: user.id,
-            courseId: course.id,
-            amount: course.price,
-            status: "Pending",
-          },
-        });
-      }
-
-      // Razorpay Initialization
-      const razorpay = await getRazorpayInstance();
-      if (!razorpay) throw new Error("Razorpay failed to initialize");
-
-      // Course prices are stored in whole rupees (see lib/money.ts). This line
-      // previously passed the rupee figure to Razorpay as paise, charging ₹4.99
-      // for a ₹499 course — a 100x undercharge.
-      const amountInPaisa = toPaise(course.price);
-      const options = {
-        amount: amountInPaisa.toString(),
-        currency: "INR",
-        receipt: enrollment.id,
-        notes: {
-          type: "COURSE_ENROLLMENT",
-          courseId: course.id,
-          enrollmentId: enrollment.id,
+    const existingEnrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
           userId: user.id,
-        }
-      };
-
-      const order = await razorpay.orders.create(options);
-
-      // Store Razorpay Order ID
-      await tx.enrollment.update({
-        where: { id: enrollment.id },
-        data: { razorpayOrderId: order.id }
-      });
-
-      return {
-        status: "success",
-        orderId: order.id,
-        amount: amountInPaisa,
-        currency: "INR",
-        keyId: await getRazorpayKeyId(),
-        courseName: course.title,
-        user: {
-          name: user.name,
-          email: user.email,
-        }
-      };
+          courseId: courseId,
+        },
+      },
+      select: { status: true },
     });
 
-    return result;
+    if (existingEnrollment?.status === "Active") {
+      return {
+        status: "already_enrolled",
+        message: "You are already enrolled in this Course",
+      };
+    }
+
+    // Enrollment.amount is whole rupees; only the Razorpay order is in paise.
+    const enrollment = await prisma.enrollment.upsert({
+      where: { userId_courseId: { userId: user.id, courseId: course.id } },
+      update: { amount: course.price, status: "Pending" },
+      create: { userId: user.id, courseId: course.id, amount: course.price, status: "Pending" },
+    });
+
+    // Network call kept outside any DB transaction so a slow gateway can't hold locks.
+    const razorpay = await getRazorpayInstance();
+    const amountInPaisa = toPaise(course.price);
+    const order = await razorpay.orders.create({
+      amount: amountInPaisa,
+      currency: "INR",
+      receipt: enrollment.id,
+      notes: {
+        type: "COURSE_ENROLLMENT",
+        courseId: course.id,
+        enrollmentId: enrollment.id,
+        userId: user.id,
+      }
+    });
+
+    await prisma.enrollment.update({
+      where: { id: enrollment.id },
+      data: { razorpayOrderId: order.id }
+    });
+
+    return {
+      status: "success",
+      orderId: order.id,
+      amount: amountInPaisa,
+      currency: "INR",
+      keyId: await getRazorpayKeyId(),
+      courseName: course.title,
+      courseSlug: course.slug,
+      user: {
+        name: user.name,
+        email: user.email,
+      }
+    };
   } catch (error) {
-    console.error("Enrollment error:", error);
+    logger.error("Course enrollment (Razorpay) error", { error, courseId }, user.id);
     return {
       status: "error",
-      message: "Failed to enroll in course",
+      message: "Could not start the payment. Please try again in a moment.",
     };
   }
 }
@@ -155,6 +140,11 @@ export async function enrollInCourseWithWallet(courseId: string, couponCode?: st
     const user = await requireUser();
 
     try {
+        const securityCheck = await protectEnrollmentAction(user.id);
+        if (!securityCheck.success) {
+            return { status: "error", message: securityCheck.error || "Security check failed" };
+        }
+
         // [STRICT ENFORCEMENT] Check Subscription Limits
         const limitCheck = await checkEnrollmentLimit(user.id);
         if (!limitCheck.allowed) {
@@ -166,13 +156,22 @@ export async function enrollInCourseWithWallet(courseId: string, couponCode?: st
 
         const course = await prisma.course.findUnique({
             where: { id: courseId },
-            select: { id: true, title: true, price: true, slug: true }
+            select: {
+                id: true,
+                title: true,
+                price: true,
+                slug: true,
+                status: true,
+                userId: true,
+                user: { select: { teacherProfile: { select: { id: true } } } },
+            }
         });
 
-        if (!course) return { status: "error", message: "Course not found" };
+        if (!course || course.status !== "Published") {
+            return { status: "error", message: "This course is not available for purchase" };
+        }
 
         return await prisma.$transaction(async (tx) => {
-            // Check existing enrollment
             const existingEnrollment = await tx.enrollment.findUnique({
                 where: {
                     userId_courseId: {
@@ -183,40 +182,29 @@ export async function enrollInCourseWithWallet(courseId: string, couponCode?: st
             });
 
             if (existingEnrollment?.status === "Active") {
-                return { status: "already_enrolled", message: "You are already enrolled in this Course" };
+                return { status: "already_enrolled", message: "You are already enrolled in this Course", slug: course.slug };
             }
 
             let finalPrice = course.price;
             let couponId: string | undefined;
 
-             // --- Coupon Logic (Basic - similar to groups) ---
-            if (couponCode && finalPrice > 0) {
-                 const coupon = await tx.coupon.findUnique({
-                    where: { code: couponCode, isActive: true }
+            if (couponCode?.trim() && finalPrice > 0) {
+                const coupon = await validateCourseCoupon(tx, {
+                    code: couponCode,
+                    userId: user.id,
+                    course: { price: course.price, userId: course.userId, teacherProfileId: course.user.teacherProfile?.id },
                 });
-
-                if (coupon) {
-                    const now = new Date();
-                    const isValid = 
-                        (!coupon.expiryDate || now <= coupon.expiryDate) &&
-                        (coupon.usedCount < coupon.usageLimit);
-                    
-                    const isApplicableOnType = coupon.applicableOn.includes("COURSE");
-
-                    if (isValid && isApplicableOnType) {
-                        let discount = 0;
-                        if (coupon.type === "PERCENTAGE") {
-                            discount = Math.round((course.price * coupon.value) / 100);
-                        } else {
-                            discount = coupon.value;
-                        }
-                        finalPrice = Math.max(0, course.price - discount);
-                        couponId = coupon.id;
-                    }
+                if (!coupon.ok) {
+                    return { status: "error", message: coupon.message };
                 }
+                finalPrice = coupon.finalPrice;
+                couponId = coupon.couponId;
             }
 
-            // Wallet Deduction
+            if (couponId && !(await redeemCoupon(tx, couponId, user.id))) {
+                return { status: "error", message: "This coupon has reached its usage limit" };
+            }
+
             if (finalPrice > 0) {
                  const { deductFromWallet } = await import("@/lib/wallet-internal");
                  await deductFromWallet(
@@ -229,18 +217,12 @@ export async function enrollInCourseWithWallet(courseId: string, couponCode?: st
                 );
             }
 
-            // Create/Update Enrollment
-            if (existingEnrollment) {
-                await tx.enrollment.update({
+            const enrollment = existingEnrollment
+                ? await tx.enrollment.update({
                     where: { id: existingEnrollment.id },
-                    data: {
-                        status: "Active",
-                        amount: finalPrice,
-                        updatedAt: new Date()
-                    }
-                });
-            } else {
-                await tx.enrollment.create({
+                    data: { status: "Active", amount: finalPrice }
+                })
+                : await tx.enrollment.create({
                     data: {
                         userId: user.id,
                         courseId: course.id,
@@ -248,24 +230,32 @@ export async function enrollInCourseWithWallet(courseId: string, couponCode?: st
                         status: "Active"
                     }
                 });
-            }
 
-            // Commission Logic
-            // NOTE: no teacher commission is accrued on a wallet course purchase.
-            // This mirrors the Razorpay path, which also does not accrue commission
-            // here (it is handled downstream on payment confirmation). Flagged during
-            // the course-creation audit: commission on wallet purchases needs a
-            // product decision before being added, since changing it retroactively
-            // would alter teacher payouts.
+            // Same commission record the Razorpay webhook creates (paise).
+            await createCourseCommission(tx, course.id, toPaise(finalPrice), {
+                enrollmentId: enrollment.id,
+                studentId: user.id,
+                paidVia: "wallet",
+            });
+
+            await tx.notification.create({
+                data: {
+                    userId: user.id,
+                    title: "Course Enrollment Successful",
+                    message: `You're now enrolled in "${course.title}".`,
+                    type: "Course",
+                    data: { courseId: course.id, action: "enrolled" },
+                }
+            });
 
             return { status: "success", message: "Enrolled successfully", slug: course.slug };
         });
 
     } catch (error: any) {
-        console.error("Wallet Enrollment Error:", error);
-         if (error.message?.includes("Insufficient balance")) {
+        if (error?.message?.includes("Insufficient balance")) {
             return { status: "error", message: error.message };
         }
-        return { status: "error", message: "Failed to enroll with wallet" };
+        logger.error("Wallet enrollment error", { error, courseId }, user.id);
+        return { status: "error", message: "Could not complete the wallet payment. Your balance was not charged." };
     }
 }
