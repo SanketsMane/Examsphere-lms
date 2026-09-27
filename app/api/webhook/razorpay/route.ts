@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendReceiptEmail, sendNotificationEmail } from "@/lib/email-notifications";
+import { getRazorpayConfig, getRazorpayInstance } from "@/lib/razorpay";
+import { activatePaidEnrollment } from "@/lib/course-purchase";
 import crypto from "crypto";
 import { calculatePlatformCommission } from "@/lib/finance";
 
@@ -17,6 +19,16 @@ interface ExtendedUserSubscription {
 
 export const dynamic = "force-dynamic";
 
+// payment.captured does not carry order notes, so look the coupon up on the order.
+async function getOrderCouponId(orderId: string): Promise<string | null> {
+    try {
+        const order = await (await getRazorpayInstance()).orders.fetch(orderId);
+        return (order.notes as Record<string, string> | undefined)?.couponId || null;
+    } catch {
+        return null;
+    }
+}
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.text();
@@ -26,9 +38,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Missing signature" }, { status: 400 });
         }
 
-        // Fetch secret directly from DB since we store it there
-        const settings = await prisma.siteSettings.findFirst();
-        const webhookSecret = settings?.razorpayWebhookSecret || settings?.razorpayKeySecret;
+        const config = await getRazorpayConfig();
+        const webhookSecret = config.webhookSecret || config.keySecret;
 
         if (!webhookSecret) {
             console.error("Razorpay secret not configured");
@@ -69,138 +80,19 @@ export async function POST(req: NextRequest) {
             });
 
             if (enrollment) {
-                // Razorpay retries webhooks, and deliveries can arrive concurrently.
-                // The previous read-then-write let two deliveries both observe
-                // status !== "Active" and each create a commission row, paying the
-                // teacher twice for one sale. updateMany with the status in the WHERE
-                // clause makes activation a single atomic compare-and-set: exactly one
-                // delivery gets count === 1 and does the follow-up work.
-                const claimed = await prisma.enrollment.updateMany({
-                    where: { id: enrollment.id, status: { not: "Active" } },
-                    data: { status: "Active", razorpayPaymentId: payment.id },
+                const result = await activatePaidEnrollment({
+                    orderId,
+                    paymentId: payment.id,
+                    amountPaise: payment.amount,
+                    currency: payment.currency,
+                    method: payment.method,
+                    email: payment.email,
+                    contact: payment.contact,
+                    couponId: payload.order?.entity?.notes?.couponId || payment.notes?.couponId || await getOrderCouponId(orderId),
                 });
-
-                if (claimed.count === 1) {
-                    // Fetch course details for notification
-                    const course = await prisma.course.findUnique({
-                        where: { id: enrollment.courseId },
-                        select: { title: true }
-                    });
-
-
-                    // Get course with teacher info
-                    const courseWithTeacher = await prisma.course.findUnique({
-                        where: { id: enrollment.courseId },
-                        include: { user: { include: { teacherProfile: true } } }
-                    });
-
-                    // 1a. Handle Commission (Author: Sanket)
-                    const { platformFee, teacherNet } = await calculatePlatformCommission(
-                        payment.amount, 
-                        courseWithTeacher?.user.teacherProfile?.id
-                    );
-
-                    if (courseWithTeacher?.user.teacherProfile) {
-                        await prisma.commission.create({
-                            data: {
-                                teacherId: courseWithTeacher.user.teacherProfile.id,
-                                courseId: enrollment.courseId,
-                                type: "Course",
-                                amount: payment.amount,
-                                commission: platformFee,
-                                netAmount: teacherNet,
-                                status: "Pending"
-                            }
-                        });
-                    }
-
-                    // Create system notification
-                    await prisma.notification.create({
-                        data: {
-                            userId: enrollment.userId,
-                            title: "Course Enrollment Successful",
-                            message: `Your payment was successful! You're now enrolled in "${course?.title || 'the course'}".`,
-                            type: "Course",
-                            data: { courseId: enrollment.courseId, action: "enrolled" }
-                        }
-                    });
-
-                    // Log Transaction
-                    await prisma.systemTransaction.create({
-                        data: {
-                            amount: payment.amount, // in paisa
-                            currency: payment.currency,
-                            status: "SUCCESS",
-                            method: payment.method,
-                            providerOrderId: orderId,
-                            providerPaymentId: payment.id,
-                            type: "COURSE_PURCHASE",
-                            description: `Course Enrollment: ${enrollment.courseId}`,
-                            userId: enrollment.userId,
-                            metadata: {
-                                enrollmentId: enrollment.id,
-                                email: payment.email,
-                                contact: payment.contact,
-                            }
-                        }
-                    });
-
-                     // Send Receipt Email (Author: Sanket)
-                     if (payment.email) {
-                        try {
-                             await sendReceiptEmail(
-                                 payment.email,
-                                 payload.payment.entity.notes.userName || "Student",
-                                 `Course Purchase: ${course?.title}`,
-                                 (payment.amount / 100).toFixed(2) + " " + payment.currency,
-                                 payment.id
-                             );
-
-                             // Send Payment Successful Email
-                             const { sendTemplatedEmail } = await import("@/lib/email");
-                             await sendTemplatedEmail(
-                                "paymentSuccessful",
-                                payment.email,
-                                "Payment Successful",
-                                {
-                                    userName: payload.payment.entity.notes.userName || "Student",
-                                    itemName: course?.title || "Course",
-                                    amount: (payment.amount / 100).toFixed(2) + " " + payment.currency,
-                                    transactionId: payment.id
-                                }
-                             );
-                        } catch (e) {
-                            console.error("Failed to send course receipt email", e);
-                        }
-
-                        // Send Payment Successful Email
-                         try {
-                             const { sendTemplatedEmail } = await import("@/lib/email");
-                             await sendTemplatedEmail(
-                                "paymentSuccessful",
-                                payment.email,
-                                "Payment Successful",
-                                {
-                                    userName: payload.payment.entity.notes.userName || "Student",
-                                    itemName: course?.title || "Course",
-                                    amount: (payment.amount / 100).toFixed(2) + " " + payment.currency,
-                                    transactionId: payment.id
-                                }
-                             );
-                         } catch (e) {
-                             console.error("Failed to send payment success email", e);
-                         }
-                     }
-
-                    console.log(`Enrollment ${enrollment.id} completed via Razorpay`);
-
-                    // 1b. Trigger Referral Reward (Author: Sanket)
-                    try {
-                        const { rewardReferrer } = await import("@/lib/wallet-internal");
-                        await rewardReferrer(enrollment.userId);
-                    } catch (e) {
-                        console.error("Failed to trigger referral reward for enrollment", e);
-                    }
+                if (result.found && result.underpaid) {
+                    // Acknowledge so Razorpay stops retrying; it is logged for manual review.
+                    return NextResponse.json({ status: "ignored" });
                 }
                 return NextResponse.json({ status: "ok" });
             }
