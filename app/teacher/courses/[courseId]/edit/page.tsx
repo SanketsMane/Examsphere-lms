@@ -19,6 +19,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { CourseActions } from "./_components/CourseActions";
 import { requireTeacher } from "@/app/data/auth/require-roles";
+import { getCourseCategoryOptions } from "@/lib/course-categories";
 
 export default async function EditRoute({
   params,
@@ -30,9 +31,10 @@ export default async function EditRoute({
   await requireTeacher();
   const { courseId } = await params;
   const { tab } = await searchParams;
-  const [data, session] = await Promise.all([
+  const [data, session, categories] = await Promise.all([
     adminGetCourse(courseId),
-    auth.api.getSession({ headers: await headers() })
+    auth.api.getSession({ headers: await headers() }),
+    getCourseCategoryOptions(),
   ]);
   const defaultTab = typeof tab === 'string' ? tab : "basic-info";
 
@@ -64,7 +66,7 @@ export default async function EditRoute({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <EditCourseForm data={data} />
+              <EditCourseForm data={data} categories={categories} />
             </CardContent>
           </Card>
         </TabsContent>

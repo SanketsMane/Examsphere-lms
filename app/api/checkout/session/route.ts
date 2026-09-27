@@ -7,6 +7,7 @@ import { protectGeneral, getClientIP } from "@/lib/security";
 import { logger } from "@/lib/logger";
 import { getRazorpayInstance } from "@/lib/razorpay";
 import { sendTemplatedEmail } from "@/lib/email";
+import { getOneOnOneSessionPrice, SESSION_PRICE_NOT_SET_MESSAGE } from "@/lib/session-pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -51,10 +52,15 @@ export async function POST(req: Request) {
         }
 
         const scheduledAt = new Date(dateTime);
-        const hourlyRate = teacher.hourlyRate || 0;
         const duration = 60; // Standard duration
-        
-        console.log("[Checkout] Teacher:", teacher.id, "Rate:", hourlyRate, "Time:", scheduledAt);
+        // Whole rupees from TeacherPricing (legacy hourlyRate fallback). No price means no booking,
+        // not a free session.
+        const sessionPrice = await getOneOnOneSessionPrice(teacher.id, duration);
+        if (sessionPrice === null) {
+            return NextResponse.json({ error: SESSION_PRICE_NOT_SET_MESSAGE }, { status: 400 });
+        }
+
+        console.log("[Checkout] Teacher:", teacher.id, "Price:", sessionPrice, "Time:", scheduledAt);
 
         // ----------------------------------------------------------------
         // QA-004: Check for Student Scheduling Overlaps
@@ -90,7 +96,7 @@ export async function POST(req: Request) {
         }
 
         // Coupon Logic (Server-side calculation)
-        let finalPrice = hourlyRate;
+        let finalPrice = sessionPrice;
         let couponId: string | undefined;
 
         if (couponCode) {
@@ -104,9 +110,9 @@ export async function POST(req: Request) {
                  const isValid = (!coupon.expiryDate || now <= coupon.expiryDate) && (coupon.usedCount < coupon.usageLimit);
                  if (isValid) {
                       if (coupon.type === "PERCENTAGE") {
-                        finalPrice = Math.round((hourlyRate * (100 - coupon.value)) / 100);
+                        finalPrice = Math.round((sessionPrice * (100 - coupon.value)) / 100);
                     } else {
-                        finalPrice = Math.max(0, hourlyRate - coupon.value);
+                        finalPrice = Math.max(0, sessionPrice - coupon.value);
                     }
                     couponId = coupon.id;
                     console.log("[Checkout] Coupon applied. Final Price:", finalPrice);
@@ -129,7 +135,7 @@ export async function POST(req: Request) {
         const isFree = amountInPaisa === 0;
 
         console.log("[Checkout] Creating LiveSession in DB...");
-        
+
         const liveSession = await prisma.liveSession.create({
             data: {
                 teacherId: teacherProfileId,
@@ -138,14 +144,14 @@ export async function POST(req: Request) {
                 description: "Private Live Session",
                 scheduledAt: scheduledAt,
                 duration: 60,
-                price: amountInPaisa, 
-                status: "scheduled", 
+                price: amountInPaisa,
+                status: "scheduled",
                 meetingUrl: `/video-call/${crypto.randomUUID()}`,
                 bookings: {
                     create: {
                         studentId: user.id,
                         amount: amountInPaisa,
-                        status: isFree ? "confirmed" : "pending", 
+                        status: isFree ? "confirmed" : "pending",
                     }
                 }
             },
@@ -158,11 +164,11 @@ export async function POST(req: Request) {
                 }
             }
         });
-        
+
         console.log("[Checkout] LiveSession Created:", liveSession.id);
 
         const bookingId = liveSession.bookings[0].id;
-        
+
         // Send confirmation emails
         try {
             if (user.email && liveSession.teacher.user.email) {
@@ -216,7 +222,7 @@ export async function POST(req: Request) {
                 }
             });
         }
-        
+
         // Create Razorpay Order
         const options = {
             amount: amountInPaisa.toString(),

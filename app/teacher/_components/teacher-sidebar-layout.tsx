@@ -12,18 +12,47 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { usePathname } from "next/navigation";
+
+const SECTION_LABELS: Record<string, string> = {
+    courses: "Courses",
+    groups: "Group Classes",
+    sessions: "Live Sessions",
+    quizzes: "Quizzes",
+    resources: "Resources",
+    students: "Students",
+    messages: "Messages",
+    notifications: "Notifications",
+    calendar: "Calendar",
+    pricing: "Pricing & Offerings",
+    finance: "Payouts & Earnings",
+    subscription: "Subscription",
+    analytics: "Analytics",
+    verification: "Profile Verification",
+    ai: "ExamSphere AI",
+    profile: "Profile",
+    settings: "Settings",
+    help: "Help",
+    bundles: "Bundles",
+};
 
 export function TeacherSidebarLayout({
     children,
+    isApproved = true,
 }: {
     children: React.ReactNode;
+    isApproved?: boolean;
 }) {
+    const pathname = usePathname();
+    const section = pathname?.split("/")[2];
+    const pageLabel = (section && SECTION_LABELS[section]) || "Dashboard";
+
     // We rely on the Server Layout to handle auth redirects.
     // If this component renders, the user IS authorized.
 
     return (
         <SidebarProvider>
-            <TeacherSidebar />
+            <TeacherSidebar isApproved={isApproved} />
             <SidebarInset>
                 <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
                     <SidebarTrigger className="-ml-1" />
@@ -37,7 +66,7 @@ export function TeacherSidebarLayout({
                             </BreadcrumbItem>
                             <BreadcrumbSeparator className="hidden md:block" />
                             <BreadcrumbItem>
-                                <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                                <BreadcrumbPage>{pageLabel}</BreadcrumbPage>
                             </BreadcrumbItem>
                         </BreadcrumbList>
                     </Breadcrumb>

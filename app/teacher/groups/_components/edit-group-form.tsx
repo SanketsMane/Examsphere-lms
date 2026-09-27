@@ -9,28 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
-import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
-import { useEffect } from "react";
 // import { updateGroupClass } from "@/app/actions/groups"; // Need to create this
 
 export function EditGroupForm({ group }: { group: any }) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [userCountry, setUserCountry] = useState<string>("India");
-
-    useEffect(() => {
-        const fetchUser = async () => {
-            const { data: session } = await authClient.getSession();
-            if (session?.user) {
-                setUserCountry((session.user as any).country || "India");
-            }
-        };
-        fetchUser();
-    }, []);
-
-    const currencyConfig = getCurrencyConfig(userCountry);
-
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         // Using manual fetch or server action wrapper if I create one.
@@ -91,10 +74,10 @@ export function EditGroupForm({ group }: { group: any }) {
                     <Input id="maxStudents" name="maxStudents" type="number" defaultValue={group.maxStudents} max="12" required />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="price">Price ({currencyConfig.code})</Label>
+                    <Label htmlFor="price">Price (INR)</Label>
                     <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
-                            {currencyConfig.symbol}
+                            ₹
                         </span>
                         <Input 
                             id="price" 

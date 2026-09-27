@@ -41,8 +41,9 @@ interface TeacherProfileFormProps {
   onSave?: (profile: TeacherProfile) => void;
 }
 
+// Almost all ExamSphere teachers are in India, so IST leads and is the default.
 const timezones = [
-  "UTC", "EST", "CST", "MST", "PST", "GMT", "CET", "IST", "JST", "AEST", "Other"
+  "IST", "GST", "SGT", "GMT", "UTC", "CET", "EST", "CST", "PST", "AEST", "Other"
 ];
 
 export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFormProps) {
@@ -60,7 +61,7 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
       languages: existingProfile?.languages || [],
       hourlyRate: existingProfile?.hourlyRate || undefined,
       experience: existingProfile?.experience || undefined,
-      timezone: existingProfile?.timezone || "",
+      timezone: existingProfile?.timezone || "IST",
       qualifications: existingProfile?.qualifications || [],
       certifications: existingProfile?.certifications || [],
     },
@@ -339,7 +340,7 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
                   <Input
                     value={qualificationInput}
                     onChange={(e) => setQualificationInput(e.target.value)}
-                    placeholder="e.g., PhD in Computer Science, MIT"
+                    placeholder="e.g., M.Sc. Physics, IIT Delhi"
                     onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addQualification())}
                   />
                   <Button type="button" onClick={addQualification} size="icon" variant="outline">
@@ -371,7 +372,7 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
                   <Input
                     value={certificationInput}
                     onChange={(e) => setCertificationInput(e.target.value)}
-                    placeholder="e.g., AWS Certified Solutions Architect"
+                    placeholder="e.g., CSIR-NET"
                     onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addCertification())}
                   />
                   <Button type="button" onClick={addCertification} size="icon" variant="outline">

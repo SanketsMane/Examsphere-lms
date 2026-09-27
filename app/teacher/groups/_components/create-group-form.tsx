@@ -10,9 +10,6 @@ import { createGroupClass } from "@/app/actions/groups";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox"; // Verify existence
-import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
-import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
-import { useEffect } from "react";
 import {
     Select,
     SelectContent,
@@ -23,26 +20,13 @@ import {
 import { FileUpload } from "@/components/ui/file-upload";
 
 interface CreateGroupFormProps {
-    subjects: { id: string, name: string }[];
+    subjects: { id: string, name: string, isFallback?: boolean }[];
 }
 
 export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [subjectId, setSubjectId] = useState<string>("");
-    const [userCountry, setUserCountry] = useState<string>("India");
-
-    useEffect(() => {
-        const fetchUser = async () => {
-            const { data: session } = await authClient.getSession();
-            if (session?.user) {
-                setUserCountry((session.user as any).country || "India");
-            }
-        };
-        fetchUser();
-    }, []);
-
-    const currencyConfig = getCurrencyConfig(userCountry);
 
     const [bannerUrl, setBannerUrl] = useState<string>("");
 
@@ -74,7 +58,8 @@ export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
                 maxStudents,
                 isAdvertised,
                 isFreeTrialEligible,
-                subjectId,
+                // Taxonomy fallback options have no Subject row, so they can't be linked by id.
+                subjectId: subjects.find((s) => s.id === subjectId && !s.isFallback) ? subjectId : undefined,
                 bannerUrl
             });
 
@@ -96,7 +81,7 @@ export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
         <form action={onSubmit} className="space-y-6 max-w-2xl">
             <div className="space-y-2">
                 <Label htmlFor="title">Class Title</Label>
-                <Input id="title" name="title" required placeholder="Python Bootcamp" />
+                <Input id="title" name="title" required placeholder="NEET Biology: Human Physiology Crash Course" />
             </div>
 
             <div className="space-y-2">
@@ -137,10 +122,10 @@ export function CreateGroupForm({ subjects = [] }: CreateGroupFormProps) {
                     <Input id="maxStudents" name="maxStudents" type="number" defaultValue="10" max="12" required />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="price">Price ({currencyConfig.code})</Label>
+                    <Label htmlFor="price">Price (INR)</Label>
                     <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
-                            {currencyConfig.symbol}
+                            ₹
                         </span>
                         <Input 
                             id="price" 

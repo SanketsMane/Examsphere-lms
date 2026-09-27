@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Banknote, History, AlertCircle, TrendingUp, DollarSign, Clock, Wallet, CheckCircle } from "lucide-react";
+import { History, AlertCircle, TrendingUp, IndianRupee, Clock, Wallet } from "lucide-react";
+import Link from "next/link";
+import { formatMoney } from "@/lib/money";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { WithdrawForm } from "./_components/withdraw-form";
@@ -25,9 +27,8 @@ export default async function TeacherFinancePage() {
     // Fetch comprehensive data using the centralized action
     const data = await getTeacherPayoutData();
     
-    // Fallback for user location/currency (if needed for display formatting, though default is USD usually)
-    // For simplicity, we'll stick to the data provided by the action which returns numbers.
-    // Formatting can be done inline.
+    // getTeacherPayoutData returns rupees (commission paise already divided by 100).
+    const inr = (amount: number) => formatMoney(amount, { showDecimals: true });
 
     const earningsData = {
         totalEarnings: data.totalEarnings,
@@ -75,7 +76,7 @@ export default async function TeacherFinancePage() {
                         <TrendingUp className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">${earningsData.totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div className="text-2xl font-bold">{inr(earningsData.totalEarnings)}</div>
                         <p className="text-xs text-muted-foreground">
                             Lifetime earnings
                         </p>
@@ -85,10 +86,10 @@ export default async function TeacherFinancePage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Available Balance</CardTitle>
-                        <DollarSign className="h-4 w-4 text-blue-500" />
+                        <IndianRupee className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">${earningsData.availableForPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div className="text-2xl font-bold">{inr(earningsData.availableForPayout)}</div>
                         <p className="text-xs text-muted-foreground">
                             Ready for withdrawal
                         </p>
@@ -101,7 +102,7 @@ export default async function TeacherFinancePage() {
                         <Clock className="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">${earningsData.pendingPayouts.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div className="text-2xl font-bold">{inr(earningsData.pendingPayouts)}</div>
                         <p className="text-xs text-muted-foreground">
                             Under review
                         </p>
@@ -114,7 +115,7 @@ export default async function TeacherFinancePage() {
                         <Wallet className="h-4 w-4 text-purple-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">${earningsData.averageSessionEarning.toFixed(2)}</div>
+                        <div className="text-2xl font-bold">{inr(earningsData.averageSessionEarning)}</div>
                         <p className="text-xs text-muted-foreground">
                             Performance metric
                         </p>
@@ -146,7 +147,7 @@ export default async function TeacherFinancePage() {
                                     {payoutHistory.map(payout => (
                                         <TableRow key={payout.id}>
                                             <TableCell>{payout.requestedAt}</TableCell>
-                                            <TableCell>${payout.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                                            <TableCell>{inr(payout.amount)}</TableCell>
                                             <TableCell>
                                                 {getStatusBadge(payout.status)}
                                             </TableCell>
@@ -177,14 +178,13 @@ export default async function TeacherFinancePage() {
                             <WithdrawForm
                                 balance={earningsData.availableForPayout}
                                 userId={session.user.id}
-                                country={(session.user as any).country} 
                             />
                             
                             {earningsData.availableForPayout < 50 && (
                                 <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
                                     <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
                                     <div className="text-xs text-yellow-800">
-                                        Minimum payout amount is $50.00.
+                                        Minimum payout amount is ₹50.
                                     </div>
                                 </div>
                             )}
@@ -198,7 +198,7 @@ export default async function TeacherFinancePage() {
                         </CardHeader>
                         <CardContent className="text-xs text-muted-foreground space-y-2">
                              <p>• Payouts are processed within 3-5 business days.</p>
-                             <p>• Ensure your bank details are correct in your profile.</p>
+                             <p>• Payouts go to the bank account saved on <Link href="/teacher/verification" className="underline">Profile Verification</Link>.</p>
                              <p>• Platform fees are deducted automatically from earnings.</p>
                         </CardContent>
                     </Card>

@@ -32,10 +32,10 @@ const templateSchema = z.object({
 
 type TemplateFormData = z.infer<typeof templateSchema>;
 
+// Used only when the page passes no subjects; mirrors the ExamSphere taxonomy.
 const SUBJECTS = [
-    "Mathematics", "Physics", "Chemistry", "Biology", "Computer Science",
-    "Programming", "Web Development", "Data Science", "English", "Business",
-    "Marketing", "Design", "Other"
+    "Physics", "Chemistry", "Mathematics", "Biology", "Botany", "Zoology",
+    "Science", "Social Science", "English", "Other"
 ];
 
 const RECURRENCE_TYPES = [
@@ -63,7 +63,7 @@ export function CreateTemplateForm({ onSuccess, subjects = [] }: { onSuccess: ()
         setLoading(true);
         const result = await createSessionTemplate({
             ...data,
-            price: data.price * 100 // Convert to cents
+            price: data.price * 100 // Rupees -> paise
         });
         
         if (result.success) {
@@ -84,7 +84,7 @@ export function CreateTemplateForm({ onSuccess, subjects = [] }: { onSuccess: ()
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Template Name</FormLabel>
-                            <FormControl><Input placeholder="e.g., Weekly Math Tutoring" {...field} /></FormControl>
+                            <FormControl><Input placeholder="e.g., Weekly JEE Maths Doubt Session" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -103,7 +103,7 @@ export function CreateTemplateForm({ onSuccess, subjects = [] }: { onSuccess: ()
                                     </FormControl>
                                     <SelectContent>
                                         {subjects.length > 0 ? (
-                                            subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)
+                                            subjects.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)
                                         ) : (
                                             SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
                                         )}

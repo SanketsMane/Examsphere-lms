@@ -20,7 +20,7 @@ interface PricingFormProps {
     pricing: any[];
     allowFreeDemo: boolean;
     allowFreeGroup: boolean;
-    teacherId: string;
+    teacherId?: string;
 }
 
 const SESSION_TYPES = [
@@ -32,7 +32,7 @@ const SESSION_TYPES = [
     { type: "FULL_COURSE", label: "Full Course (Base Price)", defaultDuration: 0 },
 ];
 
-export function PricingForm({ pricing, allowFreeDemo, allowFreeGroup, teacherId }: PricingFormProps) {
+export function PricingForm({ pricing, allowFreeDemo, allowFreeGroup }: PricingFormProps) {
     /**
      * Teacher pricing configuration form.
      * Allows toggling free trials and setting session rates.
@@ -67,7 +67,6 @@ export function PricingForm({ pricing, allowFreeDemo, allowFreeGroup, teacherId 
         setIsLoading(true);
         try {
             const result = await updateTeacherPricing({
-                teacherId,
                 ...config,
                 pricing: prices
             });
@@ -75,7 +74,7 @@ export function PricingForm({ pricing, allowFreeDemo, allowFreeGroup, teacherId 
             if (result.success) {
                 toast.success("Pricing updated successfully");
             } else {
-                toast.error("Failed to update pricing");
+                toast.error(result.error || "Failed to update pricing");
             }
         } catch (error) {
             toast.error("An error occurred");
@@ -120,7 +119,7 @@ export function PricingForm({ pricing, allowFreeDemo, allowFreeGroup, teacherId 
             <Card>
                 <CardHeader>
                     <CardTitle>Session Pricing</CardTitle>
-                    <CardDescription>Set your standard rates for different session types.</CardDescription>
+                    <CardDescription>Set your standard rates in whole rupees. Students can only book 1-on-1 sessions once the 30 or 60 minute price is set above ₹0.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {SESSION_TYPES.map((type) => {
@@ -131,7 +130,7 @@ export function PricingForm({ pricing, allowFreeDemo, allowFreeGroup, teacherId 
                                     <Label className="font-semibold text-base">{type.label}</Label>
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-muted-foreground mb-1.5 block">Price (USD)</Label>
+                                    <Label className="text-xs text-muted-foreground mb-1.5 block">Price (₹ INR)</Label>
                                     <Input 
                                         type="number" 
                                         min="0"

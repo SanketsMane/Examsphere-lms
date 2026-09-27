@@ -41,8 +41,15 @@ export async function GET(
 
     let whereClause: any = { quizId: id };
 
-    // Students can only see their own attempts
-    if ((session.user as any).role === 'student') {
+    const role = (session.user as any).role;
+    let canSeeAll = role === 'admin';
+    if (role === 'teacher') {
+      const quiz = await prisma.quiz.findUnique({ where: { id }, select: { createdById: true } });
+      canSeeAll = quiz?.createdById === session.user.id;
+    }
+
+    // Only the quiz owner (or an admin) sees other people's attempts.
+    if (!canSeeAll) {
       whereClause.userId = session.user.id;
     } else if (userId) {
       whereClause.userId = userId;

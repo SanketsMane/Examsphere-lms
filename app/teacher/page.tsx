@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionWithRole } from "../data/auth/require-roles";
 import { getTeacherAnalytics } from "../actions/analytics";
-import { formatPrice } from "@/lib/currency";
+import { formatMoney } from "@/lib/money";
 import { ChartAreaInteractive } from "@/components/sidebar/chart-area-interactive";
 import { PageHeader, StatCard, Panel } from "@/components/dashboard/es/dashboard-kit";
 import { requireTeacher } from "@/app/data/auth/require-roles";
@@ -26,7 +26,6 @@ export default async function TeacherDashboardPage() {
   const session = await getSessionWithRole();
   if (!session?.user?.id) redirect("/login");
 
-  const userCountry = (session.user as any).country || "India";
 
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { userId: session.user.id },
@@ -35,7 +34,8 @@ export default async function TeacherDashboardPage() {
   if (!teacherProfile.isApproved) redirect("/teacher/verification");
 
   const { stats, topReview, revenueData } = await getTeacherAnalytics();
-  const chartData = revenueData.map((item) => ({ date: item.month, revenue: item.revenue / 100 }));
+  // revenueData is already whole rupees; dividing by 100 under-reported it 100x.
+  const chartData = revenueData.map((item) => ({ date: item.month, revenue: item.revenue }));
   const firstName = session.user.name?.split(" ")[0] || "there";
 
   const secondary = [
@@ -58,14 +58,14 @@ export default async function TeacherDashboardPage() {
 
       {/* Primary metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard icon={Wallet} accent="navy" label="Total Earnings" value={formatPrice(stats.totalEarnings, userCountry)} hint="Lifetime" />
+        <StatCard icon={Wallet} accent="navy" label="Course Sales" value={formatMoney(stats.totalEarnings)} hint="Lifetime, before platform fees" />
         <StatCard icon={Users} accent="sky" label="Lifetime Students" value={stats.studentsCount.toString()} hint={`${stats.coursesCreated} courses`} />
         <StatCard icon={BookOpen} accent="orange" label="Courses" value={stats.coursesCreated.toString()} hint={`${stats.blogPostsCount} blog posts`} />
         <StatCard
           icon={Clock}
           accent="violet"
           label="Pending Payout"
-          value={formatPrice(Number(stats.pendingPayouts), userCountry)}
+          value={formatMoney(Number(stats.pendingPayouts))}
           hint={Number(stats.pendingPayouts) > 0 ? "Processing soon" : "All settled"}
         />
       </div>
@@ -73,7 +73,7 @@ export default async function TeacherDashboardPage() {
       {/* Chart + side */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Panel title="Earnings Statistics" icon={Wallet} className="lg:col-span-2" bodyClassName="p-2 sm:p-4">
-          <ChartAreaInteractive data={chartData} dataKey="revenue" label="Revenue" color="#0F2557" />
+          <ChartAreaInteractive data={chartData} dataKey="revenue" label="Revenue (₹)" color="#0F2557" />
         </Panel>
 
         <Panel title="Top Review" icon={Star}>

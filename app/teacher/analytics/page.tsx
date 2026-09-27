@@ -1,6 +1,7 @@
 import { requireTeacher } from "../../data/auth/require-roles";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Users, TrendingUp, Book, MonitorPlay, DollarSign, Activity } from "lucide-react";
+import { BarChart, Users, TrendingUp, Book, MonitorPlay, IndianRupee, Activity } from "lucide-react";
+import { formatPrice } from "@/lib/currency";
 import { getTeacherAnalytics } from "@/app/data/teacher/get-teacher-analytics";
 import { ChartAreaInteractive } from "@/components/sidebar/chart-area-interactive";
 import { auth } from "@/lib/auth";
@@ -97,11 +98,11 @@ export default async function TeacherAnalyticsPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Net Earnings</CardTitle>
             <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-full">
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <IndianRupee className="h-4 w-4 text-green-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${analytics.totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatPrice(analytics.totalRevenue, "India")}</div>
             <p className="text-xs text-muted-foreground mt-1 flex items-center">
               {analytics.revenueGrowth >= 0 ?
                 <TrendingUp className="h-3 w-3 text-green-500 mr-1" /> :
@@ -129,7 +130,7 @@ export default async function TeacherAnalyticsPage() {
             <ChartAreaInteractive
               data={analytics.graphData}
               dataKey="revenue"
-              label="Revenue ($)"
+              label="Revenue (₹)"
               color="var(--chart-1)"
             />
           </CardContent>

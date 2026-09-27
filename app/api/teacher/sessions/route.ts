@@ -14,19 +14,19 @@ const createSessionSchema = z.object({
     message: "Invalid date format",
   }),
   duration: z.number().min(15).max(480), // 15 mins to 8 hours
-  price: z.number().min(0, "Price cannot be negative"), // Allow 0, check logic below
+  price: z.number().int().min(0, "Price cannot be negative"), // Paise. Allow 0, check logic below
   timezone: z.string().optional(),
   isRecurring: z.boolean().optional(),
   recurringPattern: z.string().nullable().optional(),
   isFreeTrialEligible: z.boolean().optional().default(false),
 }).refine((data) => {
-  // If not a free trial, enforce minimum price
-  if (!data.isFreeTrialEligible && data.price < 50) {
+  // Paid sessions must cost at least ₹50 (5000 paise), matching CreateSessionForm.
+  if (!data.isFreeTrialEligible && data.price < 5000) {
     return false;
   }
   return true;
 }, {
-  message: "Minimum price is 50 cents for paid sessions",
+  message: "Minimum price is ₹50 for paid sessions",
   path: ["price"],
 });
 
@@ -71,7 +71,30 @@ export async function GET(req: NextRequest) {
       take: 500, // Prevent OOM crashes on veteran accounts
     });
 
-    return NextResponse.json({ sessions });
+    // Summary for SessionStats. Computed with aggregates so it isn't capped by `take` above.
+    const [upcoming, completed, earnings] = await Promise.all([
+      prisma.liveSession.count({
+        where: { teacherId: teacherProfile.id, status: "scheduled", scheduledAt: { gte: new Date() } },
+      }),
+      prisma.liveSession.count({
+        where: { teacherId: teacherProfile.id, status: "completed" },
+      }),
+      prisma.liveSession.aggregate({
+        where: { teacherId: teacherProfile.id, status: "completed" },
+        _sum: { price: true },
+      }),
+    ]);
+
+    const stats = {
+      total: await prisma.liveSession.count({ where: { teacherId: teacherProfile.id } }),
+      upcoming,
+      completed,
+      // Paise, like LiveSession.price.
+      totalEarnings: earnings._sum.price ?? 0,
+      averageRating: teacherProfile.rating ?? undefined,
+    };
+
+    return NextResponse.json({ sessions, stats });
   } catch (error) {
     console.error("Error fetching sessions:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -95,6 +118,13 @@ export async function POST(req: NextRequest) {
 
     if (!teacherProfile) {
       return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 });
+    }
+
+    if (!teacherProfile.isApproved && (session.user as any).role !== "admin") {
+      return NextResponse.json(
+        { error: "Your teacher account is awaiting admin approval." },
+        { status: 403 }
+      );
     }
 
     const json = await req.json();
