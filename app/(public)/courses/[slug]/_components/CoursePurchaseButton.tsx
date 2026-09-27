@@ -47,7 +47,9 @@ export const CoursePurchaseButton = ({
 
             if (result.status === "success" || result.status === "already_enrolled") {
                 toast.success(result.status === "success" ? "Enrolled successfully via Wallet!" : "You are already enrolled.");
-                window.location.href = `/courses/${result.slug}?success=1`;
+                const slug = "slug" in result ? result.slug : undefined;
+                if (slug) window.location.href = `/courses/${slug}?success=1`;
+                else window.location.reload();
                 return;
             } else {
                 throw new Error(result.message || "Wallet enrollment failed");

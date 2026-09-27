@@ -11,6 +11,9 @@ import { toPaise } from "@/lib/money";
 export async function POST(req: NextRequest) {
     try {
         const user = await requireUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
         if (!(await isRazorpayConfigured())) {
             return NextResponse.json({ error: PAYMENTS_UNAVAILABLE_MESSAGE }, { status: 503 });

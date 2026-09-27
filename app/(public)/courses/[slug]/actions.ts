@@ -18,6 +18,7 @@ export async function enrollInCourseAction(
   courseId: string
 ): Promise<any> {
   const user = await requireUser();
+  if (!user) return { status: "error", message: "Please log in to enroll" };
 
   try {
     // Apply security protection for enrollment actions
@@ -138,6 +139,7 @@ export async function enrollInCourseAction(
  */
 export async function enrollInCourseWithWallet(courseId: string, couponCode?: string) {
     const user = await requireUser();
+    if (!user) return { status: "error", message: "Please log in to enroll" };
 
     try {
         const securityCheck = await protectEnrollmentAction(user.id);
