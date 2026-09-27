@@ -48,7 +48,7 @@ export function ownerTagFor(userId: string) {
  */
 export async function canDeleteKey(user: { id: string; role?: string | null }, key: string) {
   if (user.role === "admin") return true;
-  if (key.includes(`-o${ownerTagFor(user.id)}-`)) return true;
+  if (/^[0-9a-f-]{36}-o[0-9a-f]{16}-/.test(key) && key.slice(37, 55) === `o${ownerTagFor(user.id)}-`) return true;
   // Records store either the bare key or a full URL; a short key would make
   // the substring match below meaningless.
   if (key.length < 20) return false;
