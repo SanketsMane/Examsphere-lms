@@ -37,8 +37,6 @@ async function getEmailProvider() {
   if (provider.type === 'gmail') {
     return nodemailer.createTransport({
       service: 'gmail',
-      logger: true,
-      debug: true,
       auth: {
         user: (config.user || '').trim(),
         pass: (config.pass || '').trim()
@@ -49,8 +47,6 @@ async function getEmailProvider() {
       host: (config.host || '').trim(),
       port: config.port,
       secure: config.secure,
-      logger: true,
-      debug: true,
       auth: {
         user: (config.user || '').trim(),
         pass: (config.pass || '').trim()
