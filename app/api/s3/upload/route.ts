@@ -10,6 +10,7 @@ import { protectGeneral } from "@/lib/security";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
+import { isAllowedUploadType, ownerTagFor, sanitizeFileName } from "../s3-access";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,15 @@ export async function POST(request: Request) {
 
     const { fileName, contentType, size } = validation.data;
 
+    // The bucket is publicly readable, so an unrestricted type would let anyone
+    // host HTML/JS/SVG on our domain.
+    if (!isAllowedUploadType(contentType)) {
+      return NextResponse.json(
+        { error: "This file type is not allowed. Upload an image, PDF, MP4/WebM video or an Office document." },
+        { status: 400 }
+      );
+    }
+
     // 1. Enforce 500MB per-file limit (Increased from 5MB)
     const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
     if (size > MAX_FILE_SIZE) {
@@ -65,11 +75,11 @@ export async function POST(request: Request) {
 
     const dbUser = user as any;
     const currentUsed = Number(dbUser.storageUsed || 0);
-    const limit = Number(dbUser.storageLimit || 5 * 1024 * 1024 * 1024); // Default 5GB
+    const limit = Number(dbUser.storageLimit || 500 * 1024 * 1024); // schema default: 500 MB
 
     if (currentUsed + size > limit) {
       return NextResponse.json(
-        { error: "Storage limit reached (5GB). Please delete some files or upgrade." },
+        { error: `Storage limit reached (${formatBytes(limit)}). Please delete some files or upgrade.` },
         { status: 400 }
       );
     }
@@ -84,7 +94,9 @@ export async function POST(request: Request) {
       } as any
     });
 
-    const uniqueKey = `${uuidv4()}-${fileName}`;
+    // The owner tag lets /api/s3/delete recognise the uploader before the key
+    // is saved on any record (e.g. removing a file from an unsaved form).
+    const uniqueKey = `${uuidv4()}-o${ownerTagFor(user.id)}-${sanitizeFileName(fileName)}`;
 
     // Author: Sanket - Include ContentType to ensure proper file serving
     // Client MUST send the exact same Content-Type header during PUT
@@ -117,4 +129,10 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function formatBytes(bytes: number) {
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb >= 1) return `${Number.isInteger(gb) ? gb : gb.toFixed(1)} GB`;
+  return `${Math.round(bytes / (1024 * 1024))} MB`;
 }

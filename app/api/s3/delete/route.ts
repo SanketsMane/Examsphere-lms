@@ -5,11 +5,11 @@ import { env } from "@/lib/env";
 import { getS3Client } from "@/lib/S3Client";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
+import { canDeleteKey } from "../s3-access";
 
 export const dynamic = "force-dynamic";
 
 export async function DELETE(request: Request) {
-  // Author: Sanket - Allow authenticated users to delete files, not just admins
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -31,11 +31,15 @@ export async function DELETE(request: Request) {
 
     const key = body.key;
 
-    if (!key) {
+    if (!key || typeof key !== "string") {
       return NextResponse.json(
         { error: "Missing or invalid object key" },
         { status: 400 }
       );
+    }
+
+    if (!(await canDeleteKey({ id: session.user.id, role: (session.user as any).role }, key))) {
+      return NextResponse.json({ error: "You can only delete your own files" }, { status: 403 });
     }
 
     const command = new DeleteObjectCommand({
@@ -52,7 +56,7 @@ export async function DELETE(request: Request) {
     );
   } catch {
     return NextResponse.json(
-      { error: "Missing or invalid object key" },
+      { error: "Could not delete the file. Please try again." },
       { status: 500 }
     );
   }
