@@ -377,6 +377,15 @@ export async function POST(req: NextRequest) {
                 const buyerId = payment.notes.userId;
                 const amount = payment.amount / 100; // Paisa to INR
 
+                // Webhooks are retried; issue at most one card per payment.
+                const alreadyIssued = await prisma.systemTransaction.findFirst({
+                    where: { providerPaymentId: payment.id, type: "GIFT_CARD_PURCHASE" },
+                    select: { id: true },
+                });
+                if (alreadyIssued) {
+                    return NextResponse.json({ status: "ok" });
+                }
+
                 // Generate unique gift card code
                 const code = crypto.randomBytes(4).toString('hex').toUpperCase();
 
