@@ -200,7 +200,7 @@ export const PROGRAMS: ProgramData[] = [
       },
       {
         q: "What are the fees?",
-        a: "Fees depend on the duration and batch you choose. Share your details through the enquiry form and our team will walk you through the options — there is no payment at the enquiry stage.",
+        a: "Fees depend on the duration and batch you choose, and are shown on each course on the Courses page. Pick the course that suits you and enroll online — if you have questions first, ask us in the chat.",
       },
     ],
   },
@@ -303,7 +303,7 @@ export const PROGRAMS: ProgramData[] = [
       },
       {
         q: "What are the fees?",
-        a: "Fees vary by duration and batch. Send an enquiry and our team will share the options that fit your target year — no payment is taken at enquiry stage.",
+        a: "Fees vary by duration and batch, and are shown on each course on the Courses page. Pick the course for your target year and enroll online — if you have questions first, ask us in the chat.",
       },
     ],
   },
@@ -413,7 +413,8 @@ export const PROGRAMS: ProgramData[] = [
     group: "foundation",
     navLabel: "Class 11–12 (Boards Prep)",
     icon: GraduationCap,
-    tag: "Foundation",
+    // Listed with the school programmes, but it is not part of the Foundation (Class 6–10) category.
+    tag: "Boards Preparation",
     title: "Class 11–12 — Boards Preparation",
     tagline: "Score in the boards without losing the entrance thread.",
     description:
@@ -494,7 +495,7 @@ export const PROGRAMS: ProgramData[] = [
     faqs: [
       {
         q: "Which boards do you cover?",
-        a: "Teaching is aligned to the CBSE syllabus and marking scheme, and it maps closely to most state boards. Tell us your board in the enquiry and we will confirm the fit before you join.",
+        a: "Teaching is aligned to the CBSE syllabus and marking scheme, and it maps closely to most state boards. Tell us your board in the chat and we will confirm the fit before you join.",
       },
       {
         q: "Can I take this along with JEE or NEET coaching?",
@@ -595,7 +596,7 @@ export const PROGRAMS: ProgramData[] = [
     faqs: [
       {
         q: "Is this aligned to my university's syllabus?",
-        a: "Content follows the NMC competency-based curriculum that most Indian universities derive from. Share your university in the enquiry and we will confirm the mapping before you enrol.",
+        a: "Content follows the NMC competency-based curriculum that most Indian universities derive from. Share your university in the chat and we will confirm the mapping before you enrol.",
       },
       {
         q: "Can I join for a single subject?",

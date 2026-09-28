@@ -96,16 +96,22 @@ export function HorizontalTeacherCard({ teacher }: TeacherCardProps) {
                         {teacher.name}
                     </h3>
 
-                    <div className="flex items-center justify-center gap-1 text-sm text-slate-500 dark:text-slate-400 mb-3">
-                        <IconMapPin className="h-3.5 w-3.5" />
-                        <span className="truncate max-w-[150px]">{teacher.country}</span>
-                    </div>
+                    {teacher.country && (
+                        <div className="flex items-center justify-center gap-1 text-sm text-slate-500 dark:text-slate-400 mb-3">
+                            <IconMapPin className="h-3.5 w-3.5" />
+                            <span className="truncate max-w-[150px]">{teacher.country}</span>
+                        </div>
+                    )}
 
-                    <div className="flex items-center justify-center gap-1 text-amber-600 bg-amber-50 dark:bg-amber-900/10 px-3 py-1 rounded-full text-sm font-medium border border-amber-100 dark:border-amber-900/30 dark:text-amber-400">
-                        <IconStarFilled className="h-3.5 w-3.5" />
-                        <span>{teacher.rating.toFixed(1)}</span>
-                        <span className="text-slate-400 font-normal ml-0.5">({teacher.reviewCount})</span>
-                    </div>
+                    {teacher.reviewCount > 0 && teacher.rating > 0 ? (
+                        <div className="flex items-center justify-center gap-1 text-amber-600 bg-amber-50 dark:bg-amber-900/10 px-3 py-1 rounded-full text-sm font-medium border border-amber-100 dark:border-amber-900/30 dark:text-amber-400">
+                            <IconStarFilled className="h-3.5 w-3.5" />
+                            <span>{teacher.rating.toFixed(1)}</span>
+                            <span className="text-slate-400 font-normal ml-0.5">({teacher.reviewCount})</span>
+                        </div>
+                    ) : (
+                        <span className="text-xs text-slate-400">New mentor</span>
+                    )}
                 </div>
             </div>
 

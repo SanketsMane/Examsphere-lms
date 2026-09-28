@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next';
 import { prisma } from '@/lib/db';
+import { PROGRAMS } from '@/app/(public)/_data/programs-content';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://examsphere.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://examsphere.online';
 
   let courseUrls: MetadataRoute.Sitemap = [];
   let blogUrls: MetadataRoute.Sitemap = [];
@@ -42,12 +43,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages = [
     '',
     '/courses',
-    '/teachers',
+    '/programs',
+    ...PROGRAMS.map((program) => `/programs/${program.slug}`),
     '/blog',
     '/about',
     '/contact',
+    '/faq',
     '/terms',
     '/privacy',
+    '/refund',
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),

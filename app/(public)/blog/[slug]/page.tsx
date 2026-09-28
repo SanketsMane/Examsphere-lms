@@ -12,10 +12,6 @@ import {
   Eye,
   User,
   ArrowLeft,
-  Share2,
-  Bookmark,
-  ThumbsUp,
-  MessageCircle
 } from "lucide-react";
 import { getBlogPostBySlug, getFeaturedBlogPosts } from "@/app/actions/blog";
 import { format } from "date-fns";
@@ -32,7 +28,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params;
   const post = await getBlogPostBySlug(slug);
 
-  if (!post) {
+  // getBlogPostBySlug doesn't filter drafts, so unpublished posts must 404 here.
+  if (!post || !post.isPublished) {
     notFound();
   }
 
@@ -111,26 +108,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <div className="font-semibold">{post.author.name}</div>
                 {post.author.teacherProfile && (
                   <div className="text-sm text-muted-foreground">
-                    Instructor • {post.author.teacherProfile.expertise?.slice(0, 2).join(", ")}
+                    Mentor • {((post.author.teacherProfile.expertise as string[] | null) ?? []).slice(0, 2).join(", ")}
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Share2 className="h-4 w-4 mr-2" />
-                Share
-              </Button>
-              <Button variant="outline" size="sm">
-                <Bookmark className="h-4 w-4 mr-2" />
-                Save
-              </Button>
-              <Button variant="outline" size="sm">
-                <ThumbsUp className="h-4 w-4 mr-2" />
-                {post.likes}
-              </Button>
             </div>
           </div>
 
@@ -196,22 +177,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 {post.author.teacherProfile?.expertise && (
                   <div className="flex flex-wrap gap-2">
                     <span className="text-sm font-medium text-muted-foreground">Expertise:</span>
-                    {post.author.teacherProfile.expertise.map((skill: any, index: number) => (
+                    {((post.author.teacherProfile.expertise as string[] | null) ?? []).map((skill, index) => (
                       <Badge key={index} variant="secondary" className="text-xs">
                         {skill}
                       </Badge>
                     ))}
                   </div>
                 )}
-                <div className="flex gap-2 mt-4">
-                  <Button size="sm" variant="outline">
-                    View Profile
-                  </Button>
-                  <Button size="sm">
-                    <MessageCircle className="h-3 w-3 mr-1" />
-                    Message
-                  </Button>
-                </div>
               </div>
             </div>
           </CardContent>

@@ -28,29 +28,35 @@ import Script from "next/script";
 //   weight: ["300", "400", "500", "600", "700"],
 // });
 
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://examsphere.online";
+const SITE_TITLE = "ExamSphere — JEE, NEET, Foundation & MBBS Preparation";
+const SITE_DESCRIPTION =
+  "Online coaching for JEE (Main & Advanced), NEET, Foundation (Class 6–10) and MBBS — live classes, structured practice, mock tests and mentorship. Browse courses and enroll online.";
+
 export const metadata: Metadata = {
-  title: "EXAMSPHERE - Professional Learning Management System",
-  description: "World-class learning management platform with live tutoring, interactive courses, and comprehensive analytics",
-  keywords: "LMS, learning management system, online courses, live tutoring, education platform",
-  authors: [{ name: "EXAMSPHERE Team" }],
-  creator: "EXAMSPHERE",
-  publisher: "EXAMSPHERE",
+  metadataBase: new URL(SITE_URL),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  keywords: "JEE, JEE Main, JEE Advanced, NEET, Foundation, Class 6-10, MBBS, online coaching, ExamSphere",
+  authors: [{ name: "ExamSphere" }],
+  creator: "ExamSphere",
+  publisher: "ExamSphere",
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
     type: "website",
-    locale: "en_US",
-    url: "https://examsphere.com",
-    siteName: "EXAMSPHERE",
-    title: "EXAMSPHERE - Professional Learning Management System",
-    description: "World-class learning management platform with live tutoring, interactive courses, and comprehensive analytics",
+    locale: "en_IN",
+    url: SITE_URL,
+    siteName: "ExamSphere",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "EXAMSPHERE - Professional Learning Management System",
-    description: "World-class learning management platform with live tutoring, interactive courses, and comprehensive analytics",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
 };
 
@@ -81,12 +87,11 @@ export default async function RootLayout({
   const appleTouchIcon = settings?.favicon
     ? constructS3Url(settings.favicon)
     : "/apple-touch-icon.png";
-  const siteName = settings?.siteName || "EXAMSPHERE";
+  const siteName = settings?.siteName || "ExamSphere";
 
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${sora.variable}`}>
       <head>
-        <title>{`${siteName} - Professional Learning Management System`}</title>
         <link rel="icon" href={favicon} />
         <meta name="theme-color" content="#2563eb" />
         <meta name="mobile-web-app-capable" content="yes" />

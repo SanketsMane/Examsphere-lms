@@ -49,10 +49,6 @@ export default function RefundPage() {
           Bank or gateway processing times may vary.
         </p>
 
-        <p className="text-xs text-slate-400 mt-6">
-          Note: This is a general template. Please confirm the final terms with ExamSphere before
-          publishing.
-        </p>
       </div>
 
       <Button variant="outline" asChild>

@@ -144,12 +144,12 @@ export function PublicChatbot() {
 
   return (
     <>
-      {/* Floating launcher */}
+      {/* Floating launcher — sits above the signed-in mobile bottom nav (fixed, below lg). */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? "Close chat" : "Open ExamSphere assistant"}
-        className="fixed bottom-5 right-5 z-[120] h-14 w-14 rounded-full bg-navy-900 hover:bg-navy-950 text-white shadow-[var(--shadow-es-lg)] flex items-center justify-center transition-all hover:-translate-y-0.5 lg:bottom-6 lg:right-6"
+        className="fixed bottom-20 right-5 z-[120] h-14 w-14 rounded-full bg-navy-900 hover:bg-navy-950 text-white shadow-[var(--shadow-es-lg)] flex items-center justify-center transition-all hover:-translate-y-0.5 lg:bottom-6 lg:right-6"
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
         {!open && (

@@ -16,31 +16,22 @@ interface PageProps {
 export default async function TeacherProfilePage({ params }: PageProps) {
     const { teacherId } = await params;
 
-    // 1. Fetch Teacher Profile
-    const teacher = await prisma.teacherProfile.findMany({
-        where: { userId: teacherId },
-        include: {
-            user: true,
-            reviews: true
-        }
-    }).then(res => res[0]); // findUnique by userId not directly possible if userId is not @unique in schema? 
-    // Schema says: userId String @unique. So findUnique should work if I used findUnique({ where: { userId: ... } }) 
-
-    // Let's retry with proper findUnique if schema allows
     const teacherProfile = await prisma.teacherProfile.findUnique({
         where: { userId: teacherId },
         include: {
-            user: true,
-            reviews: {
-                take: 5,
-                orderBy: { createdAt: 'desc' }
-            }
+            // Public page: only the fields shown, never the full user row (email, phone…).
+            user: { select: { id: true, name: true, image: true } },
         }
     });
 
-    if (!teacherProfile) {
+    // Unapproved applicants must not have a public profile.
+    if (!teacherProfile || !teacherProfile.isApproved) {
         return notFound();
     }
+
+    // expertise / languages are JSON string arrays in MySQL.
+    const expertise = (teacherProfile.expertise as string[] | null) ?? [];
+    const languages = (teacherProfile.languages as string[] | null) ?? [];
 
     // 2. Check current user (for booking)
     const session = await getSessionWithRole();
@@ -73,7 +64,7 @@ export default async function TeacherProfilePage({ params }: PageProps) {
                                         <CheckCircle2 className="text-green-500 w-6 h-6" />
                                     )}
                                 </div>
-                                <p className="text-xl text-primary font-medium mb-4">{teacherProfile.expertise.join(", ")}</p>
+                                <p className="text-xl text-primary font-medium mb-4">{expertise.join(", ")}</p>
                                 <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
                                     {teacherProfile.bio}
                                 </p>
@@ -85,7 +76,7 @@ export default async function TeacherProfilePage({ params }: PageProps) {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Globe className="w-4 h-4" />
-                                        <span>{teacherProfile.languages.join(", ") || "English"}</span>
+                                        <span>{languages.join(", ") || "English"}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Video className="w-4 h-4" />
@@ -104,18 +95,14 @@ export default async function TeacherProfilePage({ params }: PageProps) {
                     <section>
                         <h2 className="text-2xl font-bold mb-4">About Me</h2>
                         <div className="prose dark:prose-invert max-w-none text-muted-foreground">
-                            <p>{teacherProfile.bio}</p>
-                            <p className="mt-4">
-                                I am dedicated to helping students achieve their goals through personalized instruction.
-                                My sessions are interactive, focused, and tailored to your learning style.
-                            </p>
+                            <p>{teacherProfile.bio || "No biography provided."}</p>
                         </div>
                     </section>
 
                     <section>
                         <h2 className="text-2xl font-bold mb-4">Expertise</h2>
                         <div className="flex flex-wrap gap-2">
-                            {teacherProfile.expertise.map(skill => (
+                            {expertise.map(skill => (
                                 <span key={skill} className="px-4 py-2 bg-secondary rounded-lg font-medium">
                                     {skill}
                                 </span>
@@ -130,13 +117,13 @@ export default async function TeacherProfilePage({ params }: PageProps) {
                 <div className="relative">
                     <div className="sticky top-24 space-y-4">
                         <BookingWidget
-                            teacherId={teacherProfile.user.id} 
+                            teacherId={teacherProfile.user.id}
                             teacherProfileId={teacherProfile.id}
                             hourlyRate={teacherProfile.hourlyRate || 0}
                             userName={teacherProfile.user.name}
                         />
-                        <ReportTeacherButton 
-                            teacherId={teacherProfile.user.id} 
+                        <ReportTeacherButton
+                            teacherId={teacherProfile.user.id}
                             teacherName={teacherProfile.user.name}
                         />
                     </div>

@@ -4,11 +4,12 @@ import { ChevronRight } from "lucide-react";
 import type { CourseAccent } from "@/app/(public)/_data/courses-content";
 import { PROGRAM_GROUPS, programsByGroup } from "@/app/(public)/_data/programs-content";
 import { EnquireButton } from "@/components/marketing/examsphere/EnquireButton";
+import { EnrollButton } from "@/components/marketing/examsphere/EnrollButton";
 
 export const metadata: Metadata = {
   title: "Programs | ExamSphere",
   description:
-    "Explore ExamSphere programmes — JEE (Main & Advanced), NEET (UG), Class 9–10 and Class 11–12 Foundation, and MBBS medical subjects.",
+    "Explore ExamSphere programmes — JEE (Main & Advanced), NEET (UG), Foundation (Class 9–10), Class 11–12 Boards Preparation, and MBBS medical subjects.",
   alternates: { canonical: "/programs" },
 };
 
@@ -149,20 +150,18 @@ export default function ProgramsIndexPage() {
           Not sure which program fits?
         </h2>
         <p className="text-ink-700 dark:text-muted-foreground mt-3 max-w-xl mx-auto">
-          Tell us your class and target exam. Our team will recommend the right track and share
-          batch timings and fees.
+          Fees are listed on each course, and you can enroll online. Still deciding? Tell us your
+          class and target exam and we&apos;ll recommend the right track.
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3.5">
-          <EnquireButton
+          <EnrollButton
             withArrow
-            className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full font-semibold text-sm bg-navy-900 hover:bg-navy-950 text-white transition-all hover:-translate-y-0.5 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full font-semibold text-sm bg-navy-900 hover:bg-navy-950 text-white transition-all hover:-translate-y-0.5"
           />
-          <Link
-            href="/contact"
-            className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-semibold text-sm bg-card border border-border text-navy-900 dark:text-white hover:border-navy-900 dark:hover:border-white transition-all hover:-translate-y-0.5"
-          >
-            Contact Us
-          </Link>
+          <EnquireButton
+            label="Ask a question"
+            className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-semibold text-sm bg-card border border-border text-navy-900 dark:text-white hover:border-navy-900 dark:hover:border-white transition-all hover:-translate-y-0.5 cursor-pointer"
+          />
         </div>
       </section>
     </div>

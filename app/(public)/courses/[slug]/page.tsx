@@ -14,13 +14,34 @@ import {
     CheckCircle2,
     PlayCircle,
     Lock,
-    Star,
 } from "lucide-react";
+import type { Metadata } from "next";
 import { CoursePurchaseButton } from "./_components/CoursePurchaseButton";
 import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
 
 import { CourseDescription } from "./_components/CourseDescription";
 import { constructS3Url } from "@/lib/s3-helper";
+
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+    const { slug } = await params;
+    const course = await prisma.course.findUnique({
+        where: { slug },
+        select: { title: true, smallDescription: true, status: true },
+    });
+
+    if (!course || course.status !== "Published") {
+        return { title: "Course not found | ExamSphere" };
+    }
+
+    return {
+        title: `${course.title} | ExamSphere`,
+        description: course.smallDescription,
+    };
+}
 
 export default async function CourseDetailsPage({
     params,
@@ -53,11 +74,7 @@ export default async function CourseDetailsPage({
                         },
                     },
                 },
-            }, enrollment: {
-                where: {
-                    userId: session?.user.id
-                }
-            }
+            },
         },
     });
 
@@ -65,14 +82,28 @@ export default async function CourseDetailsPage({
         notFound();
     }
 
-    const isPurchased = course.enrollment.length > 0;
-    // If user is the author, treat as purchased
-    const isOwner = session?.user.id === course.userId;
-    const canAccess = isPurchased || isOwner || (session?.user as any)?.role === "admin";
+    const isOwner = !!session && session.user.id === course.userId;
+    const isAdmin = (session?.user as any)?.role === "admin";
+
+    // Drafts and courses awaiting review must not be reachable by slug for the public.
+    if (course.status !== "Published" && !isOwner && !isAdmin) {
+        notFound();
+    }
+
+    // Only an active (paid) enrollment counts. Without a session there is nothing to look up —
+    // `userId: undefined` would match every enrollment and show "Continue Learning" to visitors.
+    const activeEnrollment = session
+        ? await prisma.enrollment.findFirst({
+              where: { courseId: course.id, userId: session.user.id, status: "Active" },
+              select: { id: true },
+          })
+        : null;
+
+    const canAccess = !!activeEnrollment || isOwner || isAdmin;
+    const lessonCount = course.chapter.reduce((total, chapter) => total + chapter.lessons.length, 0);
 
     return (
         <div className="min-h-screen bg-background pb-20">
-            {/* Hero Section */}
             {/* Hero Section */}
             <div className="relative bg-slate-900 text-white pt-12 pb-24 md:pt-16 md:pb-32 overflow-hidden">
                 {/* Background Banner */}
@@ -113,11 +144,11 @@ export default async function CourseDetailsPage({
                             )}
                             <div className="flex items-center gap-1 bg-slate-800/50 px-2 py-1 rounded-full backdrop-blur-sm border border-slate-700/50">
                                 <Globe className="h-4 w-4 text-blue-400" />
-                                <span>English</span>
+                                <span>{course.language || "English"}</span>
                             </div>
                             <div className="flex items-center gap-1 bg-slate-800/50 px-2 py-1 rounded-full backdrop-blur-sm border border-slate-700/50">
                                 <Clock className="h-4 w-4 text-emerald-400" />
-                                <span>Last updated {new Date(course.updatedAt).toLocaleDateString()}</span>
+                                <span>Last updated {new Date(course.updatedAt).toLocaleDateString("en-IN")}</span>
                             </div>
                         </div>
 
@@ -163,7 +194,7 @@ export default async function CourseDetailsPage({
                                             </Button>
                                         )}
                                         {!canAccess && (
-                                            <Badge variant="secondary">Encoded</Badge>
+                                            <Badge variant="secondary">Locked</Badge>
                                         )}
                                     </div>
                                 ))
@@ -196,11 +227,6 @@ export default async function CourseDetailsPage({
                                 <span className="text-3xl font-bold text-foreground">
                                     {formatPriceSimple(course.price || 0, (session?.user as any)?.country)}
                                 </span>
-                                {course.price > 0 && (
-                                    <span className="text-lg text-muted-foreground line-through mb-1">
-                                        {formatPriceSimple(Math.round(course.price * 1.5), (session?.user as any)?.country)}
-                                    </span>
-                                )}
                             </div>
 
                             {canAccess ? (
@@ -216,7 +242,12 @@ export default async function CourseDetailsPage({
                                         price={course.price!}
                                         country={(session?.user as any)?.country}
                                     />
-                                    <p className="text-xs text-center text-muted-foreground">30-Day Money-Back Guarantee</p>
+                                    <p className="text-xs text-center text-muted-foreground">
+                                        Refunds as per our{" "}
+                                        <Link href="/refund" className="underline hover:text-primary">
+                                            refund policy
+                                        </Link>
+                                    </p>
                                 </div>
                             )}
 
@@ -224,17 +255,15 @@ export default async function CourseDetailsPage({
                                 <h4 className="font-semibold text-sm">This course includes:</h4>
                                 <ul className="space-y-2 text-sm text-muted-foreground">
                                     <li className="flex items-center gap-2">
-                                        <PlayCircle className="h-4 w-4" />
-                                        {course.chapter.length} on-demand video lessons
+                                        <BookOpen className="h-4 w-4" />
+                                        {course.chapter.length} {course.chapter.length === 1 ? "chapter" : "chapters"}
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4" />
-                                        Full lifetime access
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                        <Smartphone className="h-4 w-4" />
-                                        Access on mobile and TV
-                                    </li>
+                                    {lessonCount > 0 && (
+                                        <li className="flex items-center gap-2">
+                                            <PlayCircle className="h-4 w-4" />
+                                            {lessonCount} {lessonCount === 1 ? "lesson" : "lessons"}
+                                        </li>
+                                    )}
                                 </ul>
                             </div>
                         </div>
@@ -244,8 +273,5 @@ export default async function CourseDetailsPage({
         </div>
     );
 }
-
-// Helper icon
-import { Smartphone } from "lucide-react";
 
 export const dynamic = "force-dynamic";

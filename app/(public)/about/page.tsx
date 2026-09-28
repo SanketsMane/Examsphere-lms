@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { PROGRAM_GROUPS, programsByGroup } from "@/app/(public)/_data/programs-content";
 import { EnquireButton } from "@/components/marketing/examsphere/EnquireButton";
+import { EnrollButton } from "@/components/marketing/examsphere/EnrollButton";
 
 export const metadata: Metadata = {
   title: "About Us | ExamSphere",
@@ -234,16 +235,14 @@ export default function AboutPage() {
             programme can and cannot do for you.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3.5">
-            <EnquireButton
+            <EnrollButton
               withArrow
-              className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full font-semibold text-sm bg-navy-900 hover:bg-navy-950 text-white transition-all hover:-translate-y-0.5 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full font-semibold text-sm bg-navy-900 hover:bg-navy-950 text-white transition-all hover:-translate-y-0.5"
             />
-            <Link
-              href="/contact"
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-semibold text-sm bg-card border border-border text-navy-900 dark:text-white hover:border-navy-900 dark:hover:border-white transition-all hover:-translate-y-0.5"
-            >
-              Contact Us
-            </Link>
+            <EnquireButton
+              label="Ask a question"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-semibold text-sm bg-card border border-border text-navy-900 dark:text-white hover:border-navy-900 dark:hover:border-white transition-all hover:-translate-y-0.5 cursor-pointer"
+            />
           </div>
         </div>
       </section>

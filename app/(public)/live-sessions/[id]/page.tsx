@@ -32,7 +32,7 @@ async function getSession(id: string) {
       teacher: {
         include: {
           user: {
-            select: { name: true, image: true, email: true }
+            select: { name: true, image: true }
           }
         }
       },
@@ -53,7 +53,7 @@ async function getSession(id: string) {
       teacher: {
         include: {
           user: {
-            select: { name: true, image: true, email: true }
+            select: { name: true, image: true }
           }
         }
       },
@@ -224,11 +224,7 @@ export default async function SessionDetailPage(props: {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-                    <span>Hands-on practice and code review</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-                    <span>Recording available for 7 days after session</span>
+                    <span>Guided practice with doubt solving</span>
                   </li>
                 </ul>
               </CardContent>
@@ -237,7 +233,7 @@ export default async function SessionDetailPage(props: {
             {/* Instructor */}
             <Card>
               <CardHeader>
-                <CardTitle>Your Instructor</CardTitle>
+                <CardTitle>Your Mentor</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-start gap-4">
@@ -282,8 +278,7 @@ export default async function SessionDetailPage(props: {
                     ) : (
                       <>
                         <div className="flex items-center justify-center gap-2 mb-2">
-                          <DollarSign className="h-8 w-8 text-green-600" />
-                          <span className="text-4xl font-bold">${(session.price / 100).toFixed(0)}</span>
+                          <span className="text-4xl font-bold">₹{(session.price / 100).toFixed(0)}</span>
                         </div>
                         <p className="text-sm text-muted-foreground">One-time payment</p>
                       </>
@@ -316,7 +311,7 @@ export default async function SessionDetailPage(props: {
                         </Button>
                       </Link>
                     ) : (
-                      <Link href={`/login?redirect=/live-sessions/${session.id}`}>
+                      <Link href={`/login?callbackUrl=${encodeURIComponent(`/live-sessions/${session.id}`)}`}>
                         <Button className="w-full" size="lg">
                           Sign in to Book
                         </Button>
@@ -335,7 +330,12 @@ export default async function SessionDetailPage(props: {
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <CheckCircle className="h-4 w-4" />
-                      <span>Full refund if cancelled 48hrs+ before</span>
+                      <span>
+                        Refunds as per our{" "}
+                        <Link href="/refund" className="underline hover:text-primary">
+                          refund policy
+                        </Link>
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Video className="h-4 w-4" />
@@ -353,22 +353,20 @@ export default async function SessionDetailPage(props: {
                     <div className="flex gap-2">
                       <Shield className="h-5 w-5 text-primary shrink-0" />
                       <div>
-                        <p className="font-medium">Money-Back Guarantee</p>
-                        <p className="text-xs text-muted-foreground">100% refund if not satisfied</p>
+                        <p className="font-medium">Clear Refund Policy</p>
+                        <p className="text-xs text-muted-foreground">
+                          See our{" "}
+                          <Link href="/refund" className="underline hover:text-primary">
+                            refund policy
+                          </Link>
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-2">
                       <Users className="h-5 w-5 text-primary shrink-0" />
                       <div>
-                        <p className="font-medium">Verified Instructors</p>
-                        <p className="text-xs text-muted-foreground">All experts are vetted</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Star className="h-5 w-5 text-primary shrink-0" />
-                      <div>
-                        <p className="font-medium">High Quality</p>
-                        <p className="text-xs text-muted-foreground">4.9+ average rating</p>
+                        <p className="font-medium">Approved Mentors</p>
+                        <p className="text-xs text-muted-foreground">Sessions are run by mentors approved by ExamSphere</p>
                       </div>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Video, Shield, MessageSquare, Award } from "lucide-react";
+import { Video, Shield, MessageSquare } from "lucide-react";
 
 const benefitFeatures = [
     {
@@ -16,13 +16,8 @@ const benefitFeatures = [
     },
     {
         icon: Shield,
-        title: "Verified Experts",
-        desc: "Learn from industry professionals"
-    },
-    {
-        icon: Award,
-        title: "Certification",
-        desc: "Earn valid certificates upon completion"
+        title: "Approved Mentors",
+        desc: "Sessions are run by mentors approved by ExamSphere"
     }
 ];
 
@@ -30,7 +25,7 @@ export function LiveSessionFeatures() {
     return (
         <section className="py-16 bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-gray-800">
             <div className="container mx-auto px-4">
-                <div className="grid md:grid-cols-4 gap-6">
+                <div className="grid md:grid-cols-3 gap-6">
                     {benefitFeatures.map((feat, i) => (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
