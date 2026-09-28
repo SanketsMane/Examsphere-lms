@@ -19,11 +19,7 @@ export function FreeClassWidget({ usage }: FreeClassWidgetProps) {
      */
     const demoAvailable = !usage?.demoUsed;
     const groupAvailable = !usage?.groupUsed;
-    
-    // If both are used, we can show a "Upgrade" or "Get More" type CTA or just stats.
-    // Or maybe we don't show it if both used? 
-    // "Student Dashboard: Progress, Saved Tutors, Reporting" was the requirement.
-    // Let's show "Free Trials Status".
+
 
     return (
         <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-indigo-100 dark:border-indigo-900">
@@ -48,7 +44,7 @@ export function FreeClassWidget({ usage }: FreeClassWidgetProps) {
                         </div>
                     </div>
                     {demoAvailable ? (
-                        <Link href="/find-teacher">
+                        <Link href="/dashboard/mentors">
                             <Badge className="bg-green-600 hover:bg-green-700 cursor-pointer">Claim Now</Badge>
                         </Link>
                     ) : (
@@ -70,7 +66,7 @@ export function FreeClassWidget({ usage }: FreeClassWidgetProps) {
                         </div>
                     </div>
                     {groupAvailable ? (
-                        <Link href="/courses?type=group">
+                        <Link href="/dashboard/mentors">
                             <Badge className="bg-blue-600 hover:bg-blue-700 cursor-pointer">Browse</Badge>
                         </Link>
                     ) : (

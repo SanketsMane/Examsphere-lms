@@ -1,24 +1,19 @@
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  BookOpen, 
-  Video, 
+  BarChart3,
+  TrendingUp,
+  BookOpen,
+  Video,
   Award,
-  DollarSign,
   Clock,
   Target,
   Activity,
-  Calendar,
-  MessageSquare
 } from "lucide-react";
-import { getUserAnalytics, getTeacherAnalytics } from "@/app/actions/analytics";
+import { getUserAnalytics } from "@/app/actions/analytics";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { format } from "date-fns";
 
@@ -42,25 +37,11 @@ export default async function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Analytics Tabs */}
-      <Tabs defaultValue="student" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="student">Student Analytics</TabsTrigger>
-          <TabsTrigger value="teacher">Teacher Analytics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="student" className="space-y-6">
-          <Suspense fallback={<AnalyticsLoadingSkeleton />}>
-            <StudentAnalytics userId={session?.user?.id || ""} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="teacher" className="space-y-6">
-          <Suspense fallback={<AnalyticsLoadingSkeleton />}>
-            <TeacherAnalytics />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+      <div className="space-y-6">
+        <Suspense fallback={<AnalyticsLoadingSkeleton />}>
+          <StudentAnalytics userId={session?.user?.id || ""} />
+        </Suspense>
+      </div>
     </div>
   );
 }
@@ -76,8 +57,6 @@ async function StudentAnalytics({ userId }: { userId: string }) {
           title="Courses Enrolled"
           value={(analytics.stats?.enrollmentCount ?? 0).toString()}
           icon={<BookOpen className="h-4 w-4" />}
-          change="+12% from last month"
-          changeType="positive"
         />
         <MetricCard
           title="Completed Courses"
@@ -95,8 +74,6 @@ async function StudentAnalytics({ userId }: { userId: string }) {
           title="Lessons Completed"
           value={(analytics.stats?.totalLessonsCompleted ?? 0).toString()}
           icon={<Target className="h-4 w-4" />}
-          change="+23% from last month"
-          changeType="positive"
         />
       </div>
 
@@ -157,9 +134,9 @@ async function StudentAnalytics({ userId }: { userId: string }) {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">Enrolled in course</p>
-                    <p className="text-xs text-muted-foreground">{enrollment.course.title}</p>
+                    <p className="text-xs text-muted-foreground">{enrollment.Course?.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(enrollment.enrolledAt), "MMM dd, yyyy")}
+                      {format(new Date(enrollment.createdAt), "MMM dd, yyyy")}
                     </p>
                   </div>
                 </div>
@@ -226,124 +203,6 @@ async function StudentAnalytics({ userId }: { userId: string }) {
       </Card>
     </>
   );
-}
-
-async function TeacherAnalytics() {
-  try {
-    const analytics = await getTeacherAnalytics();
-
-    return (
-      <>
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            title="Total Students"
-            value={(analytics.stats?.studentsCount ?? 0).toString()}
-            icon={<Users className="h-4 w-4" />}
-            change="+15% from last month"
-            changeType="positive"
-          />
-          <MetricCard
-            title="Total Earnings"
-            value={`$${((analytics.stats?.totalEarnings ?? 0) / 100).toFixed(2)}`}
-            icon={<DollarSign className="h-4 w-4" />}
-            change="+28% from last month"
-            changeType="positive"
-          />
-          <MetricCard
-            title="Courses Created"
-            value={(analytics.stats?.coursesCreated ?? 0).toString()}
-            icon={<BookOpen className="h-4 w-4" />}
-            subtitle={`${analytics.stats?.totalEnrollments ?? 0} total enrollments`}
-          />
-          <MetricCard
-            title="Average Rating"
-            value={(analytics.stats?.averageRating ?? 0).toFixed(1)}
-            icon={<Award className="h-4 w-4" />}
-            subtitle="from student reviews"
-          />
-        </div>
-
-        {/* Course Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Course Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {analytics.coursePerformance.slice(0, 5).map((course: any) => (
-                <div key={course.id} className="p-4 border rounded-lg">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium">{course.title}</h4>
-                    <Badge variant="secondary">
-                      ${(course.revenue / 100).toFixed(0)} revenue
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Enrollments:</span>
-                      <span className="ml-2 font-medium">{course.enrollments}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Reviews:</span>
-                      <span className="ml-2 font-medium">{course.reviews}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Rating:</span>
-                      <span className="ml-2 font-medium">{course.averageRating.toFixed(1)} ⭐</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {analytics.coursePerformance.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <BookOpen className="h-8 w-8 mx-auto mb-2" />
-                  <p>No courses created yet</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Revenue Chart Placeholder */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Revenue Over Time
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center bg-muted/30 rounded-lg">
-              <div className="text-center">
-                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">Revenue chart would be displayed here</p>
-                <p className="text-sm text-muted-foreground">
-                  Total: ${(analytics.stats.totalEarnings / 100).toFixed(2)} across {analytics.revenueData.length} months
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </>
-    );
-  } catch (error) {
-    return (
-      <Card>
-        <CardContent className="p-12 text-center">
-          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">Teacher Analytics Not Available</h3>
-          <p className="text-muted-foreground">
-            You need to have a teacher profile to view teaching analytics.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
 }
 
 function MetricCard({ 

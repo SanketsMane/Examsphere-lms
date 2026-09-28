@@ -8,7 +8,7 @@ import { headers } from "next/headers";
 export async function getUserNotifications(page: number = 1, limit: number = 20, filter?: "all" | "unread" | "read") {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
   const currentUserId = session.user.id;
 
@@ -52,7 +52,7 @@ export async function getUserNotifications(page: number = 1, limit: number = 20,
 export async function markNotificationAsRead(notificationId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const notification = await prisma.notification.findFirst({
@@ -79,7 +79,7 @@ export async function markNotificationAsRead(notificationId: string) {
 export async function markAllNotificationsAsRead() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   await prisma.notification.updateMany({
@@ -98,7 +98,7 @@ export async function markAllNotificationsAsRead() {
 export async function deleteNotification(notificationId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const notification = await prisma.notification.findFirst({
@@ -283,7 +283,7 @@ export async function createMessageNotification(userId: string, senderId: string
 export async function getNotificationPreferences() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   // This would typically come from a user preferences table
@@ -312,7 +312,7 @@ export async function getNotificationPreferences() {
 export async function updateNotificationPreferences(preferences: any) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   // In a real implementation, you'd save these to a user preferences table

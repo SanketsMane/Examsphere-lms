@@ -1,39 +1,41 @@
 import { requireUser } from "@/app/data/user/require-user";
+import { getContactDetails } from "@/app/data/settings/get-contact-details";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { HelpCircle, Mail, MessageSquare, Book, Video } from "lucide-react";
+import { HelpCircle, Mail, LifeBuoy, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function HelpPage() {
   await requireUser();
+  const contact = await getContactDetails();
 
   const faqs = [
     {
       question: "How do I enroll in a course?",
-      answer: "Browse available courses, click on a course you're interested in, and click the 'Enroll Now' button. If the course is paid, you'll be directed to the payment page."
+      answer: "Open Browse Courses, choose a course and click 'Enroll Now'. For a paid course you'll be taken to the payment page."
     },
     {
       question: "How do I access my enrolled courses?",
-      answer: "Go to Dashboard > My Courses to see all your enrolled courses. Click on any course to access the lessons."
+      answer: "Go to My Courses in the sidebar to see every course you're enrolled in. Click a course to continue from its lessons."
     },
     {
-      question: "How do I book a live session?",
-      answer: "Navigate to Live Sessions, browse available sessions, and click 'Book Session' on your preferred time slot. Complete the payment to confirm your booking."
+      question: "How do I join a live session?",
+      answer: "Your booked sessions are listed under Live Sessions. The Join button appears 15 minutes before the session starts."
     },
     {
       question: "Can I get a refund?",
-      answer: "Yes, you can cancel live sessions and get refunds based on our cancellation policy: 100% refund if cancelled 48+ hours before, 50% if 24-48 hours before, no refund if less than 24 hours."
+      answer: "Live sessions can be cancelled from Live Sessions: 100% refund if cancelled 48+ hours before, 50% if 24-48 hours before, and no refund within 24 hours."
     },
     {
       question: "How do I track my progress?",
-      answer: "Your progress is automatically tracked as you complete lessons. Visit Dashboard > Analytics to see detailed progress reports and statistics."
+      answer: "Progress is saved as you mark lessons complete. Open Analytics in the sidebar to see your progress across courses."
     },
     {
       question: "How do I contact support?",
-      answer: "You can reach our support team through the contact form below, or email us at support@examsphere.com. We typically respond within 24 hours."
+      answer: `Raise a ticket from Support Tickets in the sidebar and track its status there, or email us at ${contact.email}. We typically respond within 24 hours.`
     }
   ];
 
@@ -44,22 +46,21 @@ export default async function HelpPage() {
           <HelpCircle className="h-8 w-8" />
           Help & Support
         </h1>
-        <p className="text-muted-foreground">Get help with using the platform</p>
+        <p className="text-muted-foreground">Get help with using ExamSphere</p>
       </div>
 
-      {/* Quick Links */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Book className="h-5 w-5" />
-              Documentation
+              <LifeBuoy className="h-5 w-5" />
+              Support Tickets
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">Browse our comprehensive guides</p>
+            <p className="text-sm text-muted-foreground mb-3">Report a problem with payments, courses or your account</p>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/docs">View Docs</Link>
+              <Link href="/dashboard/issues/new">Raise a Ticket</Link>
             </Button>
           </CardContent>
         </Card>
@@ -67,33 +68,19 @@ export default async function HelpPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Video className="h-5 w-5" />
-              Video Tutorials
+              <Sparkles className="h-5 w-5" />
+              ExamSphere AI
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">Watch step-by-step tutorials</p>
+            <p className="text-sm text-muted-foreground mb-3">Get instant help with study doubts, any time</p>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/tutorials">Watch Now</Link>
+              <Link href="/dashboard/ai">Ask ExamSphere AI</Link>
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MessageSquare className="h-5 w-5" />
-              Live Chat
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">Chat with our support team</p>
-            <Button variant="outline" size="sm">Start Chat</Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* FAQs */}
       <Card>
         <CardHeader>
           <CardTitle>Frequently Asked Questions</CardTitle>
@@ -111,7 +98,6 @@ export default async function HelpPage() {
         </CardContent>
       </Card>
 
-      {/* Contact Support */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -121,7 +107,16 @@ export default async function HelpPage() {
           <CardDescription>Contact our support team directly</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="mb-4">Email us at: <a href="mailto:support@examsphere.com" className="text-primary hover:underline">support@examsphere.com</a></p>
+          <p className="mb-4">
+            Email us at:{" "}
+            <a href={`mailto:${contact.email}`} className="text-primary hover:underline">{contact.email}</a>
+          </p>
+          {contact.phone && (
+            <p className="mb-4">
+              Call us at:{" "}
+              <a href={`tel:${contact.phone.replace(/\s+/g, "")}`} className="text-primary hover:underline">{contact.phone}</a>
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">We typically respond within 24 hours</p>
         </CardContent>
       </Card>

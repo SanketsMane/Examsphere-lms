@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Bell, Mail, MessageSquare, Phone, Loader2 } from "lucide-react";
+import { Bell, Mail, MessageSquare, Loader2 } from "lucide-react";
 
 /**
  * Notification Preferences UI
@@ -24,11 +23,10 @@ export default function NotificationSettings() {
             try {
                 const res = await fetch("/api/notifications/preferences");
                 if (res.ok) {
-                    const data = await res.ok ? await res.json() : null;
-                    setPrefs(data);
+                    setPrefs(await res.json());
                 }
-            } catch (error) {
-                console.error("Failed to fetch notification preferences", error);
+            } catch {
+                // Falls through to the "failed to load" state below
             } finally {
                 setLoading(false);
             }
@@ -42,7 +40,8 @@ export default function NotificationSettings() {
         try {
             const res = await fetch("/api/notifications/preferences", {
                 method: "POST",
-                body: JSON.stringify(prefs),
+                // SMS delivery is not set up, so only email preferences are editable here
+                body: JSON.stringify({ ...prefs, smsReminders: false }),
                 headers: { "Content-Type": "application/json" }
             });
 
@@ -66,7 +65,9 @@ export default function NotificationSettings() {
         );
     }
 
-    if (!prefs) return <div>Failed to load settings</div>;
+    if (!prefs) {
+        return <p className="text-muted-foreground p-6">Could not load notification settings. Please refresh the page.</p>;
+    }
 
     return (
         <div className="space-y-6">
@@ -110,61 +111,6 @@ export default function NotificationSettings() {
                                         id="email1h"
                                         checked={prefs.email1hBefore}
                                         onCheckedChange={(val) => setPrefs({ ...prefs, email1hBefore: val })}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* SMS Reminders */}
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Phone className="h-5 w-5 text-primary" />
-                            <CardTitle>SMS Notifications</CardTitle>
-                        </div>
-                        <CardDescription>Get text messages sent directly to your phone.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="smsReminders">Enabled SMS Alerts</Label>
-                            <Switch
-                                id="smsReminders"
-                                checked={prefs.smsReminders}
-                                onCheckedChange={(val) => setPrefs({ ...prefs, smsReminders: val })}
-                            />
-                        </div>
-
-                        {prefs.smsReminders && (
-                            <div className="ml-6 space-y-4 pt-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="phoneNumber">Phone Number</Label>
-                                    <Input
-                                        id="phoneNumber"
-                                        placeholder="+1 234 567 890"
-                                        value={prefs.phoneNumber || ""}
-                                        onFocus={(e) => {
-                                          if (!e.target.value) setPrefs({ ...prefs, phoneNumber: "+91" });
-                                        }}
-                                        onChange={(e) => setPrefs({ ...prefs, phoneNumber: e.target.value })}
-                                    />
-                                    <p className="text-xs text-muted-foreground italic">Use international format (e.g., +91...)</p>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="sms24h">24h Before Session</Label>
-                                    <Switch
-                                        id="sms24h"
-                                        checked={prefs.sms24hBefore}
-                                        onCheckedChange={(val) => setPrefs({ ...prefs, sms24hBefore: val })}
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="sms1h">1h Before Session</Label>
-                                    <Switch
-                                        id="sms1h"
-                                        checked={prefs.sms1hBefore}
-                                        onCheckedChange={(val) => setPrefs({ ...prefs, sms1hBefore: val })}
                                     />
                                 </div>
                             </div>

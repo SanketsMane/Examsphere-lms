@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     
     // Subject filter
     if (subject) {
-      where.subject = { contains: subject, mode: 'insensitive' };
+      where.subject = { contains: subject };
     }
     
     // Price filters
@@ -84,10 +84,10 @@ export async function GET(req: NextRequest) {
       if (!where.AND) where.AND = [];
       where.AND.push({
         OR: [
-            { title: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
-            { subject: { contains: search, mode: 'insensitive' } },
-            { teacher: { user: { name: { contains: search, mode: 'insensitive' } } } }
+            { title: { contains: search } },
+            { description: { contains: search } },
+            { subject: { contains: search } },
+            { teacher: { user: { name: { contains: search } } } }
         ]
       });
     }
