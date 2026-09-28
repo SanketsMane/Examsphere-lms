@@ -90,7 +90,7 @@ export default async function InquiriesPage({ searchParams }: { searchParams: Pr
           </p>
         </div>
         <Button asChild variant="outline" size="sm">
-          <a href={`/admin/inquiries/export${status ? `?status=${status}` : ""}`}>
+          <a href={`/admin/inquiries/export${buildQuery({ page: undefined }).replace("/admin/inquiries", "")}`}>
             <Download className="h-4 w-4 mr-1.5" /> Export CSV
           </a>
         </Button>

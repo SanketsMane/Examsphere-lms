@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { hash } from "bcryptjs";
+import { checkAccountChange, normaliseRole } from "@/app/admin/_lib/role-safety";
 
 async function requireAdmin() {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -18,13 +19,18 @@ export async function createUser(prevState: any, formData: FormData) {
     try {
         await requireAdmin();
 
-        const name = formData.get("name") as string;
-        const email = formData.get("email") as string;
+        const name = ((formData.get("name") as string) || "").trim();
+        const email = ((formData.get("email") as string) || "").trim().toLowerCase();
         const password = formData.get("password") as string;
-        const role = formData.get("role") as string;
+        const rawRole = formData.get("role") as string;
 
-        if (!name || !email || !password || !role) {
+        if (!name || !email || !password || !rawRole) {
             return { error: "All fields are required" };
+        }
+
+        const role = normaliseRole(rawRole);
+        if (!role) {
+            return { error: "Role must be student, teacher or admin" };
         }
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -39,7 +45,7 @@ export async function createUser(prevState: any, formData: FormData) {
                 data: {
                     name,
                     email,
-                    role: role as any,
+                    role,
                     emailVerified: true, // Auto-verify manually created users
                 },
             });
@@ -67,7 +73,7 @@ export async function createUser(prevState: any, formData: FormData) {
 
 export async function bulkImportUsers(users: any[]) {
     try {
-        await requireAdmin();
+        const admin = await requireAdmin();
 
         let createdCount = 0;
         let updatedCount = 0;
@@ -81,12 +87,20 @@ export async function bulkImportUsers(users: any[]) {
                     throw new Error(`Missing fields for ${user.email || 'unknown user'}: Name, Email, or Role`);
                 }
 
+                const role = normaliseRole(user.role);
+                if (!role) {
+                    throw new Error(`Invalid role "${user.role}" for ${user.email}. Use student, teacher or admin.`);
+                }
+
                 const existing = await prisma.user.findUnique({ where: { email: user.email } });
                 
                 // Only hash password if it exists
                 const hashedPassword = user.password ? await hash(user.password, 10) : undefined;
 
                 if (existing) {
+                    const blocked = await checkAccountChange(admin.id, existing.id, { role });
+                    if (blocked) throw new Error(`${user.email}: ${blocked}`);
+
                     // Update Logic
                     await prisma.$transaction(async (tx) => {
                         // Update User Details
@@ -94,7 +108,7 @@ export async function bulkImportUsers(users: any[]) {
                             where: { id: existing.id },
                             data: {
                                 name: user.name,
-                                role: user.role.toLowerCase() as any,
+                                role,
                             }
                         });
 
@@ -127,7 +141,7 @@ export async function bulkImportUsers(users: any[]) {
                             data: {
                                 name: user.name,
                                 email: user.email,
-                                role: user.role.toLowerCase(),
+                                role,
                                 emailVerified: true
                             }
                         });

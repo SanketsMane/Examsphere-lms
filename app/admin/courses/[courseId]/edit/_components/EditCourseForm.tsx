@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 
 import {
-  courseCategories,
   courseLevels,
   courseEditSchema,
   type CourseEditSchemaType,
@@ -45,9 +44,10 @@ import { useState, useEffect } from "react";
 
 interface iAppProps {
   data: AdminCourseSingularType;
+  categories: { id: string; name: string }[];
 }
 
-export function EditCourseForm({ data }: iAppProps) {
+export function EditCourseForm({ data, categories }: iAppProps) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const [userCountry, setUserCountry] = useState<string>("India");
@@ -215,9 +215,9 @@ export function EditCourseForm({ data }: iAppProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {courseCategories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

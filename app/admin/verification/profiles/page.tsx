@@ -1,5 +1,4 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,23 +17,34 @@ import {
   Shield
 } from "lucide-react";
 import { requireAdmin } from "@/app/data/auth/require-roles";
-import { getPendingVerifications } from "@/app/data/admin/verification-data";
+import { pendingTeacherWhere } from "@/app/admin/_lib/teacher-approval";
 import { prisma } from "@/lib/db";
 import { TeacherApprovalActions } from "./_components/TeacherApprovalActions";
 import { constructS3Url } from "@/lib/s3-utils";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProfileVerificationPage() {
   await requireAdmin();
 
-  const [pendingVerifications, approvedCount, rejectedCount] = await Promise.all([
-    getPendingVerifications(),
-    prisma.teacherVerification.count({ where: { status: 'Approved' } }),
-    prisma.teacherVerification.count({ where: { status: 'Rejected' } })
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const [pendingProfiles, approvedCount, rejectedCount] = await Promise.all([
+    prisma.teacherProfile.findMany({
+      where: pendingTeacherWhere,
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true } },
+        verification: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.teacherVerification.count({ where: { status: 'Approved', approvedAt: { gte: startOfToday } } }),
+    prisma.teacherVerification.count({ where: { status: 'Rejected', rejectedAt: { gte: startOfToday } } })
   ]);
 
-  const pendingCount = pendingVerifications.length;
+  const pendingCount = pendingProfiles.length;
 
   return (
     <div className="space-y-6">
@@ -47,7 +57,7 @@ export default async function ProfileVerificationPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
@@ -78,15 +88,6 @@ export default async function ProfileVerificationPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Review Time</CardTitle>
-            <Clock className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2.4h</div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Main Content */}
@@ -107,34 +108,42 @@ export default async function ProfileVerificationPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {pendingVerifications.length > 0 ? pendingVerifications.map((verification) => (
-                  <Card key={verification.id} className="border-l-4 border-l-orange-500">
+                {pendingProfiles.length > 0 ? pendingProfiles.map((profile) => {
+                  const verification = profile.verification;
+                  const qualificationDocs = (verification?.qualificationDocuments as string[] | null) ?? [];
+                  const experienceDocs = (verification?.experienceDocuments as string[] | null) ?? [];
+                  return (
+                  <Card key={profile.id} className="border-l-4 border-l-orange-500">
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <Avatar>
-                            <AvatarImage src={constructS3Url(verification.teacher.user.image || "")} />
+                            <AvatarImage src={constructS3Url(profile.user.image || "")} />
                             <AvatarFallback>
-                              {verification.teacher.user.name?.split(' ').map(n => n[0]).join('') || '?'}
+                              {profile.user.name?.split(' ').map(n => n[0]).join('') || '?'}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <h3 className="font-semibold">{verification.teacher.user.name || 'Unknown'}</h3>
-                            <p className="text-sm text-muted-foreground">{verification.teacher.user.email}</p>
+                            <h3 className="font-semibold">{profile.user.name || 'Unknown'}</h3>
+                            <p className="text-sm text-muted-foreground">{profile.user.email}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline" className="capitalize">
-                                Verification Request
+                                {verification ? "Verification Request" : "No documents submitted"}
                               </Badge>
                               <span className="text-sm text-muted-foreground">
-                                Submitted {verification.submittedAt ? new Date(verification.submittedAt).toLocaleDateString() : 'Unknown'}
+                                {verification?.submittedAt
+                                  ? `Submitted ${new Date(verification.submittedAt).toLocaleDateString("en-IN")}`
+                                  : `Joined ${new Date(profile.createdAt).toLocaleDateString("en-IN")}`}
                               </span>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4 mr-2" />
-                            Review
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/admin/teachers/${profile.userId}`}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Review
+                            </Link>
                           </Button>
                         </div>
                       </div>
@@ -147,8 +156,8 @@ export default async function ProfileVerificationPage() {
                           <h4 className="flex items-center gap-2 font-medium mb-3 text-sm">
                             <Shield className="h-4 w-4 text-blue-500" /> Identity
                           </h4>
-                          {verification.identityDocumentUrl ? (
-                            <DocumentLink url={verification.identityDocumentUrl as string} />
+                          {verification?.identityDocumentUrl ? (
+                            <DocumentLink url={verification.identityDocumentUrl} />
                           ) : (
                             <span className="text-xs text-muted-foreground italic">No document</span>
                           )}
@@ -158,9 +167,9 @@ export default async function ProfileVerificationPage() {
                           <h4 className="flex items-center gap-2 font-medium mb-3 text-sm">
                             <GraduationCap className="h-4 w-4 text-purple-500" /> Qualifications
                           </h4>
-                          {verification.qualificationDocuments && verification.qualificationDocuments.length > 0 ? (
+                          {qualificationDocs.length > 0 ? (
                             <div className="space-y-2">
-                              {(verification.qualificationDocuments as string[]).map((doc, i) => (
+                              {qualificationDocs.map((doc, i) => (
                                 <DocumentLink key={i} url={doc} index={i + 1} />
                               ))}
                             </div>
@@ -173,9 +182,9 @@ export default async function ProfileVerificationPage() {
                           <h4 className="flex items-center gap-2 font-medium mb-3 text-sm">
                             <Award className="h-4 w-4 text-amber-500" /> Experience
                           </h4>
-                          {verification.experienceDocuments && verification.experienceDocuments.length > 0 ? (
+                          {experienceDocs.length > 0 ? (
                             <div className="space-y-2">
-                              {(verification.experienceDocuments as string[]).map((doc, i) => (
+                              {experienceDocs.map((doc, i) => (
                                 <DocumentLink key={i} url={doc} index={i + 1} />
                               ))}
                             </div>
@@ -186,14 +195,12 @@ export default async function ProfileVerificationPage() {
                       </div>
 
                       <div className="mt-4">
-                        <TeacherApprovalActions
-                          profileId={verification.teacher.id}
-                          userId={verification.teacher.userId}
-                        />
+                        <TeacherApprovalActions profileId={profile.id} />
                       </div>
                     </CardContent>
                   </Card>
-                )) : (
+                  );
+                }) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No pending verifications</p>
@@ -260,13 +267,13 @@ function DocumentLink({ url, index }: { url: string; index?: number }) {
 
   if (isMock) {
     return (
-      <button
-        onClick={() => toast.info("This is a mock upload (simulation). File is not actually stored on server.")}
-        className="flex items-center gap-2 text-xs p-2 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 transition-colors truncate max-w-full cursor-pointer w-full"
+      <span
+        title="Mock upload (simulation). File is not actually stored on the server."
+        className="flex items-center gap-2 text-xs p-2 bg-amber-50 border border-amber-200 rounded truncate max-w-full w-full"
       >
         <FileText className="h-3 w-3 shrink-0 text-amber-500" />
         <span className="truncate text-amber-700">{index ? `Doc ${index} (Mock)` : `Mock File`}</span>
-      </button>
+      </span>
     );
   }
 

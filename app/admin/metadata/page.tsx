@@ -1,4 +1,12 @@
-import { createExpertise, createLanguage, deleteExpertise, deleteLanguage, getMetadata } from "@/app/actions/metadata";
+import {
+    createExpertise,
+    createLanguage,
+    deleteExpertise,
+    deleteLanguage,
+    getMetadata,
+    importExpertiseDefaults,
+    importLanguageDefaults,
+} from "@/app/actions/metadata";
 import { MetadataManager } from "./_components/metadata-manager";
 import { requireAdmin } from "@/app/data/auth/require-roles";
 
@@ -22,6 +30,7 @@ export default async function MetadataPage() {
                     items={expertise}
                     onAdd={createExpertise}
                     onDelete={deleteExpertise}
+                    onImportDefaults={importExpertiseDefaults}
                 />
 
                 {/* Languages */}
@@ -30,6 +39,7 @@ export default async function MetadataPage() {
                     items={languages}
                     onAdd={createLanguage}
                     onDelete={deleteLanguage}
+                    onImportDefaults={importLanguageDefaults}
                 />
             </div>
         </div>

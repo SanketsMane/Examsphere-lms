@@ -1,12 +1,16 @@
 "use server";
 
-import { requireTeacher } from "@/lib/action-security";
+import { requireAdmin } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
 import { ApiResponse } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 
 export async function deleteCourse(courseId: string): Promise<ApiResponse> {
-  const session = await requireTeacher();
+  try {
+    await requireAdmin();
+  } catch {
+    return { status: "error", message: "Unauthorized: Admin access required" };
+  }
 
   try {
     await prisma.course.delete({

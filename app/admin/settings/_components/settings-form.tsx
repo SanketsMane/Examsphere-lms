@@ -1,26 +1,25 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import type { AdminSiteSettings } from "@/app/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateSiteSettings } from "@/app/actions/settings";
 import { toast } from "sonner";
-import { Globe, Phone, Share2, CreditCard, Coins } from "lucide-react";
-import { SiteSettings } from "@prisma/client";
+import { Globe, Phone, Share2, CreditCard } from "lucide-react";
 import { SettingsImageUpload } from "@/components/ui/settings-image-upload";
 import { FooterLinksEditor } from "./footer-links-editor";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { CurrencySettings } from "./CurrencySettings";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 /**
  * Author: Sanket
  */
 
-export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
+export function SettingsForm({ settings }: { settings: AdminSiteSettings | null }) {
     const [state, formAction, isPending] = useActionState(updateSiteSettings, {
         message: "",
         success: false
@@ -30,13 +29,6 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
     const [logoUrl, setLogoUrl] = useState((settings as any)?.logo || "");
     const [faviconUrl, setFaviconUrl] = useState((settings as any)?.favicon || "");
     const [logoSize, setLogoSize] = useState((settings as any)?.logoSize || 100);
-
-    const [currencyCode, setCurrencyCode] = useState(settings?.currencyCode || "INR");
-
-    // Ensure logo/favicon DB columns are wide enough for base64 data URIs — runs once on first admin visit
-    useEffect(() => {
-        fetch("/api/admin/init-media-columns", { method: "POST" }).catch(() => {});
-    }, []);
 
     useEffect(() => {
         if (state?.success) {
@@ -66,14 +58,14 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                     <Input 
                                         id="siteName" 
                                         name="siteName" 
-                                        placeholder="Enter site name (optional)"
-                                        defaultValue={settings?.siteName || ""} 
+                                        placeholder="ExamSphere"
+                                        defaultValue={settings?.siteName || "ExamSphere"} 
                                     />
                                     <p className="text-xs text-muted-foreground">The display name for your platform.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="siteUrl">Site URL</Label>
-                                    <Input id="siteUrl" name="siteUrl" defaultValue={settings?.siteUrl || ""} placeholder="https://examsphere.com" />
+                                    <Input id="siteUrl" name="siteUrl" type="url" defaultValue={settings?.siteUrl || ""} placeholder="https://examsphere.online" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Favicon</Label>
@@ -129,50 +121,6 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                     </CardContent>
                 </Card>
 
-                {/* Localization Settings */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Coins className="h-5 w-5" />
-                            Localization
-                        </CardTitle>
-                        <CardDescription>Currency and regional settings</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="currencyCode">Default Site Currency</Label>
-                                <input type="hidden" name="currencyCode" value={currencyCode} />
-                                <Select value={currencyCode} onValueChange={setCurrencyCode}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Currency" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="INR">INR (₹)</SelectItem>
-                                        <SelectItem value="USD">USD ($)</SelectItem>
-                                        <SelectItem value="AED">AED (AED)</SelectItem>
-                                        <SelectItem value="GBP">GBP (£)</SelectItem>
-                                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                                        <SelectItem value="SGD">SGD (S$)</SelectItem>
-                                        <SelectItem value="CAD">CAD (C$)</SelectItem>
-                                        <SelectItem value="AUD">AUD (A$)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="currencySymbol">Currency Symbol</Label>
-                                <Input 
-                                    id="currencySymbol" 
-                                    name="currencySymbol" 
-                                    defaultValue={settings?.currencySymbol || "₹"} 
-                                    placeholder="e.g. ₹ or $" 
-                                />
-                                <p className="text-xs text-muted-foreground">Symbol used for manual displays.</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
                 {/* Contact Settings */}
                 <Card>
                     <CardHeader>
@@ -186,16 +134,16 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="contactEmail">Contact Email</Label>
-                                <Input id="contactEmail" name="contactEmail" defaultValue={settings?.contactEmail || ""} placeholder="support@examsphere.com" />
+                                <Input id="contactEmail" name="contactEmail" type="email" defaultValue={settings?.contactEmail || ""} placeholder="support@examsphere.online" />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="contactPhone">Contact Phone</Label>
-                                <Input id="contactPhone" name="contactPhone" defaultValue={settings?.contactPhone || ""} placeholder="+1 (555) 000-0000" />
+                                <Input id="contactPhone" name="contactPhone" type="tel" pattern="\+?[0-9 ()\-]{7,20}" defaultValue={settings?.contactPhone || ""} placeholder="+91 98765 43210" />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="contactAddress">Address</Label>
-                            <Input id="contactAddress" name="contactAddress" defaultValue={settings?.contactAddress || ""} placeholder="123 Education St, Learning City" />
+                            <Input id="contactAddress" name="contactAddress" defaultValue={settings?.contactAddress || ""} placeholder="2nd Floor, Shivaji Nagar, Pune, Maharashtra 411005" />
                         </div>
                     </CardContent>
                 </Card>
@@ -213,23 +161,23 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="facebook">Facebook</Label>
-                                <Input id="facebook" name="facebook" defaultValue={settings?.facebook || ""} placeholder="https://facebook.com/..." />
+                                <Input id="facebook" name="facebook" type="url" defaultValue={settings?.facebook || ""} placeholder="https://facebook.com/..." />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="twitter">Twitter (X)</Label>
-                                <Input id="twitter" name="twitter" defaultValue={settings?.twitter || ""} placeholder="https://x.com/..." />
+                                <Input id="twitter" name="twitter" type="url" defaultValue={settings?.twitter || ""} placeholder="https://x.com/..." />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="instagram">Instagram</Label>
-                                <Input id="instagram" name="instagram" defaultValue={settings?.instagram || ""} placeholder="https://instagram.com/..." />
+                                <Input id="instagram" name="instagram" type="url" defaultValue={settings?.instagram || ""} placeholder="https://instagram.com/..." />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="linkedin">LinkedIn</Label>
-                                <Input id="linkedin" name="linkedin" defaultValue={settings?.linkedin || ""} placeholder="https://linkedin.com/in/..." />
+                                <Input id="linkedin" name="linkedin" type="url" defaultValue={settings?.linkedin || ""} placeholder="https://linkedin.com/in/..." />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="youtube">YouTube</Label>
-                                <Input id="youtube" name="youtube" defaultValue={settings?.youtube || ""} placeholder="https://youtube.com/@..." />
+                                <Input id="youtube" name="youtube" type="url" defaultValue={settings?.youtube || ""} placeholder="https://youtube.com/@..." />
                             </div>
                         </div>
                     </CardContent>
@@ -261,22 +209,28 @@ export function SettingsForm({ settings }: { settings: SiteSettings | null }) {
                                     id="razorpayKeySecret" 
                                     name="razorpayKeySecret" 
                                     type="password"
-                                    defaultValue={settings?.razorpayKeySecret || ""} 
-                                    placeholder="••••••••••••••••" 
+                                    autoComplete="new-password"
+                                    placeholder={settings?.hasRazorpayKeySecret ? "•••••••• saved — leave blank to keep" : "Not set"}
                                 />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="razorpayWebhookSecret">Razorpay Webhook Secret</Label>
-                            <Input 
-                                id="razorpayWebhookSecret" 
-                                name="razorpayWebhookSecret" 
+                            <Input
+                                id="razorpayWebhookSecret"
+                                name="razorpayWebhookSecret"
                                 type="password"
-                                defaultValue={(settings as any)?.razorpayWebhookSecret || ""} 
-                                placeholder="••••••••••••••••" 
+                                autoComplete="new-password"
+                                placeholder={settings?.hasRazorpayWebhookSecret ? "•••••••• saved — leave blank to keep" : "Not set"}
                              />
                              <p className="text-[10px] text-muted-foreground">This secret is used to verify that webhook calls are legitimate and come from Razorpay.</p>
                         </div>
+                        {(settings?.hasRazorpayKeySecret || settings?.hasRazorpayWebhookSecret) && (
+                            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <input type="checkbox" name="clearRazorpaySecrets" className="h-4 w-4" />
+                                Remove saved Razorpay key secret and webhook secret
+                            </label>
+                        )}
                     </CardContent>
                 </Card>
 

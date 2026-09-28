@@ -83,13 +83,13 @@ export function UserActions({ user }: UserActionsProps) {
     const handleSuspendToggle = async () => {
         setLoading(true);
         try {
-            if (user.banned) {
-                await unsuspendUser(user.id);
-                toast.success("User unsuspended");
-            } else {
-                await suspendUser(user.id);
-                toast.warning("User suspended");
+            const res = user.banned ? await unsuspendUser(user.id) : await suspendUser(user.id);
+            if (!res.success) {
+                toast.error(res.message);
+                return;
             }
+            if (user.banned) toast.success("User unsuspended");
+            else toast.warning("User suspended and signed out");
             router.refresh();
         } catch (error) {
             toast.error("Action failed");
@@ -101,7 +101,11 @@ export function UserActions({ user }: UserActionsProps) {
     const handleDelete = async () => {
         setLoading(true);
         try {
-            await deleteUser(user.id);
+            const res = await deleteUser(user.id);
+            if (!res.success) {
+                toast.error(res.message);
+                return;
+            }
             toast.success("User deleted");
             router.refresh();
         } catch (error) {
@@ -133,7 +137,11 @@ export function UserActions({ user }: UserActionsProps) {
                 } : {})
             };
 
-            await updateUserAndTeacherProfile(user.id, data);
+            const res = await updateUserAndTeacherProfile(user.id, data);
+            if (!res.success) {
+                toast.error(res.message);
+                return;
+            }
             toast.success("User updated successfully");
             setIsEditDialogOpen(false);
             router.refresh();
@@ -236,7 +244,7 @@ export function UserActions({ user }: UserActionsProps) {
                                     <Input value={languages} onChange={(e) => setLanguages(e.target.value)} placeholder="English, Hindi, Spanish" className="col-span-3" />
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label className="text-right">Hourly Rate ($)</Label>
+                                    <Label className="text-right">Hourly Rate (₹)</Label>
                                     <Input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} className="col-span-3" />
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">

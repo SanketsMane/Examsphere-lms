@@ -1,66 +1,11 @@
-"use client";
+import { ReactNode } from "react";
+import { requireAdmin } from "@/app/data/auth/require-roles";
+import { AdminShell } from "./_components/AdminShell";
 
-import { AppSidebar } from "@/components/sidebar/app-sidebar";
-import { SiteHeader } from "@/components/sidebar/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { ReactNode, useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+// Server-side gate: admin pages that don't call requireAdmin themselves would
+// otherwise render their data for anyone.
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  await requireAdmin();
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
-  const { data: session, isPending } = useAuth();
-  const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isMounted && !isPending && !session) {
-      router.push("/login");
-    } else if (isMounted && !isPending && session && (session.user as any).role !== "admin") {
-      router.push("/not-admin");
-    }
-  }, [session, isPending, router, isMounted]);
-
-  // Prevent hydration mismatch by not rendering until mounted
-  if (!isMounted || isPending) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
-
-  if ((session.user as any).role !== "admin") {
-    return null;
-  }
-  return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "4.25rem",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
-              {children}
-            </div>
-          </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

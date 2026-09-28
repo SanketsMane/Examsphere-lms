@@ -7,9 +7,11 @@ import { EXPERTISE_AREAS, TEACHING_LANGUAGES } from "@/lib/examsphere-taxonomy";
 
 // --- Expertise Actions ---
 
-export async function createExpertise(name: string) {
+export async function createExpertise(rawName: string) {
     try {
         await requireAdmin();
+        const name = (rawName ?? "").trim().replace(/\s+/g, " ");
+        if (!name) return { success: false, error: "Name is required" };
         const existing = await prisma.expertise.findUnique({
             where: { name },
         });
@@ -64,9 +66,11 @@ export async function deleteExpertise(id: string) {
 
 // --- Language Actions ---
 
-export async function createLanguage(name: string) {
+export async function createLanguage(rawName: string) {
     try {
         await requireAdmin();
+        const name = (rawName ?? "").trim().replace(/\s+/g, " ");
+        if (!name) return { success: false, error: "Name is required" };
         const existing = await prisma.language.findUnique({
             where: { name },
         });
@@ -110,6 +114,52 @@ export async function deleteLanguage(id: string) {
     } catch (error) {
         console.error("Error deleting language:", error);
         return { success: false, error: "Failed to delete language" };
+    }
+}
+
+// --- Defaults import ---
+// A fresh database has empty lists; importing the canonical ExamSphere taxonomy saves
+// the admin typing them in one by one. Existing rows (active or not) are reactivated.
+
+export async function importExpertiseDefaults() {
+    try {
+        await requireAdmin();
+        await prisma.$transaction(
+            EXPERTISE_AREAS.map((name) =>
+                prisma.expertise.upsert({
+                    where: { name },
+                    create: { name },
+                    update: { isActive: true },
+                })
+            )
+        );
+        revalidatePath("/admin/metadata");
+        revalidatePath("/register/teacher");
+        return { success: true, message: `Imported ${EXPERTISE_AREAS.length} expertise areas` };
+    } catch (error) {
+        console.error("Error importing expertise defaults:", error);
+        return { success: false, error: "Failed to import defaults" };
+    }
+}
+
+export async function importLanguageDefaults() {
+    try {
+        await requireAdmin();
+        await prisma.$transaction(
+            TEACHING_LANGUAGES.map((name) =>
+                prisma.language.upsert({
+                    where: { name },
+                    create: { name },
+                    update: { isActive: true },
+                })
+            )
+        );
+        revalidatePath("/admin/metadata");
+        revalidatePath("/register/teacher");
+        return { success: true, message: `Imported ${TEACHING_LANGUAGES.length} languages` };
+    } catch (error) {
+        console.error("Error importing language defaults:", error);
+        return { success: false, error: "Failed to import defaults" };
     }
 }
 

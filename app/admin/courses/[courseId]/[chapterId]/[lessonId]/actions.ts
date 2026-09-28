@@ -1,6 +1,6 @@
 "use server";
 
-import { requireTeacherOrAdmin } from "@/app/data/auth/require-roles";
+import { requireAdmin } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
 import { ApiResponse } from "@/lib/types";
 import { lessonSchema, LessonSchemaType } from "@/lib/zodSchemas";
@@ -9,7 +9,11 @@ export async function updateLesson(
   values: LessonSchemaType,
   lessonId: string
 ): Promise<ApiResponse> {
-  await requireTeacherOrAdmin();
+  try {
+    await requireAdmin();
+  } catch {
+    return { status: "error", message: "Unauthorized: Admin access required" };
+  }
 
   try {
     const result = lessonSchema.safeParse(values);
@@ -35,12 +39,12 @@ export async function updateLesson(
 
     return {
       status: "success",
-      message: "Course updated successfully",
+      message: "Lesson updated successfully",
     };
   } catch {
     return {
       status: "error",
-      message: "Failed to update course",
+      message: "Failed to update lesson",
     };
   }
 }
