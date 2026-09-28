@@ -79,7 +79,7 @@ export default async function TeacherBundlesPage() {
                                             </Badge>
                                         </div>
                                         <div className="flex justify-between items-center pt-2 border-t">
-                                            <span className="font-bold">{formatPriceSimple(bundle.price || 0, userCountry)}</span>
+                                            <span className="font-bold">{formatPriceSimple(bundle.price || 0, "India")}</span>
                                             <div className="flex gap-2">
                                                 <Button variant="ghost" size="sm" asChild>
                                                     <Link href={`/bundles/${bundle.id}`}>
@@ -111,7 +111,7 @@ export default async function TeacherBundlesPage() {
                                             <TableRow key={bundle.id}>
                                                 <TableCell className="font-medium">{bundle.title}</TableCell>
                                                 <TableCell>{bundle.sessionCount}</TableCell>
-                                                <TableCell>{formatPriceSimple(bundle.price || 0, userCountry)}</TableCell>
+                                                <TableCell>{formatPriceSimple(bundle.price || 0, "India")}</TableCell>
                                                 <TableCell>{(bundle as any)._count?.bookings || 0}</TableCell>
                                                 <TableCell>
                                                     <Badge variant={bundle.isActive ? "default" : "secondary"}>

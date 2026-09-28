@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { getSessionWithRole } from "@/app/data/auth/require-roles";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { getOneOnOneSessionPrice, SESSION_PRICE_NOT_SET_MESSAGE } from "@/lib/session-pricing";
+import { toPaise } from "@/lib/money";
 
 interface BookSessionInput {
     teacherProfileId: string;
@@ -77,8 +79,7 @@ export async function bookSessionAction(data: BookSessionInput) {
             teacherId: data.teacherProfileId
         });
 
-        const hourlyRate = teacherProfile.hourlyRate || 0;
-        const basePrice = hourlyRate;
+        const configuredPrice = await getOneOnOneSessionPrice(teacherProfile.id, duration);
 
         // Check for Active Subscription
         // Author: Sanket - Hardened expiration and status check
@@ -87,6 +88,12 @@ export async function bookSessionAction(data: BookSessionInput) {
 
         const hasActiveSubscription = !!activeSub;
         const isSubscriptionBooking = hasActiveSubscription && (activeSub.plan.name === "Unlimited" || activeSub.plan.name === "Pro Student Plan");
+
+        // Subscription bookings don't depend on the teacher's rate; everything else needs one.
+        if (configuredPrice === null && !isSubscriptionBooking) {
+            return { success: false, error: SESSION_PRICE_NOT_SET_MESSAGE };
+        }
+        const basePrice = configuredPrice ?? 0;
 
         // Coupon Logic
         let finalPrice = isSubscriptionBooking ? 0 : basePrice;
@@ -239,8 +246,11 @@ export async function bookSessionWithWallet(data: BookSessionInput) {
         });
         if (!teacherProfile) return { success: false, error: "Teacher not found" };
 
-        const hourlyRate = teacherProfile.hourlyRate || 0;
-        const basePrice = hourlyRate;
+        const configuredPrice = await getOneOnOneSessionPrice(teacherProfile.id, 60);
+        if (configuredPrice === null) {
+            return { success: false, error: SESSION_PRICE_NOT_SET_MESSAGE };
+        }
+        const basePrice = configuredPrice;
         let finalPrice = basePrice;
 
         if (data.couponCode) {
@@ -278,13 +288,14 @@ export async function bookSessionWithWallet(data: BookSessionInput) {
                     description: "Private Live Session",
                     scheduledAt: scheduledAt,
                     duration: 60,
-                    price: finalPrice,
+                    // LiveSession/booking amounts are paise (as in checkout); the wallet is debited in rupees.
+                    price: toPaise(finalPrice),
                     status: "scheduled",
                     meetingUrl: `/video-call/${crypto.randomUUID()}`,
                     bookings: {
                         create: {
                             studentId: session.user.id,
-                            amount: finalPrice, 
+                            amount: toPaise(finalPrice),
                             status: "confirmed"
                         }
                     }

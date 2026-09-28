@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { publishCourse } from "../actions";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 interface CourseActionsProps {
@@ -15,12 +16,14 @@ interface CourseActionsProps {
 
 export function CourseActions({ courseId, status, isTeacher }: CourseActionsProps) {
     const [pending, startTransition] = useTransition();
+    const router = useRouter();
 
     const handlePublish = () => {
         startTransition(async () => {
             const result = await publishCourse(courseId);
             if (result.status === "success") {
                 toast.success(result.message);
+                router.refresh();
             } else {
                 toast.error(result.message);
             }
@@ -44,10 +47,10 @@ export function CourseActions({ courseId, status, isTeacher }: CourseActionsProp
         <div className="flex items-center gap-4">
             <StatusBadge />
 
-            {status === "Draft" && (
+            {(status === "Draft" || status === "Archived") && (
                 <Button onClick={handlePublish} disabled={pending} size="sm">
                     {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isTeacher ? "Submit for Review" : "Publish Course"}
+                    {status === "Draft" ? "Submit for Review" : "Resubmit for Review"}
                 </Button>
             )}
         </div>

@@ -11,57 +11,49 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { subject, message } = await req.json();
+        const role = (session.user as any).role;
+        if (role !== "teacher" && role !== "admin") {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const body = await req.json().catch(() => ({}));
+        const subject = typeof body.subject === "string" ? body.subject.trim() : "";
+        const message = typeof body.message === "string" ? body.message.trim() : "";
 
         if (!subject || !message) {
             return NextResponse.json({ error: "Subject and message are required" }, { status: 400 });
         }
-
-        // Get all students enrolled in teacher's courses
-        const teacherCourses = await prisma.course.findMany({
-            where: { userId: session.user.id },
-            select: {
-                id: true,
-                title: true,
-                enrollment: {
-                    include: {
-                        User: {
-                            select: {
-                                id: true,
-                                email: true,
-                                name: true
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        const students = new Map();
-        teacherCourses.forEach(course => {
-            course.enrollment.forEach(enrollment => {
-                if (enrollment.User.email) {
-                    students.set(enrollment.User.email, enrollment.User);
-                }
-            });
-        });
-
-        const uniqueStudents = Array.from(students.values());
-
-        if (uniqueStudents.length === 0) {
-            return NextResponse.json({ message: "No students to send announcement to" });
+        if (subject.length > 200 || message.length > 5000) {
+            return NextResponse.json({ error: "Announcement is too long" }, { status: 400 });
         }
 
-        // SIMULATED SENDING (To avoid missing dependency issues)
-        console.log(`[Announcement] Subject: ${subject}`);
-        console.log(`[Announcement] Message: ${message}`);
-        console.log(`[Announcement] Recipients: ${uniqueStudents.length} students`);
+        // Only students with an Active enrollment in this teacher's courses.
+        const enrollments = await prisma.enrollment.findMany({
+            where: { status: "Active", Course: { userId: session.user.id } },
+            select: { userId: true },
+            distinct: ["userId"],
+        });
 
-        // In a real production app, integrate with Resend, SendGrid, or Nodemailer here.
-        // For now, we simulate success to verify the flow.
+        const studentIds = enrollments.map((e) => e.userId).filter((id) => id !== session.user.id);
+
+        if (studentIds.length === 0) {
+            return NextResponse.json({ message: "You have no enrolled students to notify yet", sent: 0 });
+        }
+
+        // Delivered as in-app notifications; there is no bulk email pipeline for announcements.
+        await prisma.notification.createMany({
+            data: studentIds.map((userId) => ({
+                userId,
+                title: subject,
+                message,
+                type: "Course" as const,
+                data: { kind: "announcement", teacherId: session.user.id, teacherName: session.user.name },
+            })),
+        });
 
         return NextResponse.json({
-            message: `Announcement sent to ${uniqueStudents.length} students`
+            message: `Announcement sent to ${studentIds.length} student${studentIds.length === 1 ? "" : "s"} as an in-app notification`,
+            sent: studentIds.length,
         });
 
     } catch (error) {

@@ -40,7 +40,6 @@ export default async function TeacherPricingPage() {
             pricing={teacher.pricing} 
             allowFreeDemo={teacher.allowFreeDemo} 
             allowFreeGroup={teacher.allowFreeGroup}
-            teacherId={teacher.id}
         />
       </div>
     </div>

@@ -144,7 +144,7 @@ export default function TeacherProfilePage() {
               <TrendingUp className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">${profile.totalEarnings.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">₹{Number(profile.totalEarnings || 0).toLocaleString("en-IN")}</p>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Earnings</p>
             </div>
           </CardContent>

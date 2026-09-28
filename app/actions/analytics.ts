@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 export async function getUserAnalytics(userId?: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const targetUserId = userId || session.user.id;
@@ -33,9 +33,9 @@ export async function getUserAnalytics(userId?: string) {
     blogPostsCount,
     certificatesCount,
   ] = await Promise.all([
-    // Enrollment count
+    // Only Active enrollments count; Pending (unpaid) and Cancelled ones aren't courses the student has.
     prisma.enrollment.count({
-      where: { userId: targetUserId }
+      where: { userId: targetUserId, status: "Active" }
     }),
 
     // Total lessons completed
@@ -138,11 +138,13 @@ export async function getUserAnalytics(userId?: string) {
   };
 }
 
-// Get teacher analytics
+// Get teacher analytics.
+// Money figures (totalEarnings, revenueData, pendingPayouts) are whole rupees:
+// Enrollment.amount and PayoutRequest.requestedAmount are both stored in rupees.
 export async function getTeacherAnalytics() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   // Check if user is a teacher
@@ -176,15 +178,17 @@ export async function getTeacherAnalytics() {
     // Total enrollments across all courses
     prisma.enrollment.count({
       where: {
+        status: "Active",
         Course: {
           userId: session.user.id
         }
       }
     }),
 
-    // Total earnings (simplified calculation)
+    // Gross course sales: paid (Active) enrollments only, before platform fees.
     prisma.enrollment.aggregate({
       where: {
+        status: "Active",
         Course: {
           userId: session.user.id
         }
@@ -194,10 +198,10 @@ export async function getTeacherAnalytics() {
       }
     }),
 
-    // Sessions completed
+    // LiveSession.teacherId is the TeacherProfile id, not the user id.
     prisma.liveSession.count({
       where: {
-        teacherId: session.user.id,
+        teacherId: teacherProfile.id,
         status: "completed"
       }
     }),
@@ -217,6 +221,7 @@ export async function getTeacherAnalytics() {
     // Unique students
     prisma.enrollment.findMany({
       where: {
+        status: "Active",
         Course: {
           userId: session.user.id
         }
@@ -265,7 +270,7 @@ export async function getTeacherAnalytics() {
     // Upcoming Sessions
     prisma.liveSession.count({
       where: {
-        teacherId: session.user.id,
+        teacherId: teacherProfile.id,
         status: "scheduled",
         scheduledAt: {
           gte: new Date()
@@ -289,7 +294,7 @@ export async function getTeacherAnalytics() {
       averageRating: averageRating._avg.rating || 0,
       studentsCount: studentsCount.length,
       blogPostsCount,
-      pendingPayouts: pendingPayouts._sum.requestedAmount || 0,
+      pendingPayouts: Number(pendingPayouts._sum.requestedAmount || 0),
       upcomingSessions
     },
     revenueData,
@@ -302,7 +307,7 @@ export async function getTeacherAnalytics() {
 export async function getPlatformAnalytics() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   // Check if user is admin
@@ -471,7 +476,7 @@ async function getRecentActivity(userId: string) {
 
 async function getLearningProgress(userId: string) {
   const enrollments = await prisma.enrollment.findMany({
-    where: { userId },
+    where: { userId, status: "Active" },
     include: {
       Course: {
         include: {
@@ -548,9 +553,10 @@ async function getEngagementMetrics(userId: string) {
 }
 
 async function getRevenueOverTime(teacherId: string) {
-  // Optimized: Select only necessary fields
+  // Whole rupees per month from paid enrollments.
   const enrollments = await prisma.enrollment.findMany({
     where: {
+      status: "Active",
       Course: { userId: teacherId }
     },
     orderBy: { createdAt: "asc" },
@@ -589,7 +595,8 @@ async function getCoursePerformance(teacherId: string) {
     prisma.enrollment.groupBy({
       by: ['courseId'],
       where: {
-        courseId: { in: courseIds }
+        courseId: { in: courseIds },
+        status: "Active"
       },
       _count: { _all: true },
       _sum: { amount: true }

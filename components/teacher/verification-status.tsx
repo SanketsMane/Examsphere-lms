@@ -164,7 +164,7 @@ export default function TeacherVerificationStatus({ verificationStatus }: Teache
           </Button>
           {status.isVerified && (
             <Button asChild size="sm" variant="outline" className="flex-1">
-              <Link href="/teacher/payouts">
+              <Link href="/teacher/finance">
                 <Wallet className="h-3 w-3 mr-1" />
                 Request Payout
               </Link>

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { getTeacherSubjectOptions } from "@/app/teacher/_lib/subject-options";
 import { requireTeacher } from "@/app/data/auth/require-roles";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateSessionForm } from "../_components/CreateSessionForm";
@@ -11,17 +11,14 @@ export const dynamic = "force-dynamic";
 export default async function CreateSessionPage() {
   await requireTeacher();
 
-  const subjects = await prisma.subject.findMany({
-    where: { isActive: true },
-    orderBy: { name: 'asc' }
-  });
+  const subjects = await getTeacherSubjectOptions();
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-10">
       {/* Header with Breadcrumbs - Refined by Sanket */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-            <Link href="/teacher/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+            <Link href="/teacher" className="hover:text-primary transition-colors">Dashboard</Link>
             <span>/</span>
             <Link href="/teacher/sessions" className="hover:text-primary transition-colors">Live Sessions</Link>
             <span>/</span>
@@ -34,7 +31,7 @@ export default async function CreateSessionPage() {
                 Create Live Session
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl">
-              Design a high-impact learning experience. Set your schedule, define your curriculum, and start teaching globally.
+              Design a high-impact learning experience. Set your schedule, define your curriculum, and start teaching.
             </p>
           </div>
           

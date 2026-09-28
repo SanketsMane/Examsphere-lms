@@ -2,31 +2,55 @@
 import { prisma } from "@/lib/db";
 import { getEffectivePlan } from "./subscription";
 
+const DEFAULT_TEACHER_LIMITS = { maxCourses: 3, maxGroups: 2 };
+
+/** A negative limit in plan metadata means "unlimited". */
+function isWithinLimit(used: number, limit: number) {
+    return limit < 0 || used < limit;
+}
+
+/**
+ * Single source of truth for teacher plan limits, used by the create actions and the
+ * subscription usage screen so they can never disagree.
+ *
+ * Only an explicit numeric `maxCourses`/`maxGroups` in plan metadata overrides the
+ * defaults. `canCreateCourses: false` on the free default plan used to turn into a
+ * limit of 0, which meant no approved teacher could create a course without paying.
+ */
+export async function getTeacherPlanLimits(userId: string): Promise<{ maxCourses: number; maxGroups: number }> {
+    const plan = await getEffectivePlan(userId, "TEACHER");
+    const limits = { ...DEFAULT_TEACHER_LIMITS };
+    const meta = (plan?.metadata ?? null) as any;
+    if (meta) {
+        if (typeof meta.maxCourses === "number") limits.maxCourses = meta.maxCourses;
+        if (typeof meta.maxGroups === "number") limits.maxGroups = meta.maxGroups;
+    }
+    return limits;
+}
+
+/** Scheduled group classes owned by this user. GroupClass.teacherId is the TeacherProfile id. */
+export async function countActiveGroupClasses(userId: string): Promise<number> {
+    const profile = await prisma.teacherProfile.findUnique({
+        where: { userId },
+        select: { id: true },
+    });
+    if (!profile) return 0;
+    return prisma.groupClass.count({ where: { teacherId: profile.id, status: { in: ["Scheduled"] } } });
+}
+
 /**
  * Author: Sanket
  * Checks course creation limit for teachers, respecting plan expiration.
  */
 export async function checkCourseLimit(userId: string): Promise<{ allowed: boolean; limit: number; used: number }> {
-    const [plan, courseCount] = await Promise.all([
-        getEffectivePlan(userId, "TEACHER"),
+    const [limits, courseCount] = await Promise.all([
+        getTeacherPlanLimits(userId),
         prisma.course.count({ where: { userId } })
     ]);
 
-    // Default fallback limits if plan fetching fails (should not happen with default plan in DB)
-    let maxCourses = 3; 
-
-    if (plan && plan.metadata) {
-        const meta = plan.metadata as any;
-        if (typeof meta.maxCourses === 'number') {
-            maxCourses = meta.maxCourses;
-        } else if (meta.canCreateCourses === false) {
-             maxCourses = 0; // Explicitly blocked on Basic plan according to seed
-        }
-    }
-
     return {
-        allowed: courseCount < maxCourses,
-        limit: maxCourses,
+        allowed: isWithinLimit(courseCount, limits.maxCourses),
+        limit: limits.maxCourses,
         used: courseCount
     };
 }
@@ -36,25 +60,14 @@ export async function checkCourseLimit(userId: string): Promise<{ allowed: boole
  * Checks group class limit for teachers, respecting plan expiration.
  */
 export async function checkGroupClassLimit(userId: string): Promise<{ allowed: boolean; limit: number; used: number }> {
-     const [plan, groupCount] = await Promise.all([
-        getEffectivePlan(userId, "TEACHER"),
-        prisma.groupClass.count({ where: { teacherId: userId, status: { in: ["Scheduled"] } } })
+    const [limits, groupCount] = await Promise.all([
+        getTeacherPlanLimits(userId),
+        countActiveGroupClasses(userId)
     ]);
 
-    let maxGroups = 2; // Default fallback
-
-    if (plan && plan.metadata) {
-        const meta = plan.metadata as any;
-        if (typeof meta.maxGroups === 'number') {
-            maxGroups = meta.maxGroups;
-        } else if (plan.name === "Basic Teacher Plan") {
-            maxGroups = 2; // Hardcoded default for free tier
-        }
-    }
-
     return {
-        allowed: groupCount < maxGroups,
-        limit: maxGroups,
+        allowed: isWithinLimit(groupCount, limits.maxGroups),
+        limit: limits.maxGroups,
         used: groupCount
     };
 }

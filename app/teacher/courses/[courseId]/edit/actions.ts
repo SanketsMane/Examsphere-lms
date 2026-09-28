@@ -14,24 +14,35 @@ import {
 } from "@/lib/zodSchemas";
 import { revalidatePath } from "next/cache";
 import {
-  adminCourseSchema,
   buildCourseData,
+  getTeacherAuthoringBlock,
   handleCourseWriteError,
+  teacherCourseSchema,
   toFieldErrors,
 } from "@/lib/course-write";
-import { courseEditSchema } from "@/lib/zodSchemas";
+import { assertValidCategory } from "@/lib/course-categories";
 import { createSystemNotification } from "@/app/actions/notifications";
 import { sendCourseSubmissionEmail } from "@/lib/email-notifications";
 
+/**
+ * Save course details. Publication state is never changed here — a teacher submits
+ * for review only through publishCourse (CourseActions), so fixing a typo on a
+ * published course doesn't pull it off the site.
+ */
 export async function editCourse(
   data: CourseSchemaType,
   courseId: string
 ): Promise<ApiResponse> {
   const session = await requireTeacher();
   const user = session.user as any;
+  const isAdmin = user.role === "admin";
 
-  // Check if teacher is trying to edit their own course
-  if (user.role === "teacher") {
+  const authoringBlock = await getTeacherAuthoringBlock({ id: user.id, role: user.role });
+  if (authoringBlock) {
+    return { status: "error", message: authoringBlock };
+  }
+
+  if (!isAdmin) {
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       select: { userId: true }
@@ -46,20 +57,8 @@ export async function editCourse(
   }
 
   try {
-    // Apply security protection for admin actions
-    /*
-    const securityCheck = await protectAdminAction(user.id);
-    if (!securityCheck.success) {
-      return {
-        status: "error",
-        message: securityCheck.error || "Security check failed",
-      };
-    }
-    */
-
-    // Admins may additionally set isFeatured; teachers may not.
-    const schema = user.role === "admin" ? adminCourseSchema : courseEditSchema;
-    const result = schema.safeParse(data);
+    // This form never carries status/isFeatured (admins change those from the admin console).
+    const result = teacherCourseSchema.safeParse(data);
 
     if (!result.success) {
       return {
@@ -69,92 +68,41 @@ export async function editCourse(
       };
     }
 
-    const whereClause: any = {
-      id: courseId,
-    };
+    const categoryError = await assertValidCategory(result.data.category);
+    if (categoryError) {
+      return {
+        status: "error",
+        message: categoryError,
+        fieldErrors: { category: categoryError },
+      };
+    }
 
-    // If teacher, ensure they own the course
-    if (user.role === "teacher") {
+    const whereClause: any = { id: courseId };
+    if (!isAdmin) {
       whereClause.userId = user.id;
     }
 
-    // Approval Logic: If teacher tries to Publish, set to Pending unless Admin
-    let statusToSave = result.data.status;
-    let message = "Course updated successfully";
-
-    if (user.role === "teacher" && result.data.status === "Published") {
-      statusToSave = "Pending";
-      message = "Course submitted for approval";
-
-      // Notify Admins
-      const admins = await prisma.user.findMany({
-        where: { role: "admin" },
-        select: { id: true }
-      });
-
-      const courseTitle = result.data.title || "A course"; // Title might not be in payload if not updating it, need to handle that.
-      // Wait, result.data is partial? courseSchema.safeParse(data). 
-      // strict() is not on z.object usually unless specified. 
-      // If title is missing in update data, we might need to fetch it or just say "A course".
-      // But usually edit page sends full data? let's check schema.
-
-      // Better to fetch course title if not in data, but let's assume valid data for now or generic message.
-      // actually, let's just say "A new course has been submitted".
-      // Or better, fetch the course to get the title if needed, but we are updating it.
-      // If title is in result.data, use it. If not, fetch it.
-
-      // Let's keep it simple for now to avoid extra DB calls if possible, but for notification quality we want title.
-      // We are updating the course, so result.data might have it. 
-      // If not, we can use "New Course Submission".
-
-      for (const admin of admins) {
-        await createSystemNotification(
-          admin.id,
-          "New Course Submission",
-          `Teacher ${user.name || "Unknown"} has submitted a course for review.`,
-          "Course",
-          { courseId: courseId, action: "submission" }
-        );
-      }
-    }
-
     // QA-061: teachers cannot promote their own course. buildCourseData writes an
-    // explicit column list, so `isFeatured` can only ever be what we pass here.
-    const dataToSave = buildCourseData(result.data as any, {
-      status: statusToSave as string,
-      isFeatured:
-        user.role === "admin" ? ((result.data as any).isFeatured ?? false) : undefined as any,
-    });
+    // explicit column list and leaves status/isFeatured untouched when not passed.
+    const dataToSave = buildCourseData(result.data, {}, { partial: true });
 
-    // Only an admin may change featured placement; for teachers leave it untouched.
-    if (user.role !== "admin") {
-      delete (dataToSave as any).isFeatured;
-    }
-
-    await prisma.course.update({
+    const updatedCourse = await prisma.course.update({
       where: whereClause,
       data: dataToSave,
-    });
-
-
-
-    // Fetch slug for revalidation if needed, or rely on just home/search
-    // Ideally we should have the slug from the update result or existing data
-    const updatedCourse = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { slug: true }
+      select: { slug: true },
     });
 
     revalidatePath("/");
     revalidatePath("/search");
     revalidatePath("/browse");
+    revalidatePath(`/teacher/courses/${courseId}/edit`);
     if (updatedCourse?.slug) {
       revalidatePath(`/courses/${updatedCourse.slug}`);
     }
 
     return {
       status: "success",
-      message: message,
+      message: "Course updated successfully",
     };
   } catch (error) {
     return handleCourseWriteError(error, {
@@ -649,45 +597,53 @@ export async function deleteChapter({
 export async function publishCourse(courseId: string): Promise<ApiResponse> {
   const session = await requireTeacher();
   const user = session.user as any;
+
+  const authoringBlock = await getTeacherAuthoringBlock({ id: user.id, role: user.role });
+  if (authoringBlock) {
+    return { status: "error", message: authoringBlock };
+  }
+
   try {
     const course = await prisma.course.findUnique({
-        where: {
-            id: courseId,
-            userId: session.user.id,
-        },
-        select: {
-            id: true,
-            title: true,
-            price: true,
-            status: true,
-        },
+      where: {
+        id: courseId,
+        userId: session.user.id,
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        _count: { select: { chapter: true } },
+        chapter: { select: { _count: { select: { lessons: true } } } },
+      },
     });
 
     if (!course) {
-        throw new Error("Course not found");
+      return { status: "error", message: "Course not found" };
     }
 
-    // Determine new status based on price
-    // Free courses (price = 0) are auto-approved
-    // Paid courses require admin review
-    const isFree = course.price === 0;
-    const newStatus = isFree ? "Published" : "Pending";
+    if (course.status === "Pending") {
+      return { status: "error", message: "This course is already awaiting admin review." };
+    }
 
-    // Update course status
+    const lessonCount = course.chapter.reduce((sum, ch) => sum + ch._count.lessons, 0);
+    if (lessonCount < 1) {
+      return { status: "error", message: "Add at least one lesson before submitting the course for review." };
+    }
+
+    // Every teacher course — free or paid — goes through admin review.
     await prisma.course.update({
-        where: { id: courseId },
-        data: { status: newStatus as any },
+      where: { id: courseId },
+      data: { status: "Pending" },
     });
 
-    // Only notify admins for paid courses
-    if (!isFree && newStatus === "Pending") {
-      // Notify Admins
-      const admins = await prisma.user.findMany({
-        where: { role: "admin" },
-        select: { id: true, email: true }
-      });
+    const admins = await prisma.user.findMany({
+      where: { role: "admin" },
+      select: { id: true, email: true }
+    });
 
-      for (const admin of admins) {
+    for (const admin of admins) {
+      try {
         await createSystemNotification(
           admin.id,
           "New Course Submission",
@@ -696,7 +652,6 @@ export async function publishCourse(courseId: string): Promise<ApiResponse> {
           { courseId: courseId, action: "submission" }
         );
 
-        // Send Email
         if (admin.email) {
           await sendCourseSubmissionEmail(
             admin.email,
@@ -706,41 +661,20 @@ export async function publishCourse(courseId: string): Promise<ApiResponse> {
             courseId
           );
         }
+      } catch (e) {
+        console.error("Failed to notify admin about course submission", e);
       }
     }
 
     revalidatePath(`/teacher/courses/${courseId}/edit`);
     revalidatePath("/teacher/courses");
 
-    // Send Course Published Email (Author: Sanket)
-    if (newStatus === "Published") {
-        try {
-            const { sendTemplatedEmail } = await import("@/lib/email");
-            if (session.user.email) {
-                await sendTemplatedEmail(
-                    "coursePublished",
-                    session.user.email,
-                    "Your Course is Live! 🚀",
-                    {
-                        userName: session.user.name || "Teacher",
-                        courseTitle: course.title,
-                        courseUrl: `${process.env.NEXT_PUBLIC_APP_URL}/courses/${courseId}` // Ideally Slug
-                    }
-                );
-            }
-        } catch (e) {
-            console.error("Failed to send course published email", e);
-        }
-    }
-
     return {
-        status: "success",
-        message: isFree
-            ? "Free course published successfully!"
-            : "Course submitted for admin review."
+      status: "success",
+      message: "Course submitted for admin review."
     };
-}
-  catch (error) {
-    return { status: "error", message: "Failed to update status" };
+  } catch (error) {
+    console.error("[teacher.publishCourse]", error);
+    return { status: "error", message: "Failed to submit course for review" };
   }
 }
