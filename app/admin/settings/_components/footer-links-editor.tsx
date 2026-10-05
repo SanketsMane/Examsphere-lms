@@ -30,7 +30,6 @@ const defaultLinks: FooterLinks = {
     teach: [
         { name: "Become a Tutor", href: "/register/teacher" },
         { name: "Teacher Rules", href: "/terms" },
-        { name: "Success Stories", href: "/testimonials-demo" },
         { name: "Teacher Verification", href: "/teacher/verification" },
     ],
     support: [

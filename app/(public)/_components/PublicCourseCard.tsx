@@ -16,8 +16,9 @@ interface iAppProps {
   data: PublicCourseType;
   userCountry?: string | null; // Added for localization - Author: Sanket
   /**
-   * When set, the card links to `${hrefBase}/${slug}` instead of the public course page —
-   * the student portal uses "/dashboard" so enrolled students land in their course player.
+   * When set, enrolled courses link to `${hrefBase}/${slug}` — the student portal uses
+   * "/dashboard" so enrolled students land in their course player. Courses the student hasn't
+   * bought still open the public course page, where the price and Enroll button are.
    */
   hrefBase?: string;
 }
@@ -34,7 +35,8 @@ export function PublicCourseCard({ data, userCountry, hrefBase }: iAppProps) {
     data.isEnrolled && data.firstChapterId
       ? `/courses/${data.slug}/chapters/${data.firstChapterId}`
       : null;
-  const courseHref = hrefBase ? `${hrefBase}/${data.slug}` : continueHref ?? `/courses/${data.slug}`;
+  const courseHref =
+    hrefBase && data.isEnrolled ? `${hrefBase}/${data.slug}` : continueHref ?? `/courses/${data.slug}`;
 
   return (
     <motion.div

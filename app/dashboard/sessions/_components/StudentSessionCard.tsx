@@ -21,7 +21,7 @@ import { formatDistance, isWithinInterval, addMinutes } from "date-fns";
 import { CancelBookingDialog } from "./CancelBookingDialog";
 import { FeedbackDialog } from "@/components/sessions/FeedbackDialog";
 import { formatMoney } from "@/lib/money";
-import { generateRecordingSignedUrl } from "@/app/actions/video-call"; // Added for secure downloads - Author: Sanket
+import { getRecordingDownloadUrl } from "@/app/actions/recordings";
 import { toast } from "sonner";
 
 // Booking amounts are stored in paise
@@ -135,7 +135,7 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
 
   const handleDownloadRecording = async () => {
     try {
-      const result = await generateRecordingSignedUrl(session.id);
+      const result = await getRecordingDownloadUrl(session.id);
       if (result.success && result.url) {
         window.open(result.url, "_blank");
       } else {
