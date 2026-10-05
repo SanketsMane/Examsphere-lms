@@ -105,7 +105,7 @@ export async function purchaseBundle(bundleId: string, paymentMethod: 'razorpay'
 
         // Wallet Payment Flow (Author: Sanket)
         if (paymentMethod === 'wallet') {
-             const { deductFromWallet } = await import("@/app/actions/wallet");
+             const { deductFromWallet } = await import("@/lib/wallet-internal");
              
              try {
                 return await prisma.$transaction(async (tx) => {

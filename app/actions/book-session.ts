@@ -238,7 +238,7 @@ export async function bookSessionWithWallet(data: BookSessionInput) {
         const scheduledAt = new Date(data.dateTime);
 
         // Deduct from Wallet
-        const { deductFromWallet } = await import("@/app/actions/wallet");
+        const { deductFromWallet } = await import("@/lib/wallet-internal");
         
         const teacherProfile = await prisma.teacherProfile.findUnique({
              where: { id: data.teacherProfileId },

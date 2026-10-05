@@ -136,9 +136,9 @@ export async function requestPayout(data?: {
     });
 
     const totalCents = pendingCommissions.reduce((sum: number, c: any) => sum + c.netAmount, 0);
-    const MIN_PAYOUT_CENTS = 5000; // $50.00
+    const MIN_PAYOUT_CENTS = 5000; // ₹50.00 (commission amounts are paise)
     if (totalCents < MIN_PAYOUT_CENTS) {
-        return { success: false, error: `Minimum payout amount is $50.00. Current balance: $${(totalCents / 100).toFixed(2)}` };
+        return { success: false, error: `Minimum payout amount is ₹50.00. Current balance: ₹${(totalCents / 100).toFixed(2)}` };
     }
 
     // Note: We currently process ALL pending commissions regardless of requested 'amount'.
@@ -168,7 +168,7 @@ export async function requestPayout(data?: {
                 data: {
                     teacherId: teacherProfile.id,
                     requestedAmount: currentTotalCents / 100.0,
-                    currency: "USD",
+                    currency: "INR",
                     status: "Pending",
                     bankAccountName: bankAccountName || "Unknown",
                     bankAccountNumber: bankAccountNumber!,
@@ -203,7 +203,7 @@ export async function requestPayout(data?: {
                     "Payout Request Received",
                     {
                         userName: session.user.name || "Partner",
-                        amount: `$${requestedAmountDecimal.toFixed(2)}`
+                        amount: `₹${requestedAmountDecimal.toFixed(2)}`
                     }
                 );
             }

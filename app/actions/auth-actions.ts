@@ -13,15 +13,25 @@ export async function setTeacherRole() {
         throw new Error("Unauthorized");
     }
 
-    // Double check they aren't already an admin before changing role?
-    // Actually, if they are admin, we probably shouldn't downgrade them, 
-    // but this action is for new teacher signup. 
-    // Safety: Only allow changing from 'user' to 'teacher'.
-
-    await prisma.user.update({
-        where: { id: session.user.id },
+    // Conditional update so this self-service action can only promote a plain
+    // user/student; it must never downgrade an admin (or touch any other role).
+    const updated = await prisma.user.updateMany({
+        where: {
+            id: session.user.id,
+            OR: [{ role: null }, { role: { in: ["user", "student"] } }],
+        },
         data: { role: "teacher" },
     });
+
+    if (updated.count === 0) {
+        const current = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { role: true },
+        });
+        if (current?.role !== "teacher" && current?.role !== "admin") {
+            throw new Error("This account cannot be switched to a teacher account");
+        }
+    }
 
     return { success: true };
 }

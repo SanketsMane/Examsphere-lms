@@ -2,17 +2,9 @@ import { auth } from "@/lib/auth";
 import { protectSignup, protectGeneral, getClientIP } from "@/lib/security";
 import { toNextJsHandler } from "better-auth/next-js";
 import { NextRequest } from "next/server";
-import fs from "fs";
-import path from "path";
 
 export const dynamic = "force-dynamic";
 
-const LOG_FILE = path.join(process.cwd(), "auth_debug.log");
-
-function logToFile(message: string) {
-    const timestamp = new Date().toISOString();
-    fs.appendFileSync(LOG_FILE, `[${timestamp}] ${message}\n`);
-}
 
 async function protect(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
@@ -101,7 +93,6 @@ export const POST = async (req: NextRequest) => {
         headers: modifiedHeaders
     });
     
-    logToFile(`Incoming Request: ${req.method} ${pathname} | Original Origin: ${origin} | Derived Origin: ${derivedOrigin} | Host: ${hostHeader}`);
 
     // Pass the original request with modified headers to the Better Auth handler.
     // Better Auth will use the URL from the request to determine the correct route.
@@ -110,10 +101,7 @@ export const POST = async (req: NextRequest) => {
     if (response.status >= 400) {
         const clonedRes = response.clone();
         const errorBody = await clonedRes.json().catch(() => ({}));
-        logToFile(` ⚠️ BetterAuth Error ${response.status}: ${JSON.stringify(errorBody)}`);
         console.warn(`[BetterAuth Error] ${pathname} returning ${response.status}:`, JSON.stringify(errorBody));
-    } else {
-        logToFile(` ✅ BetterAuth Success ${response.status}`);
     }
     
     return response;
