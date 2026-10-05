@@ -58,6 +58,7 @@ export default async function BrowseCoursesPage({
         courses={courses}
         userCountry={(session?.user as any)?.country}
         clearHref="/dashboard/browse"
+        hrefBase="/dashboard"
       />
     </div>
   );

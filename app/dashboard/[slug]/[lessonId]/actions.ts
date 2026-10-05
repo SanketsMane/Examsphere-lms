@@ -9,13 +9,43 @@ export async function markLessonComplete(
   lessonId: string,
   slug: string
 ): Promise<ApiResponse> {
-  const session = await requireUser();
+  const user = await requireUser();
+  if (!user) {
+    return { status: "error", message: "Please sign in again" };
+  }
 
   try {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { Chapter: { select: { courseId: true, Course: { select: { userId: true } } } } },
+    });
+
+    if (!lesson) {
+      return { status: "error", message: "Lesson not found" };
+    }
+
+    // Progress may only be recorded by someone who can actually open the lesson,
+    // mirroring the access check in getLessonContent.
+    const isOwnerOrAdmin =
+      user.role === "admin" || lesson.Chapter.Course.userId === user.id;
+
+    if (!isOwnerOrAdmin) {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          userId_courseId: { userId: user.id, courseId: lesson.Chapter.courseId },
+        },
+        select: { status: true },
+      });
+
+      if (enrollment?.status !== "Active") {
+        return { status: "error", message: "You are not enrolled in this course" };
+      }
+    }
+
     await prisma.lessonProgress.upsert({
       where: {
         userId_lessonId: {
-          userId: session.id,
+          userId: user.id,
           lessonId: lessonId,
         },
       },
@@ -24,36 +54,16 @@ export async function markLessonComplete(
       },
       create: {
         lessonId: lessonId,
-        userId: session.id,
+        userId: user.id,
         completed: true,
       },
     });
-
-    // Check if course is fully completed
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-      include: { Chapter: { select: { courseId: true } } }
-    });
-
-    let certificateData = null;
-
-    if (lesson?.Chapter?.courseId) {
-      const { generateCertificate } = await import("@/app/actions/certificates");
-      const certResult = await generateCertificate(lesson.Chapter.courseId);
-
-      if (certResult.status === "success") {
-        certificateData = certResult;
-      }
-    }
 
     revalidatePath(`/dashboard/${slug}`);
 
     return {
       status: "success",
-      message: certificateData?.status === "success"
-        ? "Course completed!"
-        : "Progress updated",
-      data: certificateData
+      message: "Progress updated",
     };
   } catch (e) {
     console.error(e);

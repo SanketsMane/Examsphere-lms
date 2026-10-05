@@ -63,6 +63,35 @@ export default async function StudentDetailPage({ params }: PageProps) {
         return notFound();
     }
 
+    // Teachers may only view students who are actually theirs: an active course
+    // enrollment, or a booked 1-on-1 session. Anything else is someone else's data.
+    if ((session.user as any).role !== "admin") {
+        const hasActiveEnrollment = student.enrollment.some((e) => e.status === "Active");
+        let hasSession = false;
+        if (!hasActiveEnrollment) {
+            const profile = await prisma.teacherProfile.findUnique({
+                where: { userId: teacherId },
+                select: { id: true },
+            });
+            if (profile) {
+                const booked = await prisma.liveSession.findFirst({
+                    where: {
+                        teacherId: profile.id,
+                        OR: [
+                            { studentId },
+                            { bookings: { some: { studentId } } },
+                        ],
+                    },
+                    select: { id: true },
+                });
+                hasSession = !!booked;
+            }
+        }
+        if (!hasActiveEnrollment && !hasSession) {
+            return notFound();
+        }
+    }
+
     const performance = await getStudentPerformanceMetrics(studentId, teacherId);
 
     // Process course progress

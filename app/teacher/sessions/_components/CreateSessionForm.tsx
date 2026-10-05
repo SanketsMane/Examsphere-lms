@@ -10,8 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { getCurrencyConfig, formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
-import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
+import { formatPriceSimple } from "@/lib/currency";
 import {
   Select,
   SelectContent,
@@ -31,7 +30,7 @@ import {
   Loader2, 
   BookOpen, 
   Clock, 
-  DollarSign, 
+  IndianRupee, 
   Sparkles,
   Info,
   ShieldCheck,
@@ -97,21 +96,9 @@ const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
 
 export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, name: string }[] }) {
   const router = useRouter();
-  const [userCountry, setUserCountry] = useState<string>("India");
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: session } = await authClient.getSession();
-      if (session?.user) {
-        setUserCountry((session.user as any).country || "India");
-      }
-    };
-    fetchUser();
-  }, []);
-
-  const config = getCurrencyConfig(userCountry);
-  const s = config.symbol;
-  const rate = config.exchangeRate;
+  // Teachers always price in INR; students see conversions elsewhere.
+  const config = { code: "INR" };
+  const s = "₹";
 
   const [loading, setLoading] = useState(false);
   const [sessionType, setSessionType] = useState<"specific" | "available">("specific");
@@ -169,7 +156,7 @@ export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, 
             subject: data.subject,
             scheduledAt: scheduledAt.toISOString(),
             duration: data.duration,
-            price: Math.round(data.price * 100), // Convert to cents
+            price: Math.round(data.price * 100), // Rupees -> paise
             timezone: data.timezone,
             isAvailableSlot: false, // Specific sessions are not "available slots" in this context
             isFreeTrialEligible: data.isFreeTrialEligible
@@ -191,51 +178,16 @@ export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, 
         // We need to import this action dynamically or move it to top if this file allows
         const { createSessionTemplate } = await import("@/app/actions/session-templates");
         
-        const result = await createSessionTemplate({
-            title: data.title,
-            description: data.description,
-            subject: data.subject,
-            duration: data.duration,
-            price: Math.round(data.price * 100), // Convert to cents
-            recurrenceType: "NONE", // Default to simple template for now, or assume Weekly if we had UI for it
-            startTime: data.scheduledTime || "10:00", // Default or user restricted? The UI hides time for "available"
-            // The current UI for "available" hides date/time input. 
-            // We should probably redirect them to "Availability" settings or 
-            // create a generic template. 
-            // Let's create a generic template with no specific time.
-        });
-
-        // WAIT: The UI for "available" says: "This session will be automatically offered... based on your Teaching Calendar"
-        // This implies we should be creating a "Service" or "Session Type" definition, not a scheduled session.
-        // In this system, `SessionTemplate` seems to be that definition.
-        // However, `createSessionTemplate` requires `startTime` in the schema/action we saw earlier?
-        // Let's check `app/actions/session-templates.ts` again. It requires `startTime`.
-        // But the "Available" UI hides the time input (lines 358-416).
-        // If we want to support "Available", we should probably enforce creating a template 
-        // OR ask for a default time if the template action requires it.
-        
-        // Actually, looking at the previous code (lines 416-429), it shows an info box:
-        // "This session will be automatically offered... based on ... Teaching Calendar."
-        
-        // If the backend `SessionTemplate` *requires* a start time, we might be blocked.
-        // Let's look at `createSessionTemplate` signature again.
-        // Yes: `startTime: string;` is required in the arguments.
-        
-        // HACK/FIX: We'll generate a dummy template with a placeholder time, 
-        // or we need to ask the user for "Default Time" even for recurring availability?
-        // Or maybe we treat "Available" as "Create a Template" and redirect them?
-        
-        // Better approach for now: Treat it as a template creation with a default time, 
-        // letting them edit it later.
-        
+        // "Available" sessions have no fixed time in the UI, so the template gets a default
+        // start time the teacher can change when applying it to the calendar.
         const templateResult = await createSessionTemplate({
             title: data.title,
             description: data.description,
             subject: data.subject,
             duration: data.duration,
-            price: Math.round(data.price * 100),
+            price: Math.round(data.price * 100), // Rupees -> paise
             recurrenceType: "NONE",
-            startTime: "09:00", // Placeholder default
+            startTime: data.scheduledTime || "09:00",
         });
 
         if (templateResult.success) {
@@ -280,7 +232,7 @@ export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, 
                 <Label htmlFor="title" className="text-sm font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Session Title *</Label>
                 <Input
                   id="title"
-                  placeholder="e.g., Mastering React Hooks: A Deep Dive"
+                  placeholder="e.g., JEE Main Physics: Rotational Motion Masterclass"
                   className="h-14 bg-gray-50/50 dark:bg-gray-800/20 border-gray-200 dark:border-gray-800 rounded-2xl text-lg font-medium focus-visible:ring-blue-500/30 focus-visible:border-blue-500 transition-all"
                   {...register("title")}
                 />
@@ -493,7 +445,7 @@ export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, 
                <div className="space-y-1">
                  <h3 className="text-xl font-bold flex items-center gap-2.5 text-gray-900 dark:text-gray-100">
                    <div className="bg-green-600/10 p-2 rounded-lg">
-                     <DollarSign className="h-6 w-6 text-green-600" />
+                     <IndianRupee className="h-6 w-6 text-green-600" />
                    </div>
                    Investment & Value
                  </h3>
@@ -650,7 +602,7 @@ export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, 
                             <div className="space-y-1">
                                <span className="text-[10px] uppercase font-black tracking-widest text-white/40">Tuition Fee</span>
                                <p className="text-4xl font-black text-blue-400">
-                                  {isFreeTrial ? "0.00" : formatPriceSimple(watchedPrice || 0, userCountry)}
+                                  {isFreeTrial ? "0.00" : formatPriceSimple(watchedPrice || 0, "India")}
                                </p>
                             </div>
                             <div className="bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-xl">
@@ -662,7 +614,7 @@ export function CreateSessionForm({ subjects = [] }: { subjects?: { id: string, 
                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
                               <span className="text-xs font-bold text-white/30">Contractor Payout (85%)</span>
                               <span className="text-lg font-black text-green-400">
-                                 {formatPriceSimple((watchedPrice || 0) * 0.85, userCountry)}
+                                 {formatPriceSimple((watchedPrice || 0) * 0.85, "India")}
                               </span>
                            </div>
                         )}

@@ -3,11 +3,9 @@
 import { Button } from "@/components/ui/button";
 
 import {
-  courseCategories,
   courseLevels,
-  courseEditSchema,
-  type CourseEditSchemaType,
-  courseStatus,
+  teacherCourseSchema,
+  type TeacherCourseSchemaType,
 } from "@/lib/zodSchemas";
 import { Loader2, PlusIcon, SparkleIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -39,49 +37,40 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { editCourse } from "../actions";
 import { AdminCourseSingularType } from "@/app/data/admin/admin-get-course";
-import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
-import { authClient } from "@/lib/auth-client"; // Added for localization - Author: Sanket
-import { useState, useEffect } from "react";
 
 interface iAppProps {
   data: AdminCourseSingularType;
+  categories: { id: string; name: string }[];
 }
 
-export function EditCourseForm({ data }: iAppProps) {
+// Status is deliberately absent: submission for review happens only via CourseActions.
+export function EditCourseForm({ data, categories }: iAppProps) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
-  const [userCountry, setUserCountry] = useState<string>("India");
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: session } = await authClient.getSession();
-      if (session?.user) {
-        setUserCountry((session.user as any).country || "India");
-      }
-    };
-    fetchUser();
-  }, []);
+  // Keep a legacy category selectable so opening the form doesn't silently blank it.
+  const categoryNames = categories.map((c) => c.name);
+  if (data.category && !categoryNames.includes(data.category)) {
+    categoryNames.unshift(data.category);
+  }
 
-  const currencyConfig = getCurrencyConfig(userCountry);
-  // 1. Define your form.
-  const form = useForm<CourseEditSchemaType>({
-    resolver: zodResolver(courseEditSchema) as any,
+  const form = useForm<TeacherCourseSchemaType>({
+    resolver: zodResolver(teacherCourseSchema) as any,
     defaultValues: {
       title: data.title,
       description: data.description,
       fileKey: data.fileKey,
       price: data.price,
       duration: data.duration,
-      level: data.level as CourseEditSchemaType["level"],
-      category: data.category as CourseEditSchemaType["category"],
-      status: data.status,
+      level: data.level as TeacherCourseSchemaType["level"],
+      category: data.category,
       slug: data.slug,
       smallDescription: data.smallDescription,
     },
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: CourseEditSchemaType) {
+  function onSubmit(values: TeacherCourseSchemaType) {
     startTransition(async () => {
       const { data: result, error } = await tryCatch(
         editCourse(values, data.id)
@@ -215,7 +204,7 @@ export function EditCourseForm({ data }: iAppProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {courseCategories.map((category) => (
+                    {categoryNames.map((category) => (
                       <SelectItem key={category} value={category}>
                         {category}
                       </SelectItem>
@@ -276,14 +265,14 @@ export function EditCourseForm({ data }: iAppProps) {
             name="price"
             render={({ field }) => (
               <FormItem className="w-full">
-                <FormLabel>Price ({currencyConfig.code})</FormLabel>
+                <FormLabel>Price (INR)</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
-                      {currencyConfig.symbol}
+                      ₹
                     </span>
                     <Input 
-                      placeholder={`Price in ${currencyConfig.code}`} 
+                      placeholder="Price in INR (0 for free)" 
                       type="number" 
                       className="pl-8"
                       {...field} 
@@ -295,32 +284,6 @@ export function EditCourseForm({ data }: iAppProps) {
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem className="w-full">
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {courseStatus.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <Button type="submit" disabled={pending}>
           {pending ? (

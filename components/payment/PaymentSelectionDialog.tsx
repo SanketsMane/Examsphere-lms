@@ -40,6 +40,8 @@ export function PaymentSelectionDialog({
     const [loading, setLoading] = useState(false);
     const [loadingBalance, setLoadingBalance] = useState(true);
     const [userCountry, setUserCountry] = useState<string>("India");
+    // null = still checking; the server is the source of truth for gateway config.
+    const [razorpayAvailable, setRazorpayAvailable] = useState<boolean | null>(null);
     const { rates } = useCurrency();
 
     // Fetch wallet balance and user country
@@ -47,8 +49,21 @@ export function PaymentSelectionDialog({
         if (open) {
             fetchWalletBalance();
             fetchUserCountry();
+            fetchPaymentConfig();
         }
     }, [open]);
+
+    const fetchPaymentConfig = async () => {
+        try {
+            const response = await fetch("/api/checkout/config");
+            const data = await response.json();
+            setRazorpayAvailable(Boolean(data.razorpay));
+            if (!data.razorpay) setPaymentMethod("wallet");
+        } catch {
+            setRazorpayAvailable(false);
+            setPaymentMethod("wallet");
+        }
+    };
 
     const fetchUserCountry = async () => {
         const { data: session } = await authClient.getSession();
@@ -87,7 +102,7 @@ export function PaymentSelectionDialog({
     };
 
     const insufficientBalance = walletBalance !== null && walletBalance < amount;
-    const canProceed = paymentMethod === "razorpay" || (paymentMethod === "wallet" && !insufficientBalance);
+    const canProceed = (paymentMethod === "razorpay" && razorpayAvailable === true) || (paymentMethod === "wallet" && !insufficientBalance);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -112,7 +127,7 @@ export function PaymentSelectionDialog({
                     <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "razorpay" | "wallet")}>
                         {/* Razorpay Option */}
                         <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                            <RadioGroupItem value="razorpay" id="razorpay" />
+                            <RadioGroupItem value="razorpay" id="razorpay" disabled={razorpayAvailable !== true} />
                             <Label htmlFor="razorpay" className="flex-1 cursor-pointer">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -120,7 +135,11 @@ export function PaymentSelectionDialog({
                                     </div>
                                     <div>
                                         <p className="font-semibold">Razorpay (Cards/UPI/Netbanking)</p>
-                                        <p className="text-sm text-muted-foreground">Pay securely via Razorpay</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {razorpayAvailable === false
+                                                ? "Online payments are not available yet. Please contact us to enroll."
+                                                : "Pay securely via Razorpay"}
+                                        </p>
                                     </div>
                                 </div>
                             </Label>

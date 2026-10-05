@@ -9,7 +9,7 @@ import { z } from "zod"; // author: Sanket
 const bundleSchema = z.object({
     title: z.string().min(3).max(100),
     description: z.string().max(500).optional(),
-    price: z.number().min(1), // cents
+    price: z.number().int().min(1), // whole rupees (the wallet is debited this amount directly)
     sessionCount: z.number().min(1).max(100),
 });
 
@@ -31,10 +31,16 @@ export async function createBundle(data: {
         }
 
         const session = await getSessionWithRole();
-        const teacherProfile = (session?.user as any).teacherProfile;
-        
+        // The session user carries no teacherProfile relation; look it up by user id.
+        const teacherProfile = session?.user?.id
+            ? await prisma.teacherProfile.findUnique({ where: { userId: session.user.id }, select: { id: true, isApproved: true } })
+            : null;
+
         if (!session || !teacherProfile) {
             return { error: "Unauthorized" };
+        }
+        if (!teacherProfile.isApproved) {
+            return { error: "Your teacher account is awaiting admin approval." };
         }
 
         const bundle = await prisma.sessionBundle.create({
@@ -55,8 +61,10 @@ export async function createBundle(data: {
 export async function getTeacherBundles() {
     try {
         const session = await getSessionWithRole();
-        const teacherProfile = (session?.user as any).teacherProfile;
-        
+        const teacherProfile = session?.user?.id
+            ? await prisma.teacherProfile.findUnique({ where: { userId: session.user.id }, select: { id: true } })
+            : null;
+
         if (!session || !teacherProfile) {
             return { bundles: [] }; // Or error, but empty list is safer for UI
         }
@@ -97,7 +105,7 @@ export async function purchaseBundle(bundleId: string, paymentMethod: 'razorpay'
 
         // Wallet Payment Flow (Author: Sanket)
         if (paymentMethod === 'wallet') {
-             const { deductFromWallet } = await import("@/app/actions/wallet");
+             const { deductFromWallet } = await import("@/lib/wallet-internal");
              
              try {
                 return await prisma.$transaction(async (tx) => {

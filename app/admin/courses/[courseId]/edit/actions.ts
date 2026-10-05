@@ -1,69 +1,102 @@
 "use server";
 
-import { requireTeacher } from "@/lib/action-security";
+import { requireAdmin } from "@/lib/action-security";
 import { prisma } from "@/lib/db";
 import { ApiResponse } from "@/lib/types";
 import {
   chapterSchema,
   ChapterSchemaType,
-  courseSchema,
-  CourseSchemaType,
   lessonSchema,
+  type AdminCourseSchemaType,
+  type CourseEditSchemaType,
 } from "@/lib/zodSchemas";
+import {
+  adminCourseSchema,
+  buildCourseData,
+  handleCourseWriteError,
+  toFieldErrors,
+} from "@/lib/course-write";
+import { assertValidCategory } from "@/lib/course-categories";
 import { revalidatePath } from "next/cache";
 
+async function ensureAdmin(): Promise<ApiResponse | null> {
+  try {
+    await requireAdmin();
+    return null;
+  } catch {
+    return { status: "error", message: "Unauthorized: Admin access required" };
+  }
+}
+
+// Optional columns the edit form doesn't render. buildCourseData defaults them to
+// null/[], so writing them when absent would silently wipe existing values.
+const OPTIONAL_COURSE_FIELDS = [
+  "language",
+  "prerequisites",
+  "tags",
+  "learningOutcomes",
+  "discountPrice",
+  "discountExpiry",
+  "isFeatured",
+] as const;
+
 export async function editCourse(
-  data: CourseSchemaType,
+  data: CourseEditSchemaType | AdminCourseSchemaType,
   courseId: string
 ): Promise<ApiResponse> {
-  const session = await requireTeacher();
-  const user = session.user as any;
-
-  // Check if teacher is trying to edit their own course
-  if (user.role === "teacher") {
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { userId: true }
-    });
-
-    if (!course || course.userId !== session.user.id) {
-      return {
-        status: "error",
-        message: "You can only edit your own courses"
-      };
-    }
-  }
+  const denied = await ensureAdmin();
+  if (denied) return denied;
 
   try {
-
-    const result = courseSchema.safeParse(data);
+    const result = adminCourseSchema.safeParse(data);
 
     if (!result.success) {
       return {
         status: "error",
-        message: "Invalid data",
+        message: "Please correct the highlighted fields.",
+        fieldErrors: toFieldErrors(result.error),
       };
     }
 
-    await prisma.course.update({
-      where: {
-        id: courseId,
-        userId: session.user.id,
-      },
-      data: {
-        ...result.data,
-      },
+    const categoryError = await assertValidCategory(result.data.category);
+    if (categoryError) {
+      return {
+        status: "error",
+        message: categoryError,
+        fieldErrors: { category: categoryError },
+      };
+    }
+
+    const dataToSave: Record<string, unknown> = buildCourseData(result.data, {
+      status: result.data.status,
+      isFeatured: result.data.isFeatured,
     });
+    for (const key of OPTIONAL_COURSE_FIELDS) {
+      if ((data as Record<string, unknown>)?.[key] === undefined) {
+        delete dataToSave[key];
+      }
+    }
+
+    const updated = await prisma.course.update({
+      where: { id: courseId },
+      data: dataToSave,
+      select: { slug: true },
+    });
+
+    revalidatePath("/admin/courses");
+    revalidatePath("/");
+    revalidatePath("/courses");
+    revalidatePath(`/courses/${updated.slug}`);
 
     return {
       status: "success",
       message: "Course updated successfully",
     };
-  } catch {
-    return {
-      status: "error",
-      message: "Failed to update Course",
-    };
+  } catch (error) {
+    return handleCourseWriteError(error, {
+      action: "admin.editCourse",
+      slug: (data as any)?.slug,
+    });
   }
 }
 
@@ -72,7 +105,8 @@ export async function reorderLessons(
   lessons: { id: string; position: number }[],
   courseId: string
 ): Promise<ApiResponse> {
-  await requireTeacher();
+  const denied = await ensureAdmin();
+  if (denied) return denied;
   try {
     if (!lessons || lessons.length === 0) {
       return {
@@ -113,7 +147,8 @@ export async function reorderChapters(
   courseId: string,
   chapters: { id: string; position: number }[]
 ): Promise<ApiResponse> {
-  await requireTeacher();
+  const denied = await ensureAdmin();
+  if (denied) return denied;
   try {
     if (!chapters || chapters.length === 0) {
       return {
@@ -153,7 +188,8 @@ export async function reorderChapters(
 export async function createChapter(
   values: ChapterSchemaType
 ): Promise<ApiResponse> {
-  await requireTeacher();
+  const denied = await ensureAdmin();
+  if (denied) return denied;
   try {
     const result = chapterSchema.safeParse(values);
 
@@ -203,7 +239,8 @@ export async function createChapter(
 export async function createLesson(
   values: ChapterSchemaType
 ): Promise<ApiResponse> {
-  await requireTeacher();
+  const denied = await ensureAdmin();
+  if (denied) return denied;
   try {
     const result = lessonSchema.safeParse(values);
 
@@ -262,7 +299,8 @@ export async function deleteLesson({
   courseId: string;
   lessonId: string;
 }): Promise<ApiResponse> {
-  await requireTeacher();
+  const denied = await ensureAdmin();
+  if (denied) return denied;
   try {
     const chapterWithLessons = await prisma.chapter.findUnique({
       where: {
@@ -338,7 +376,8 @@ export async function deleteChapter({
   chapterId: string;
   courseId: string;
 }): Promise<ApiResponse> {
-  await requireTeacher();
+  const denied = await ensureAdmin();
+  if (denied) return denied;
   try {
     const courseWithChapters = await prisma.course.findUnique({
       where: {

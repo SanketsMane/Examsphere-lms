@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireAdmin } from "@/app/data/auth/require-roles";
+import { adminGuard } from "@/app/api/admin/_lib/guard";
+import { decideTeacher } from "@/app/admin/_lib/teacher-approval";
 
 export const dynamic = "force-dynamic";
 
@@ -9,52 +10,69 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    const guard = await adminGuard();
+    if (!guard.ok) return guard.response;
 
     const body = await request.json();
-    const { status, reviewNotes, reviewedBy } = body;
+    const { status, reviewNotes } = body as { status?: string; reviewNotes?: string };
     const { id: verificationId } = await params;
+    const normalised = typeof status === "string" ? status.toLowerCase() : "";
 
-    if (!status || !['approved', 'rejected', 'pending'].includes(status)) {
+    if (!['approved', 'rejected', 'pending'].includes(normalised)) {
       return NextResponse.json(
         { success: false, error: 'Valid status is required' },
         { status: 400 }
       );
     }
 
-    const verification = await prisma.teacherVerification.update({
+    const existing = await prisma.teacherVerification.findUnique({
       where: { id: verificationId },
-      data: {
-        status,
-        adminNotes: reviewNotes,
-        reviewedById: reviewedBy,
-        reviewedAt: new Date()
-      },
+      select: { teacherId: true },
+    });
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: 'Verification not found' },
+        { status: 404 }
+      );
+    }
+
+    // Approve/reject go through the same service as the admin UI so profile flags,
+    // notification and email stay consistent.
+    if (normalised === 'approved' || normalised === 'rejected') {
+      const result = await decideTeacher(
+        { profileId: existing.teacherId },
+        normalised === 'approved'
+          ? { decision: 'approve' }
+          : { decision: 'reject', reason: reviewNotes ?? '' },
+        guard.userId
+      );
+      if (!result.success) {
+        return NextResponse.json({ success: false, error: result.message }, { status: 400 });
+      }
+    } else {
+      await prisma.teacherVerification.update({
+        where: { id: verificationId },
+        data: { status: 'Pending', reviewedAt: new Date(), reviewedById: guard.userId },
+      });
+    }
+
+    if (reviewNotes) {
+      await prisma.teacherVerification.update({
+        where: { id: verificationId },
+        data: { adminNotes: reviewNotes },
+      });
+    }
+
+    const verification = await prisma.teacherVerification.findUnique({
+      where: { id: verificationId },
       include: {
         teacher: {
           include: {
-            user: {
-              select: {
-                id: true,
-                email: true,
-                name: true,
-                image: true,
-              }
-            }
-          }
-        }
-      }
+            user: { select: { id: true, email: true, name: true, image: true } },
+          },
+        },
+      },
     });
-
-    // If approved, update teacher profile verification status
-    if (status === 'Approved') {
-      await prisma.teacherProfile.update({
-        where: { id: verification.teacherId },
-        data: {
-          isVerified: true
-        }
-      });
-    }
 
     return NextResponse.json({
       success: true,
@@ -75,7 +93,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    const guard = await adminGuard();
+    if (!guard.ok) return guard.response;
     const { id } = await params;
 
     const verification = await prisma.teacherVerification.findUnique({

@@ -3,7 +3,7 @@
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
 import { MentorMatchWizard } from "@/components/marketing/MentorMatchWizard";
 import { HorizontalTeacherCard } from "@/components/marketing/HorizontalTeacherCard";
-import { ShieldCheck, Search, SlidersHorizontal, ChevronDown, X, ArrowUp, Filter, Star, Globe, Languages, Users, Zap, Award, Clock } from "lucide-react";
+import { ShieldCheck, Search, SlidersHorizontal, ChevronDown, X, ArrowUp, Filter, Star, Languages, Award, Clock, GraduationCap } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { PackagesList } from "@/components/mentors/PackagesList";
 
@@ -53,13 +53,13 @@ interface FindTeacherContentProps {
     currency?: { code: string; symbol: string; factor: number };
 }
 
-export function FindTeacherContent({ 
-    teachers, 
-    featuredMentors, 
-    categories = [], 
-    allLanguages = [], 
+export function FindTeacherContent({
+    teachers,
+    featuredMentors,
+    categories = [],
+    allLanguages = [],
     packages = [],
-    currency = { code: "USD", symbol: "$", factor: 1 }
+    currency = { code: "INR", symbol: "₹", factor: 1 }
 }: FindTeacherContentProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -69,7 +69,6 @@ export function FindTeacherContent({
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isSubcategoryOpen, setIsSubcategoryOpen] = useState(false);
 
-    const [selectedAvailability, setSelectedAvailability] = useState<string[]>([]);
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
     const [sortBy, setSortBy] = useState("popularity");
     const [showScrollTop, setShowScrollTop] = useState(false);
@@ -79,18 +78,11 @@ export function FindTeacherContent({
 
     // New Filters
     const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
-    const [selectedGender, setSelectedGender] = useState<string | null>(null);
-    const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
     const [minRating, setMinRating] = useState<number | null>(null);
     const [experienceRange, setExperienceRange] = useState<[number, number]>([0, 30]);
-    const [isOnlineOnly, setIsOnlineOnly] = useState(false);
 
     const [languageSearch, setLanguageSearch] = useState("");
-    const [countrySearch, setCountrySearch] = useState("");
     const [isLanguageOpen, setIsLanguageOpen] = useState(false);
-    const [isCountryOpen, setIsCountryOpen] = useState(false);
-
-    const availabilityOptions = ["Instant Booking", "Free Trial", "Weekends"];
 
     // Filter and search logic
     const filteredTeachers = useMemo(() => {
@@ -120,17 +112,11 @@ export function FindTeacherContent({
 
             // New filters
             const matchesLanguage = !selectedLanguage || teacher.speaks.some(s => s.toLowerCase() === selectedLanguage.toLowerCase());
-            const matchesGender = !selectedGender || teacher.gender?.toLowerCase() === selectedGender.toLowerCase();
-            const matchesCountry = !selectedCountry || teacher.country?.toLowerCase() === selectedCountry.toLowerCase();
             const matchesRating = !minRating || teacher.rating >= minRating;
             const matchesExperience = teacher.experience >= experienceRange[0] && teacher.experience <= experienceRange[1];
-            
-            // Online status is a bit tricky, for now we match any teacher if not toggled, 
-            // otherwise we'd need real-time data or a flag. Assuming isVerified for "Online" for demo if toggled.
-            const matchesOnline = !isOnlineOnly || teacher.isVerified; 
 
-            return matchesSearch && matchesCategory && matchesSubCategory && matchesPrice && matchesLanguage && 
-                   matchesGender && matchesCountry && matchesRating && matchesExperience && matchesOnline;
+            return matchesSearch && matchesCategory && matchesSubCategory && matchesPrice && matchesLanguage &&
+                   matchesRating && matchesExperience;
         });
 
         // Sorting Logic
@@ -149,14 +135,14 @@ export function FindTeacherContent({
                     return b.reviewCount - a.reviewCount; // Popularity by review count
             }
         });
-    }, [searchQuery, selectedCategory, selectedSubCategory, priceRange, sortBy, teachers, 
-        selectedLanguage, selectedGender, selectedCountry, minRating, experienceRange, isOnlineOnly]);
+    }, [searchQuery, selectedCategory, selectedSubCategory, priceRange, sortBy, teachers,
+        selectedLanguage, minRating, experienceRange]);
 
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, selectedCategory, selectedSubCategory, priceRange, sortBy, 
-        selectedLanguage, selectedGender, selectedCountry, minRating, experienceRange, isOnlineOnly]);
+    }, [searchQuery, selectedCategory, selectedSubCategory, priceRange, sortBy,
+        selectedLanguage, minRating, experienceRange]);
 
     // Paginated results
     const paginatedTeachers = useMemo(() => {
@@ -179,34 +165,20 @@ export function FindTeacherContent({
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    const toggleAvailability = (opt: string) => {
-        setSelectedAvailability(prev =>
-            prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]
-        );
-    };
-
     const clearAllFilters = () => {
         setSearchQuery("");
         setSelectedCategory(null);
         setSelectedSubCategory(null);
-        setSelectedAvailability([]);
         setPriceRange([0, 10000]);
         setSelectedLanguage(null);
-        setSelectedGender(null);
-        setSelectedCountry(null);
         setMinRating(null);
         setExperienceRange([0, 30]);
-        setIsOnlineOnly(false);
     };
 
-    const activeFiltersCount = (selectedCategory ? 1 : 0) + 
-                             (selectedSubCategory ? 1 : 0) + 
-                             (selectedLanguage ? 1 : 0) + 
-                             (selectedGender ? 1 : 0) + 
-                             (selectedCountry ? 1 : 0) + 
-                             (minRating ? 1 : 0) + 
-                             (isOnlineOnly ? 1 : 0) + 
-                             selectedAvailability.length;
+    const activeFiltersCount = (selectedCategory ? 1 : 0) +
+                             (selectedSubCategory ? 1 : 0) +
+                             (selectedLanguage ? 1 : 0) +
+                             (minRating ? 1 : 0);
 
     return (
         <div className="min-h-screen bg-neutral-50 dark:bg-[#0f172a] font-sans text-slate-900 dark:text-slate-50 pb-20">
@@ -231,7 +203,7 @@ export function FindTeacherContent({
                         className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 dark:bg-blue-900/30 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm font-semibold mb-8 backdrop-blur-sm"
                     >
                         <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        Access Top 1% Global Talent
+                        JEE · NEET · Foundation · MBBS
                     </motion.div>
 
                     {/* Main Title */}
@@ -257,8 +229,8 @@ export function FindTeacherContent({
                         transition={{ delay: 0.2 }}
                         className="text-lg text-slate-600 dark:text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed"
                     >
-                        Connect with industry experts from top companies for 1-on-1 guidance,
-                        code reviews, and career advice.
+                        Book 1-on-1 sessions with ExamSphere-approved mentors for JEE, NEET,
+                        Foundation (Class 6–10) and MBBS — doubt solving, study planning and exam strategy.
                     </motion.p>
 
                     {/* Search Bar - Blue Accent */}
@@ -274,7 +246,7 @@ export function FindTeacherContent({
                                 <Search className="w-6 h-6 text-slate-400 dark:text-slate-500 ml-4" />
                                 <Input
                                     type="text"
-                                    placeholder="Search by skill, company, or name..."
+                                    placeholder="Search by subject, exam or name..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="flex-1 bg-transparent border-none text-slate-900 dark:text-white placeholder:text-slate-400 text-base h-12 focus-visible:ring-0 focus-visible:ring-offset-0 px-4"
@@ -303,15 +275,11 @@ export function FindTeacherContent({
                     >
                         <div className="flex items-center gap-2">
                             <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-500" />
-                            Verified Experts
+                            Approved Mentors
                         </div>
                         <div className="flex items-center gap-2">
                             <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-500" />
                             Secure Payments
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Star className="w-5 h-5 text-blue-500 fill-blue-500 dark:text-blue-400 dark:fill-blue-400" />
-                            4.9/5 Average Rating
                         </div>
                     </motion.div>
 
@@ -355,26 +323,6 @@ export function FindTeacherContent({
                                         <X className="h-3 w-3" />
                                     </Badge>
                                 )}
-                                {selectedCountry && (
-                                    <Badge
-                                        variant="secondary"
-                                        className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-200 cursor-pointer gap-1 pl-3 pr-2 py-1.5"
-                                        onClick={() => setSelectedCountry(null)}
-                                    >
-                                        Country: {selectedCountry}
-                                        <X className="h-3 w-3" />
-                                    </Badge>
-                                )}
-                                {selectedGender && (
-                                    <Badge
-                                        variant="secondary"
-                                        className="bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800 hover:bg-purple-200 cursor-pointer gap-1 pl-3 pr-2 py-1.5"
-                                        onClick={() => setSelectedGender(null)}
-                                    >
-                                        Gender: {selectedGender}
-                                        <X className="h-3 w-3" />
-                                    </Badge>
-                                )}
                                 {minRating && (
                                     <Badge
                                         variant="secondary"
@@ -382,16 +330,6 @@ export function FindTeacherContent({
                                         onClick={() => setMinRating(null)}
                                     >
                                         Rating: {minRating}+ Stars
-                                        <X className="h-3 w-3" />
-                                    </Badge>
-                                )}
-                                {isOnlineOnly && (
-                                    <Badge
-                                        variant="secondary"
-                                        className="bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800 hover:bg-rose-200 cursor-pointer gap-1 pl-3 pr-2 py-1.5"
-                                        onClick={() => setIsOnlineOnly(false)}
-                                    >
-                                        Online Now
                                         <X className="h-3 w-3" />
                                     </Badge>
                                 )}
@@ -415,7 +353,7 @@ export function FindTeacherContent({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
                     {/* Sidebar Filters */}
-                    <div className="lg:col-span-3 hidden lg:block space-y-6">
+                    <div className={cn("lg:col-span-3 lg:block space-y-6", mobileFiltersOpen ? "block" : "hidden")}>
                         <div className="bg-white dark:bg-[#1e293b] p-6 rounded-2xl border border-slate-200 dark:border-slate-800 sticky top-24 shadow-sm">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
@@ -435,20 +373,6 @@ export function FindTeacherContent({
 
                             {/* Filter Groups */}
                             <div className="space-y-6">
-                                {/* Online Now Toggle */}
-                                <div className="flex items-center justify-between p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/20">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Online Now</span>
-                                    </div>
-                                    <Switch 
-                                        checked={isOnlineOnly}
-                                        onCheckedChange={setIsOnlineOnly}
-                                    />
-                                </div>
-
-                                <div className="h-px bg-slate-100 dark:bg-slate-800" />
-
                                 {/* Categories / Profile Filter */}
                                 <div className="space-y-3">
                                     <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
@@ -614,87 +538,6 @@ export function FindTeacherContent({
 
                                 <div className="h-px bg-slate-100 dark:bg-slate-800" />
 
-                                {/* Country Filter */}
-                                <div className="space-y-3">
-                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                        <Globe className="w-4 h-4 text-emerald-500" /> Country
-                                    </h4>
-
-                                    <Popover open={isCountryOpen} onOpenChange={setIsCountryOpen}>
-                                        <PopoverTrigger asChild>
-                                            <div
-                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm flex items-center justify-between cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500 transition-colors"
-                                            >
-                                                <span className={selectedCountry ? "text-slate-900 dark:text-white font-medium" : "text-slate-500 dark:text-slate-400"}>
-                                                    {selectedCountry || "Select Country"}
-                                                </span>
-                                                <ChevronDown className="h-4 w-4 text-slate-400" />
-                                            </div>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[280px] p-0" align="start">
-                                            <div className="p-2 border-b border-slate-100 dark:border-slate-800">
-                                                <Input
-                                                    placeholder="Search countries..."
-                                                    value={countrySearch}
-                                                    onChange={(e) => setCountrySearch(e.target.value)}
-                                                    className="h-9 border-none bg-slate-50 dark:bg-slate-800 focus-visible:ring-0"
-                                                />
-                                            </div>
-                                            <div className="max-h-[300px] overflow-y-auto p-1">
-                                                {Array.from(new Set(teachers.map(t => t.country)))
-                                                    .filter(c => c && c.toLowerCase().includes(countrySearch.toLowerCase()))
-                                                    .map((country, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            onClick={() => {
-                                                                setSelectedCountry(country === selectedCountry ? null : country);
-                                                                setIsCountryOpen(false);
-                                                            }}
-                                                            className={cn(
-                                                                "flex items-center justify-between px-3 py-2 rounded-md text-sm cursor-pointer transition-colors",
-                                                                selectedCountry === country
-                                                                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-200"
-                                                                    : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                                                            )}
-                                                        >
-                                                            {country}
-                                                            {selectedCountry === country && <Check className="h-4 w-4" />}
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
-
-                                <div className="h-px bg-slate-100 dark:bg-slate-800" />
-
-                                {/* Gender Filter */}
-                                <div className="space-y-3">
-                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                        <Users className="w-4 h-4 text-purple-500" /> Gender
-                                    </h4>
-                                    <RadioGroup 
-                                        value={selectedGender || "all"} 
-                                        onValueChange={(val) => setSelectedGender(val === "all" ? null : val)}
-                                        className="flex flex-col gap-2"
-                                    >
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="all" id="g-all" />
-                                            <Label htmlFor="g-all" className="text-sm font-normal cursor-pointer">All</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="Male" id="g-male" />
-                                            <Label htmlFor="g-male" className="text-sm font-normal cursor-pointer">Male</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="Female" id="g-female" />
-                                            <Label htmlFor="g-female" className="text-sm font-normal cursor-pointer">Female</Label>
-                                        </div>
-                                    </RadioGroup>
-                                </div>
-
-                                <div className="h-px bg-slate-100 dark:bg-slate-800" />
-
                                 {/* Experience Filter */}
                                 <div className="space-y-3">
                                     <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
@@ -724,24 +567,24 @@ export function FindTeacherContent({
                                     </h4>
                                     <div className="flex flex-col gap-2">
                                         {[4.5, 4.0, 3.5, 3.0].map((rating) => (
-                                            <div 
+                                            <div
                                                 key={rating}
                                                 onClick={() => setMinRating(minRating === rating ? null : rating)}
                                                 className={cn(
                                                     "flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all border",
-                                                    minRating === rating 
-                                                        ? "bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800" 
+                                                    minRating === rating
+                                                        ? "bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800"
                                                         : "border-transparent hover:bg-slate-50 dark:hover:bg-slate-800"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-1">
                                                     {Array.from({ length: 5 }).map((_, i) => (
-                                                        <Star 
-                                                            key={i} 
+                                                        <Star
+                                                            key={i}
                                                             className={cn(
-                                                                "w-3 h-3", 
+                                                                "w-3 h-3",
                                                                 i < Math.floor(rating) ? "text-amber-500 fill-amber-500" : "text-slate-300"
-                                                            )} 
+                                                            )}
                                                         />
                                                     ))}
                                                     <span className="text-xs font-semibold ml-1">{rating}+</span>
@@ -774,36 +617,6 @@ export function FindTeacherContent({
                                     />
                                 </div>
 
-                                <div className="h-px bg-slate-100 dark:bg-slate-800" />
-
-                                {/* Availability */}
-                                <div className="space-y-3">
-                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                                        Availability <ChevronDown className="w-4 h-4 text-slate-400" />
-                                    </h4>
-                                    <div className="space-y-2">
-                                        {availabilityOptions.map(opt => (
-                                            <motion.div
-                                                key={opt}
-                                                className="flex items-center space-x-2"
-                                                whileHover={{ x: 2 }}
-                                            >
-                                                <Checkbox
-                                                    id={opt}
-                                                    checked={selectedAvailability.includes(opt)}
-                                                    onCheckedChange={() => toggleAvailability(opt)}
-                                                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                                                />
-                                                <Label
-                                                    htmlFor={opt}
-                                                    className="text-sm font-normal text-slate-600 dark:text-slate-400 cursor-pointer"
-                                                >
-                                                    {opt}
-                                                </Label>
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -836,7 +649,7 @@ export function FindTeacherContent({
                             <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                                 Showing <span className="text-slate-900 dark:text-white font-bold">
                                     {filteredTeachers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, filteredTeachers.length)}
-                                </span> of {filteredTeachers.length} Professional Mentors
+                                </span> of {filteredTeachers.length} {filteredTeachers.length === 1 ? "mentor" : "mentors"}
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-slate-500">Sort By:</span>
@@ -857,7 +670,22 @@ export function FindTeacherContent({
 
                         {/* List */}
                         <AnimatePresence mode="popLayout">
-                            {paginatedTeachers.length > 0 ? (
+                            {teachers.length === 0 ? (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="text-center py-20 px-4"
+                                >
+                                    <GraduationCap className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                                    <h3 className="text-2xl font-bold mb-2">Our mentors are being onboarded — check back soon</h3>
+                                    <p className="text-slate-500 mb-6 max-w-md mx-auto">
+                                        Meanwhile, explore our programmes for JEE, NEET, Foundation and MBBS.
+                                    </p>
+                                    <Button asChild>
+                                        <Link href="/programs">View programmes</Link>
+                                    </Button>
+                                </motion.div>
+                            ) : paginatedTeachers.length > 0 ? (
                                 <div className="flex flex-col gap-6">
                                     {paginatedTeachers.map((teacher, index) => (
                                         <motion.div
@@ -891,17 +719,17 @@ export function FindTeacherContent({
                         {/* Pagination Visual */}
                         {totalPages > 1 && (
                             <div className="flex justify-center mt-12 gap-2">
-                                <Button 
-                                    variant="outline" 
-                                    size="icon" 
+                                <Button
+                                    variant="outline"
+                                    size="icon"
                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                     disabled={currentPage === 1}
                                 >
                                     {'<'}
                                 </Button>
-                                
+
                                 {Array.from({ length: totalPages }).map((_, i) => (
-                                    <Button 
+                                    <Button
                                         key={i + 1}
                                         variant={currentPage === i + 1 ? "default" : "outline"}
                                         size="icon"
@@ -911,9 +739,9 @@ export function FindTeacherContent({
                                         {i + 1}
                                     </Button>
                                 ))}
-                                
-                                <Button 
-                                    variant="outline" 
+
+                                <Button
+                                    variant="outline"
                                     size="icon"
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}

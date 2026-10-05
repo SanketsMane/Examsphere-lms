@@ -15,7 +15,7 @@ import { constructS3Url } from "@/lib/s3-helper";
 export async function getMeetingRoom(sessionId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const liveSession = await prisma.liveSession.findUnique({
@@ -63,7 +63,7 @@ export async function updateSessionStatus(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   const liveSession = await prisma.liveSession.findUnique({

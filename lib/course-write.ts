@@ -1,7 +1,8 @@
 import "server-only";
 
 import DOMPurify from "isomorphic-dompurify";
-import { Prisma } from "@prisma/client";
+import { Prisma, type CourseStatus } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { ApiResponse } from "@/lib/types";
@@ -46,12 +47,50 @@ export function sanitizeDescription(html: string): string {
  * Explicit, not a spread: a spread lets any field the schema happens to accept
  * reach the database, which is how `status` and `isFeatured` became settable by
  * teachers. Adding a field here must be a deliberate act.
+ *
+ * Optional fields are written only when the caller actually sent them, so an
+ * edit that omits e.g. tags or the discount doesn't wipe the stored value.
+ * `status`/`isFeatured` are left untouched when not passed. Pass
+ * `{ partial: true }` for updates; creates get `[]` for the required JSON columns.
  */
+type CourseInput = TeacherCourseSchemaType | AdminCourseSchemaType;
+type CoursePrivileged = { status?: CourseStatus; isFeatured?: boolean };
+type CourseWriteData = {
+  title: string;
+  description: string;
+  smallDescription: string;
+  fileKey: string;
+  price: number;
+  duration: number;
+  level: TeacherCourseSchemaType["level"];
+  category: string;
+  slug: string;
+  language?: string;
+  prerequisites?: string;
+  tags?: string[];
+  learningOutcomes?: string[];
+  discountPrice?: number;
+  discountExpiry?: Date;
+  status?: CourseStatus;
+  isFeatured?: boolean;
+};
+
 export function buildCourseData(
-  input: TeacherCourseSchemaType | AdminCourseSchemaType,
-  privileged: { status: string; isFeatured: boolean }
-) {
-  return {
+  input: CourseInput,
+  privileged?: CoursePrivileged,
+  options?: { partial?: false }
+): CourseWriteData & { tags: string[]; learningOutcomes: string[] };
+export function buildCourseData(
+  input: CourseInput,
+  privileged: CoursePrivileged,
+  options: { partial: true }
+): CourseWriteData;
+export function buildCourseData(
+  input: CourseInput,
+  privileged: CoursePrivileged = {},
+  options: { partial?: boolean } = {}
+): CourseWriteData {
+  const data: CourseWriteData = {
     title: input.title,
     description: sanitizeDescription(input.description),
     smallDescription: input.smallDescription,
@@ -61,17 +100,37 @@ export function buildCourseData(
     level: input.level,
     category: input.category,
     slug: input.slug,
-    language: input.language ?? null,
-    prerequisites: input.prerequisites ?? null,
-    // Previously hardcoded to `[]` *after* the spread, silently discarding
-    // whatever the user entered.
-    tags: input.tags ?? [],
-    learningOutcomes: input.learningOutcomes ?? [],
-    discountPrice: input.discountPrice ?? null,
-    discountExpiry: input.discountExpiry ?? null,
-    status: privileged.status as any,
-    isFeatured: privileged.isFeatured,
   };
+
+  if (input.language !== undefined) data.language = input.language;
+  if (input.prerequisites !== undefined) data.prerequisites = input.prerequisites;
+  if (input.tags !== undefined) data.tags = input.tags;
+  else if (!options.partial) data.tags = [];
+  if (input.learningOutcomes !== undefined) data.learningOutcomes = input.learningOutcomes;
+  else if (!options.partial) data.learningOutcomes = [];
+  if (input.discountPrice !== undefined) data.discountPrice = input.discountPrice;
+  if (input.discountExpiry !== undefined) data.discountExpiry = input.discountExpiry;
+  if (privileged.status !== undefined) data.status = privileged.status;
+  if (privileged.isFeatured !== undefined) data.isFeatured = privileged.isFeatured;
+
+  return data;
+}
+
+/**
+ * Teachers may only author courses once an admin has approved their profile.
+ * Returns an error message, or null when allowed. Admins are always allowed.
+ */
+export async function getTeacherAuthoringBlock(user: { id: string; role?: string | null }): Promise<string | null> {
+  if (user.role === "admin") return null;
+  const profile = await prisma.teacherProfile.findUnique({
+    where: { userId: user.id },
+    select: { isApproved: true },
+  });
+  if (!profile) return "Complete your teacher profile before creating courses.";
+  if (!profile.isApproved) {
+    return "Your teacher account is awaiting admin approval. You can create and edit courses once it is approved.";
+  }
+  return null;
 }
 
 /**

@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,13 +15,24 @@ import {
   AlertCircle,
   Download,
   MessageSquare,
-  DollarSign
 } from "lucide-react";
 import Link from "next/link";
-import { format, formatDistance, isPast, isWithinInterval, addMinutes } from "date-fns";
+import { formatDistance, isWithinInterval, addMinutes } from "date-fns";
 import { CancelBookingDialog } from "./CancelBookingDialog";
-import { generateRecordingSignedUrl } from "@/app/actions/video-call"; // Added for secure downloads - Author: Sanket
+import { FeedbackDialog } from "@/components/sessions/FeedbackDialog";
+import { formatMoney } from "@/lib/money";
+import { getRecordingDownloadUrl } from "@/app/actions/recordings";
 import { toast } from "sonner";
+
+// Booking amounts are stored in paise
+const formatPaise = (paise: number) => formatMoney(paise / 100, { showDecimals: paise % 100 !== 0 });
+
+// Sessions are scheduled for Indian students; render in IST regardless of server/browser TZ
+const IST = "Asia/Kolkata";
+const formatIstDate = (d: Date) =>
+  d.toLocaleDateString("en-IN", { timeZone: IST, day: "2-digit", month: "short", year: "numeric" });
+const formatIstTime = (d: Date) =>
+  d.toLocaleTimeString("en-IN", { timeZone: IST, hour: "numeric", minute: "2-digit", hour12: true });
 
 interface StudentSessionCardProps {
   booking: {
@@ -58,12 +71,15 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
   const sessionDate = session.scheduledAt ? new Date(session.scheduledAt) : null;
   const now = new Date();
   
-  const isUpcoming = sessionDate && sessionDate > now && booking.status === "confirmed";
+  const isFuture = !!sessionDate && sessionDate > now && session.status !== "cancelled";
+  const isConfirmed = booking.status === "confirmed";
+  const isPending = booking.status === "pending";
+  const isUpcoming = isFuture && isConfirmed;
   const isCompleted = session.status === "completed" || session.status === "Completed";
   const isCancelled = booking.status === "cancelled" || booking.status === "refunded";
   
   // Can join 15 minutes before until session end time
-  const canJoin = sessionDate && booking.status === "confirmed" && isWithinInterval(now, {
+  const canJoin = sessionDate && isConfirmed && isWithinInterval(now, {
     start: addMinutes(sessionDate, -15),
     end: addMinutes(sessionDate, session.duration)
   });
@@ -77,7 +93,7 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
         </Badge>
       );
     }
-    if (booking.status === "pending") {
+    if (isPending) {
       return (
         <Badge variant="secondary">
           <AlertCircle className="h-3 w-3 mr-1" />
@@ -119,7 +135,7 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
 
   const handleDownloadRecording = async () => {
     try {
-      const result = await generateRecordingSignedUrl(session.id);
+      const result = await getRecordingDownloadUrl(session.id);
       if (result.success && result.url) {
         window.open(result.url, "_blank");
       } else {
@@ -147,9 +163,8 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
             <Badge variant="outline">{session.subject}</Badge>
           </div>
           <div className="text-right shrink-0">
-            <div className="flex items-center gap-1 text-2xl font-bold text-green-600">
-              <DollarSign className="h-5 w-5" />
-              {(booking.amount / 100).toFixed(0)}
+            <div className="text-2xl font-bold text-green-600">
+              {booking.amount > 0 ? formatPaise(booking.amount) : "Free"}
             </div>
             <div className="text-sm text-muted-foreground">
               {session.duration} min
@@ -184,17 +199,25 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
             <>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>{format(sessionDate, "MMM dd, yyyy")}</span>
+                <span>{formatIstDate(sessionDate)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>{format(sessionDate, "h:mm a")}</span>
+                <span>{formatIstTime(sessionDate)} IST</span>
               </div>
             </>
           )}
         </div>
 
         {/* Time Until Session */}
+        {isFuture && isPending && (
+          <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded-lg p-3">
+            <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+              Payment not completed yet — this seat is not confirmed.
+            </p>
+          </div>
+        )}
+
         {isUpcoming && sessionDate && (
           <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-3">
             <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
@@ -215,14 +238,14 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
             )}
             {booking.refundAmount !== null && booking.refundAmount > 0 && (
               <p className="text-muted-foreground mt-1">
-                Refunded: ${(booking.refundAmount / 100).toFixed(2)}
+                Refunded: {formatPaise(booking.refundAmount)}
               </p>
             )}
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex flex-wrap gap-2 pt-2">
           {canJoin && session.meetingUrl && (
             <Link href={session.meetingUrl as any} className="flex-1">
               <Button className="w-full" size="lg">
@@ -233,7 +256,7 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
           )}
           
           {canJoin && !session.meetingUrl && (
-            <Link href={`/video-room/${session.id}`} className="flex-1">
+            <Link href={`/video-call/${session.id}`} className="flex-1">
               <Button className="w-full" size="lg">
                 <Video className="mr-2 h-5 w-5" />
                 Join Session
@@ -249,12 +272,16 @@ export function StudentSessionCard({ booking }: StudentSessionCardProps) {
           )}
 
           {isCompleted && !session.studentRating && (
-            <Link href={`/dashboard/sessions/${session.id}/rate`} className="flex-1">
-              <Button variant="outline" className="w-full">
-                <Star className="mr-2 h-4 w-4" />
-                Rate Session
-              </Button>
-            </Link>
+            <FeedbackDialog
+              sessionId={session.id}
+              sessionTitle={session.title}
+              trigger={
+                <Button variant="outline" className="flex-1">
+                  <Star className="mr-2 h-4 w-4" />
+                  Rate Session
+                </Button>
+              }
+            />
           )}
 
           {isUpcoming && !canJoin && (

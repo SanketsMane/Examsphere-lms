@@ -46,7 +46,7 @@ export function CreateIssueForm() {
             if (result.error) {
                 toast.error("Error", { description: result.error });
             } else {
-                toast.success("Issue Reported", { description: "We have received your report." });
+                toast.success("Ticket created", { description: "We have received your request." });
                 router.push("/dashboard/issues");
                 router.refresh();
             }

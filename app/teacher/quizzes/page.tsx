@@ -148,7 +148,7 @@ export default function QuizManagementPage() {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/api/course');
+      const response = await fetch('/api/teacher/courses');
       if (response.ok) {
         const data = await response.json();
         setCourses(data);
@@ -525,14 +525,6 @@ export default function QuizManagementPage() {
                       )}
                     </Button>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => window.open(`/quiz/${quiz.id}/analytics`, '_blank')}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                    </Button>
-
                     {/* More Actions */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -544,11 +536,6 @@ export default function QuizManagementPage() {
                         <DropdownMenuItem onClick={() => setSelectedQuiz(quiz)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Quiz
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem onClick={() => window.open(`/quiz/${quiz.id}/preview`, '_blank')}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Preview
                         </DropdownMenuItem>
 
                         <DropdownMenuItem onClick={() => handleDuplicateQuiz(quiz)}>
@@ -574,22 +561,6 @@ export default function QuizManagementPage() {
 
                         <DropdownMenuSeparator />
 
-                        <DropdownMenuItem onClick={() => window.open(`/quiz/${quiz.id}/results`, '_blank')}>
-                          <Users className="h-4 w-4 mr-2" />
-                          View Results
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem>
-                          <Download className="h-4 w-4 mr-2" />
-                          Export Data
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem>
-                          <Share2 className="h-4 w-4 mr-2" />
-                          Share Quiz
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator />
 
                         <DropdownMenuItem
                           onClick={() => {

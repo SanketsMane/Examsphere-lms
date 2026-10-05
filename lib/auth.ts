@@ -43,7 +43,6 @@ const authOptions = {
        request.headers.set("origin", cleanBaseURL);
     }
 
-    console.log(`[BetterAuth Request] ${request.method} ${request.url} | Origin: ${request.headers.get("origin")} | Host: ${host}`);
     return undefined;
   },
   onResponse: async (response: Response) => {
@@ -144,8 +143,7 @@ const authOptions = {
   plugins: [
     emailOTP({
       async sendVerificationOTP({ email, otp }) {
-        console.log("AUTH DEBUG: sendVerificationOTP called for:", email);
-        console.log("AUTH DEBUG: OTP generated:", otp);
+        // Never log the OTP or the recipient: logs are not a secure channel.
         try {
           const success = await sendEmail({
             to: email,
@@ -207,7 +205,6 @@ const authOptions = {
               </html>
             `,
           });
-          console.log("AUTH DEBUG: sendEmail result:", success);
           if (!success) throw new Error("sendEmail returned false");
         } catch (e: any) {
           console.error("AUTH DEBUG: sendVerificationOTP FAILED:", e);
@@ -218,8 +215,6 @@ const authOptions = {
     admin(),
     phoneNumber({
       async sendOTP({ phoneNumber, code }, request) {
-        console.log("AUTH DEBUG: sendOTP called for:", phoneNumber);
-        console.log("AUTH DEBUG: OTP generated:", code);
         try {
             const accountSid = process.env.TWILIO_ACCOUNT_SID;
             const authToken = process.env.TWILIO_AUTH_TOKEN;

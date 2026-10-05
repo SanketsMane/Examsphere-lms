@@ -19,6 +19,10 @@ import { Label } from "@/components/ui/label";
 import { XCircle, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInHours } from "date-fns";
+import { formatMoney } from "@/lib/money";
+
+// Booking amounts are stored in paise
+const formatPaise = (paise: number) => formatMoney(paise / 100, { showDecimals: paise % 100 !== 0 });
 
 interface CancelBookingDialogProps {
   bookingId: string;
@@ -69,7 +73,7 @@ export function CancelBookingDialog({
       toast.success(
         `Booking cancelled successfully! ${
           result.refundAmount > 0 
-            ? `Refund of $${(result.refundAmount / 100).toFixed(2)} will be processed within 5-10 business days.`
+            ? `Refund of ${formatPaise(result.refundAmount)} will be processed within 5-10 business days.`
             : 'No refund applicable due to cancellation policy.'
         }`
       );
@@ -125,7 +129,7 @@ export function CancelBookingDialog({
                 <p className="text-sm text-muted-foreground">
                   {refundPercentage > 0 ? (
                     <>
-                      You'll receive <span className="font-bold">${(estimatedRefund / 100).toFixed(2)}</span> back
+                      You'll receive <span className="font-bold">{formatPaise(Math.round(estimatedRefund))}</span> back
                       {refundPercentage === 100 
                         ? ' (full refund - cancelled 48+ hours before)'
                         : ' (partial refund - cancelled 24-48 hours before)'

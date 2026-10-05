@@ -43,8 +43,16 @@ export async function GET(
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
     }
 
+    const role = (session.user as any).role;
+    const isStaff = role === 'teacher' || role === 'admin';
+
+    // A teacher may only see class-wide analytics for quizzes they created.
+    if (role === 'teacher' && quiz.createdById !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Check permissions
-    if ((session.user as any).role === 'student') {
+    if (!isStaff) {
       // Students can only see their own analytics
       const userAttempts = quiz.attempts.filter(a => a.userId === session.user.id);
 

@@ -1,8 +1,13 @@
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowLeft, Home } from 'lucide-react';
 
 export default function GlobalNotFound() {
+  const router = useRouter();
+
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Decorative elements */}
@@ -24,11 +29,11 @@ export default function GlobalNotFound() {
         </div>
 
         <h1 className="text-3xl font-bold text-neutral-900 mb-4 px-4">
-          Lost in Space?
+          Page not found
         </h1>
         
         <p className="text-neutral-500 mb-10 text-lg leading-relaxed px-4">
-          The page you're looking for was moved, removed, or never existed in this dimension.
+          The page you&apos;re looking for was moved or no longer exists.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 px-6">
@@ -42,15 +47,13 @@ export default function GlobalNotFound() {
             </Link>
           </Button>
           
-          <Button 
+          <Button
             variant="outline"
-            asChild
+            onClick={() => router.back()}
             className="flex-1 bg-white border-neutral-200 text-neutral-700 h-14 rounded-xl hover:bg-neutral-50 transition-all active:scale-95"
           >
-            <Link href="javascript:history.back()">
-              <ArrowLeft className="mr-2 w-5 h-5" />
-              Back
-            </Link>
+            <ArrowLeft className="mr-2 w-5 h-5" />
+            Back
           </Button>
         </div>
 

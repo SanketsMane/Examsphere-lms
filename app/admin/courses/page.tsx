@@ -7,7 +7,6 @@ import {
 } from "./_components/AdminCourseCard";
 import { EmptyState } from "@/components/general/EmptyState";
 import { Suspense } from "react";
-import { requireTeacherOrAdmin } from "@/app/data/auth/require-roles";
 import { requireAdmin } from "@/app/data/auth/require-roles";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +38,7 @@ export default async function CoursesPage({
 }
 
 async function RenderCourses({ page }: { page: number }) {
-  const session = await requireTeacherOrAdmin();
+  const session = await requireAdmin();
   const { data, totalCount } = await adminGetCourses(page, 10);
   const totalPages = Math.ceil(totalCount / 10);
 

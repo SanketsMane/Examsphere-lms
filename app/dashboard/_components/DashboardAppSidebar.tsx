@@ -16,7 +16,6 @@ import {
   IconBell,
   IconCalendar,
   IconWallet,
-  IconCrown,
   IconChartBar,
   IconSettings,
   IconLifebuoy,
@@ -61,7 +60,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Explore",
     items: [
-      { title: "Find a Mentor", url: "/find-teacher", icon: IconUserSearch },
+      { title: "Find a Mentor", url: "/dashboard/mentors", icon: IconUserSearch },
       { title: "My Groups", url: "/dashboard/groups", icon: IconUsersGroup },
     ],
   },
@@ -78,7 +77,6 @@ const navGroups: NavGroup[] = [
     label: "Account",
     items: [
       { title: "Wallet", url: "/dashboard/wallet", icon: IconWallet },
-      { title: "My Subscription", url: "/subscription", icon: IconCrown },
     ],
   },
 ];

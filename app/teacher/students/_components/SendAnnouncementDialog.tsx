@@ -38,17 +38,18 @@ export function SendAnnouncementDialog() {
                 body: JSON.stringify({ subject, message }),
             });
 
+            const result = await response.json().catch(() => ({}));
             if (!response.ok) {
-                throw new Error("Failed to send announcement");
+                throw new Error(result.error || "Failed to send announcement");
             }
 
-            toast.success("Announcement sent successfully");
+            toast.success(result.message || "Announcement sent");
             setOpen(false);
             setSubject("");
             setMessage("");
         } catch (error) {
             console.error(error);
-            toast.error("Failed to send announcement");
+            toast.error(error instanceof Error ? error.message : "Failed to send announcement");
         } finally {
             setLoading(false);
         }
@@ -66,7 +67,7 @@ export function SendAnnouncementDialog() {
                 <DialogHeader>
                     <DialogTitle>Send Announcement</DialogTitle>
                     <DialogDescription>
-                        Send a message to all your students. They will receive an email and a dashboard notification.
+                        Send a message to all students enrolled in your courses. They will see it in their notifications.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">

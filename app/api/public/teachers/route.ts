@@ -10,16 +10,31 @@ export async function GET() {
       where: {
         isVerified: true, // Only show verified teachers in public marketplace
       },
-      include: {
+      // Explicit select: this endpoint is public, so earnings, email, userId
+      // and verification data must never be serialised here.
+      select: {
+        id: true,
+        bio: true,
+        expertise: true,
+        languages: true,
+        hourlyRate: true,
+        isVerified: true,
+        timezone: true,
+        rating: true,
+        totalReviews: true,
+        totalStudents: true,
+        qualifications: true,
+        certifications: true,
+        experience: true,
+        allowFreeDemo: true,
+        allowFreeGroup: true,
         user: {
           select: {
             id: true,
             name: true,
-            email: true,
             image: true,
           },
         },
-
         _count: {
           select: {
             liveSessions: true,

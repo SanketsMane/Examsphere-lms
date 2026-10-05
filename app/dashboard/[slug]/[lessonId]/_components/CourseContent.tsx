@@ -5,8 +5,10 @@ import { RenderDescription } from "@/components/rich-text-editor/RenderDescripti
 import { Button } from "@/components/ui/button";
 import { tryCatch } from "@/hooks/try-catch";
 import { useConstructUrl } from "@/hooks/use-construct-url";
-import { BookIcon, CheckCircle } from "lucide-react";
-import { useTransition } from "react";
+import { ArrowRight, BookIcon, CheckCircle } from "lucide-react";
+import { useMemo, useTransition } from "react";
+import Link from "next/link";
+import type { JSONContent } from "@tiptap/react";
 import { markLessonComplete } from "../actions";
 import { toast } from "sonner";
 import { useConfetti } from "@/hooks/use-confetti";
@@ -16,9 +18,23 @@ interface iAppProps {
   data: LessonContentType;
 }
 
+// Lesson descriptions are normally Tiptap JSON, but older/imported lessons hold plain text
+function parseDescription(raw: string | null): { json: JSONContent | null; text: string | null } {
+  if (!raw) return { json: null, text: null };
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") return { json: parsed, text: null };
+  } catch {
+    // fall through to plain text
+  }
+  return { json: null, text: raw };
+}
+
 export function CourseContent({ data }: iAppProps) {
   const [pending, startTransition] = useTransition();
   const { triggerConfetti } = useConfetti();
+  const description = useMemo(() => parseDescription(data.description), [data.description]);
+  const slug = data.Chapter.Course.slug;
 
   function VideoPlayer({
     thumbnailKey,
@@ -83,7 +99,7 @@ export function CourseContent({ data }: iAppProps) {
         videoKey={data.videoKey ?? ""}
       />
 
-      <div className="py-4 border-b">
+      <div className="py-4 border-b flex flex-wrap items-center gap-3">
         {data.lessonProgress.length > 0 ? (
           <Button
             variant="outline"
@@ -99,9 +115,16 @@ export function CourseContent({ data }: iAppProps) {
           </Button>
         )}
 
-        <div className="ml-4 inline-block">
-          <ReviewDialog courseId={data.Chapter.Course.id} courseTitle={data.Chapter.Course.title} />
-        </div>
+        <ReviewDialog courseId={data.Chapter.Course.id} courseTitle={data.Chapter.Course.title} />
+
+        {data.nextLessonId && (
+          <Button asChild className="ml-auto">
+            <Link href={`/dashboard/${slug}/${data.nextLessonId}`}>
+              Next lesson
+              <ArrowRight className="size-4 ml-2" />
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="space-y-3 pt-3">
@@ -109,8 +132,9 @@ export function CourseContent({ data }: iAppProps) {
           {data.title}
         </h1>
 
-        {data.description && (
-          <RenderDescription json={JSON.parse(data.description)} />
+        {description.json && <RenderDescription json={description.json} />}
+        {description.text && (
+          <p className="text-muted-foreground whitespace-pre-wrap">{description.text}</p>
         )}
       </div>
     </div>

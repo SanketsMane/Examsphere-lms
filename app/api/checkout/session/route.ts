@@ -5,8 +5,9 @@ import crypto from "crypto";
 import { env } from "@/lib/env";
 import { protectGeneral, getClientIP } from "@/lib/security";
 import { logger } from "@/lib/logger";
-import { getRazorpayInstance } from "@/lib/razorpay";
+import { getRazorpayInstance, PAYMENTS_UNAVAILABLE_MESSAGE, RazorpayNotConfiguredError } from "@/lib/razorpay";
 import { sendTemplatedEmail } from "@/lib/email";
+import { getOneOnOneSessionPrice, SESSION_PRICE_NOT_SET_MESSAGE } from "@/lib/session-pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,6 @@ export async function POST(req: Request) {
         const user = session?.user;
         userId = user?.id;
 
-        console.log("[Checkout] User:", user?.id, user?.email);
 
         if (!user || !user.id || !user.email) {
             console.warn("[Checkout] Unauthorized access attempt");
@@ -26,7 +26,6 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        console.log("[Checkout] Request Body:", JSON.stringify(body));
         const { teacherProfileId, dateTime, couponCode } = body;
 
         if (!teacherProfileId || !dateTime) {
@@ -51,10 +50,13 @@ export async function POST(req: Request) {
         }
 
         const scheduledAt = new Date(dateTime);
-        const hourlyRate = teacher.hourlyRate || 0;
         const duration = 60; // Standard duration
-        
-        console.log("[Checkout] Teacher:", teacher.id, "Rate:", hourlyRate, "Time:", scheduledAt);
+        // Whole rupees from TeacherPricing (legacy hourlyRate fallback). No price means no booking,
+        // not a free session.
+        const sessionPrice = await getOneOnOneSessionPrice(teacher.id, duration);
+        if (sessionPrice === null) {
+            return NextResponse.json({ error: SESSION_PRICE_NOT_SET_MESSAGE }, { status: 400 });
+        }
 
         // ----------------------------------------------------------------
         // QA-004: Check for Student Scheduling Overlaps
@@ -90,11 +92,10 @@ export async function POST(req: Request) {
         }
 
         // Coupon Logic (Server-side calculation)
-        let finalPrice = hourlyRate;
+        let finalPrice = sessionPrice;
         let couponId: string | undefined;
 
         if (couponCode) {
-             console.log("[Checkout] Validating coupon:", couponCode);
              const coupon = await prisma.coupon.findUnique({
                 where: { code: couponCode, isActive: true }
             });
@@ -104,12 +105,11 @@ export async function POST(req: Request) {
                  const isValid = (!coupon.expiryDate || now <= coupon.expiryDate) && (coupon.usedCount < coupon.usageLimit);
                  if (isValid) {
                       if (coupon.type === "PERCENTAGE") {
-                        finalPrice = Math.round((hourlyRate * (100 - coupon.value)) / 100);
+                        finalPrice = Math.round((sessionPrice * (100 - coupon.value)) / 100);
                     } else {
-                        finalPrice = Math.max(0, hourlyRate - coupon.value);
+                        finalPrice = Math.max(0, sessionPrice - coupon.value);
                     }
                     couponId = coupon.id;
-                    console.log("[Checkout] Coupon applied. Final Price:", finalPrice);
                  } else {
                      console.warn("[Checkout] Invalid coupon:", couponCode);
                  }
@@ -118,18 +118,15 @@ export async function POST(req: Request) {
              }
         }
 
-        // Razorpay Initialization
-        console.log("[Checkout] Initializing Razorpay...");
-        const razorpay = await getRazorpayInstance();
-        if (!razorpay) throw new Error("Razorpay Failed to Initialize");
-
         const currencyCode = "INR";
         const amountInPaisa = Math.round(finalPrice * 100);
 
         const isFree = amountInPaisa === 0;
 
-        console.log("[Checkout] Creating LiveSession in DB...");
-        
+        // Only paid sessions need the gateway; resolve it before creating any booking so an
+        // unconfigured gateway doesn't leave an orphaned pending session behind.
+        const razorpay = isFree ? null : await getRazorpayInstance();
+
         const liveSession = await prisma.liveSession.create({
             data: {
                 teacherId: teacherProfileId,
@@ -138,14 +135,14 @@ export async function POST(req: Request) {
                 description: "Private Live Session",
                 scheduledAt: scheduledAt,
                 duration: 60,
-                price: amountInPaisa, 
-                status: "scheduled", 
+                price: amountInPaisa,
+                status: "scheduled",
                 meetingUrl: `/video-call/${crypto.randomUUID()}`,
                 bookings: {
                     create: {
                         studentId: user.id,
                         amount: amountInPaisa,
-                        status: isFree ? "confirmed" : "pending", 
+                        status: isFree ? "confirmed" : "pending",
                     }
                 }
             },
@@ -158,11 +155,9 @@ export async function POST(req: Request) {
                 }
             }
         });
-        
-        console.log("[Checkout] LiveSession Created:", liveSession.id);
 
         const bookingId = liveSession.bookings[0].id;
-        
+
         // Send confirmation emails
         try {
             if (user.email && liveSession.teacher.user.email) {
@@ -193,7 +188,6 @@ export async function POST(req: Request) {
                     sessionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/teacher/sessions/${liveSession.id}`
                 });
 
-                console.log(`[Email] Booking confirmation sent to ${user.email} and ${liveSession.teacher.user.email}`);
             }
         } catch (emailError) {
             console.error("[Email] Failed to send booking confirmation emails:", emailError);
@@ -201,7 +195,6 @@ export async function POST(req: Request) {
         }
 
         if (isFree) {
-            console.log("[Checkout] Free session confirmed (skipping Razorpay):", bookingId);
             return NextResponse.json({
                 orderId: "free_" + bookingId,
                 amount: 0,
@@ -216,7 +209,7 @@ export async function POST(req: Request) {
                 }
             });
         }
-        
+
         // Create Razorpay Order
         const options = {
             amount: amountInPaisa.toString(),
@@ -231,9 +224,7 @@ export async function POST(req: Request) {
             }
         };
 
-        console.log("[Checkout] Creating Razorpay Order with options:", options);
-        const order = await razorpay.orders.create(options);
-        console.log("[Checkout] Razorpay Order Created:", order.id);
+        const order = await razorpay!.orders.create(options);
 
         return NextResponse.json({
             orderId: order.id,
@@ -251,7 +242,10 @@ export async function POST(req: Request) {
         });
 
     } catch (error) {
+        if (error instanceof RazorpayNotConfiguredError) {
+            return new NextResponse(PAYMENTS_UNAVAILABLE_MESSAGE, { status: 503 });
+        }
         console.error("Session Checkout Error Full Stack:", error);
-        return new NextResponse("Internal Error: " + (error instanceof Error ? error.message : "Unknown"), { status: 500 });
+        return new NextResponse("Could not start the payment. Please try again in a moment.", { status: 500 });
     }
 }

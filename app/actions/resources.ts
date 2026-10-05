@@ -27,6 +27,18 @@ export async function createResource(data: {
 
         if (!teacher) throw new Error("Teacher profile not found");
 
+        const courseId = data.courseId && data.courseId !== "none" ? data.courseId : undefined;
+        // A resource attached to a course is visible to its students, so the course must be ours.
+        if (courseId) {
+            const course = await prisma.course.findFirst({
+                where: { id: courseId, userId: session.user.id },
+                select: { id: true },
+            });
+            if (!course) {
+                return { error: "Course not found" };
+            }
+        }
+
         const resource = await prisma.resource.create({
             data: {
                 title: data.title,
@@ -35,7 +47,7 @@ export async function createResource(data: {
                 fileType: data.fileType,
                 size: data.size,
                 teacherId: teacher.id,
-                courseId: data.courseId === "none" ? undefined : data.courseId,
+                courseId,
             }
         });
 

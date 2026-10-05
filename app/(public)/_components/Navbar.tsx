@@ -6,13 +6,15 @@ import { useState } from "react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 import { UserDropdown } from "./UserDropdown";
-import { Search, Menu as MenuIcon, X } from "lucide-react";
+import { Menu as MenuIcon, X } from "lucide-react";
 import { constructS3Url } from "@/lib/s3-helper";
 import { CoursesMegaMenu, CoursesMobileGroup } from "./CoursesMegaMenu";
 
-// Simple links shown alongside the "Courses" mega-dropdown.
+// Simple links shown alongside the "Programs" mega-dropdown. "Courses" is the purchasable
+// catalogue (fees + enroll), which the programme pages alone never linked to.
 const navigationItems = [
   { id: 1, title: "Home", url: "/" },
+  { id: 4, title: "Courses", url: "/courses" },
   { id: 2, title: "About Us", url: "/about" },
   { id: 3, title: "Contact", url: "/contact" },
 ];
@@ -64,6 +66,12 @@ export function Navbar({ settings }: { settings?: any }) {
           </Link>
           <CoursesMegaMenu />
           <Link
+            href="/courses"
+            className="px-4 py-2 rounded font-semibold text-[15px] text-ink-700 dark:text-foreground hover:text-navy-900 dark:hover:text-white transition-colors"
+          >
+            Courses
+          </Link>
+          <Link
             href="/about"
             className="px-4 py-2 rounded font-semibold text-[15px] text-ink-700 dark:text-foreground hover:text-navy-900 dark:hover:text-white transition-colors"
           >
@@ -79,11 +87,6 @@ export function Navbar({ settings }: { settings?: any }) {
 
         {/* Right Actions */}
         <div className="flex items-center gap-3 md:gap-4 shrink-0">
-          {/* Mobile Search Trigger (Visible only on small screens) */}
-          <button suppressHydrationWarning className="md:hidden text-gray-600 hover:text-primary">
-            <Search className="h-5 w-5" />
-          </button>
-
           <div className="hidden sm:block">
             <ThemeToggle />
           </div>

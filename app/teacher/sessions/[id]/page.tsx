@@ -90,11 +90,12 @@ export default function SessionDetailsPage({ params }: { params: Promise<{ id: s
     fetchSession();
   }, [id, router]);
 
-  const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat("en-US", {
+  // LiveSession.price is stored in paise.
+  const formatCurrency = (paise: number) => {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "USD",
-    }).format(cents / 100);
+      currency: "INR",
+    }).format(paise / 100);
   };
 
   if (loading) {
@@ -172,11 +173,6 @@ export default function SessionDetailsPage({ params }: { params: Promise<{ id: s
                 <Video className="w-5 h-5 mr-2" />
                 Start Live Session
               </Button>
-            </Link>
-          )}
-          {isScheduled && enrolledStudents.length === 0 && (
-            <Link href={`/teacher/sessions/${session.id}/edit`}>
-              <Button variant="outline" size="lg">Edit Session</Button>
             </Link>
           )}
         </div>

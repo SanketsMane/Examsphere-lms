@@ -131,7 +131,7 @@ export default function RegisterPage() {
                 <User className="w-4 h-4" />
               </div>
               <div className="text-sm">
-                <p className="font-semibold text-orange-800 dark:text-orange-200">Instructor Account</p>
+                <p className="font-semibold text-orange-800 dark:text-orange-200">Teacher Account</p>
                 <p className="text-orange-600 dark:text-orange-300 mt-1">You'll be redirected to complete your profile after signup.</p>
               </div>
             </div>
@@ -207,6 +207,18 @@ export default function RegisterPage() {
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Create Account"}
               {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
+
+            <p className="text-center text-xs text-muted-foreground">
+              By creating an account you agree to our{" "}
+              <Link href="/terms" className="font-semibold text-primary hover:underline">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="font-semibold text-primary hover:underline">
+                Privacy Policy
+              </Link>
+              .
+            </p>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">

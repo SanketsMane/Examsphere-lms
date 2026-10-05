@@ -1,15 +1,17 @@
 {
-  "name": "EXAMSPHERE - Professional Learning Platform",
-  "short_name": "EXAMSPHERE",
-  "description": "Advanced learning management system with video conferencing, collaborative whiteboard, and analytics",
+  "name": "ExamSphere — JEE, NEET, Foundation & MBBS",
+  "short_name": "ExamSphere",
+  "description": "Online coaching for JEE, NEET, Foundation (Class 6–10) and MBBS — live classes, practice, mock tests and mentorship.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
   "scope": "/",
-  "lang": "en",
-  "categories": ["education", "productivity", "lifestyle"],
+  "lang": "en-IN",
+  "categories": [
+    "education"
+  ],
   "icons": [
     {
       "src": "/logo.png",
@@ -66,44 +68,50 @@
       "short_name": "Dashboard",
       "description": "Access your learning dashboard",
       "url": "/dashboard",
-      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Courses",
       "short_name": "Courses",
       "description": "Browse available courses",
       "url": "/courses",
-      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Live Sessions",
       "short_name": "Sessions",
-      "description": "Join live tutoring sessions",
+      "description": "Join live classes",
       "url": "/live-sessions",
-      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Messages",
       "short_name": "Messages",
       "description": "Check your messages",
       "url": "/dashboard/messages",
-      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
   "prefer_related_applications": false,
-  "related_applications": [],
-  "screenshots": [
-    {
-      "src": "/screenshot1.png",
-      "type": "image/png",
-      "sizes": "540x720",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/screenshot2.png", 
-      "type": "image/png",
-      "sizes": "1024x768",
-      "form_factor": "wide"
-    }
-  ]
+  "related_applications": []
 }

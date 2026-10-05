@@ -38,11 +38,14 @@ export function EnrollmentButton({ courseId }: { courseId: string }) {
           name: "Course Enrollment",
           description: `Enrollment in ${result.courseName}`,
           user: result.user,
-          onSuccess: (paymentId) => {
-            toast.success("Payment successful! Enrolling you now...");
-            setTimeout(() => {
-              window.location.href = "/dashboard/courses?enrollment=success";
-            }, 2000);
+          onSuccess: async (_paymentId, rzp) => {
+            const verify = await fetch("/api/checkout/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(rzp),
+            }).catch(() => null);
+            toast.success(verify?.ok ? "Payment successful! Redirecting..." : "Payment received. Your access will be ready in a moment.");
+            window.location.href = `/courses/${result.courseSlug}?success=1`;
           },
           onError: (err) => {
             toast.error("Payment failed. Please try again.");

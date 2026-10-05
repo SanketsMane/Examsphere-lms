@@ -53,6 +53,22 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const role = (session.user as any).role;
+    const isStaff = role === 'teacher' || role === 'admin';
+
+    // Only the quiz's creator (or an admin) gets every student's attempts and the answer key.
+    let isOwner = role === 'admin';
+    if (role === 'teacher') {
+      const owner = await prisma.quiz.findUnique({ where: { id }, select: { createdById: true } });
+      if (!owner) {
+        return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
+      }
+      if (owner.createdById !== session.user.id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      isOwner = true;
+    }
+
     const quiz = await prisma.quiz.findUnique({
       where: { id },
       include: {
@@ -71,7 +87,7 @@ export async function GET(
         createdBy: {
           select: { name: true, email: true }
         },
-        attempts: (session.user as any).role === 'teacher' || (session.user as any).role === 'admin' ? {
+        attempts: isOwner ? {
           include: {
             user: {
               select: { name: true, email: true }
@@ -91,7 +107,7 @@ export async function GET(
     }
 
     // Students can only access published and active quizzes
-    if ((session.user as any).role === 'student') {
+    if (!isStaff) {
       if (!quiz.isPublished || !quiz.isActive) {
         return NextResponse.json({ error: "Quiz not available" }, { status: 403 });
       }
@@ -106,7 +122,7 @@ export async function GET(
                   }
               }
           });
-          if (!enrollment) {
+          if (!enrollment || enrollment.status !== 'Active') {
               return NextResponse.json({ error: "Forbidden: You must be enrolled in the course to access this quiz" }, { status: 403 });
           }
       }
@@ -122,7 +138,7 @@ export async function GET(
     }
 
     // Sanitize questions for students - Author: Sanket
-    if ((session.user as any).role === 'student') {
+    if (!isStaff) {
         quiz.questions = quiz.questions.map((q: any) => {
             const { explanation, ...rest } = q;
             let sanitizedData = { ...q.questionData };

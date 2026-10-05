@@ -7,6 +7,7 @@ import { ApiResponse } from "@/lib/types";
 import { CourseSchemaType } from "@/lib/zodSchemas";
 import {
   buildCourseData,
+  getTeacherAuthoringBlock,
   handleCourseWriteError,
   teacherCourseSchema,
   toFieldErrors,
@@ -27,6 +28,11 @@ export async function CreateCourse(
 ): Promise<ApiResponse> {
   const session = await requireTeacher();
   const userId = (session.user as any).id as string;
+
+  const authoringBlock = await getTeacherAuthoringBlock({ id: userId, role: (session.user as any).role });
+  if (authoringBlock) {
+    return { status: "error", message: authoringBlock };
+  }
 
   // Plan limit is enforced before doing any work.
   const { checkCourseLimit } = await import("@/lib/subscription-limits");

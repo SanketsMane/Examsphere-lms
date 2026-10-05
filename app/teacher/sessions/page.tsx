@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/db";
 import { requireTeacher } from "@/app/data/auth/require-roles";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,16 +22,14 @@ import Link from "next/link";
 import { SessionsList } from "./_components/SessionsList";
 import { SessionStats } from "./_components/SessionStats";
 import { SessionTemplatesManager } from "@/components/teacher/SessionTemplatesManager";
+import { getTeacherSubjectOptions } from "@/app/teacher/_lib/subject-options";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeacherSessionsPage() {
   await requireTeacher();
   
-  const subjects = await prisma.subject.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' }
-  });
+  const subjects = await getTeacherSubjectOptions();
 
   return (
     <div className="space-y-6">

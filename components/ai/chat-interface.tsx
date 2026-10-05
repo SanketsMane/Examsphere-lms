@@ -277,7 +277,7 @@ export function ChatInterface() {
                      </SheetContent>
                  </Sheet>
                  <div className="flex items-center gap-2">
-                     <span className="font-semibold">ExamSphere Ai</span>
+                     <span className="font-semibold">ExamSphere AI</span>
                      {/* The model name used to be hardcoded here ("qwen2.5:14b") and
                          went stale the moment the provider changed. The model is a
                          server-side detail, so it is no longer surfaced to users. */}
@@ -394,7 +394,7 @@ export function ChatInterface() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-                        placeholder="Message ExamSphere Ai..."
+                        placeholder="Message ExamSphere AI..."
                         className="flex-1 rounded-full py-6 px-6 shadow-sm"
                         disabled={isLoading}
                     />
@@ -409,7 +409,7 @@ export function ChatInterface() {
                     </Button>
                 </div>
                 <div className="text-center mt-2">
-                    <span className="text-[10px] text-muted-foreground">ExamSphere Ai can make mistakes. Check important info.</span>
+                    <span className="text-[10px] text-muted-foreground">ExamSphere AI can make mistakes. Check important info.</span>
                 </div>
             </div>
         </div>

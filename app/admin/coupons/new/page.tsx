@@ -45,7 +45,7 @@ export default function CreateCouponPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
-                                    <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
+                                    <SelectItem value="FIXED">Fixed Amount (₹)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

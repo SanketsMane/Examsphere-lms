@@ -1,5 +1,4 @@
 import { getAllCourses } from "@/app/data/course/get-all-courses";
-import { CourseComparisonProvider } from "@/components/marketing/CourseComparison";
 import { PublicCourseCardSkeleton } from "../_components/PublicCourseCard";
 import { CourseFilters } from "../_components/CourseFilters";
 import { Suspense } from "react";
@@ -14,7 +13,7 @@ import { PROGRAM_CATEGORY_NAMES } from "@/lib/examsphere-taxonomy";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Courses - EXAMSPHERE",
+  title: "Courses | ExamSphere",
   description: "Browse ExamSphere courses for JEE, NEET, Foundation (Class 6–10) and MBBS, and enroll online.",
 };
 
@@ -47,8 +46,15 @@ export default async function PublicCoursesRoute({ searchParams }: Props) {
     );
   }
 
+  const categoryParam = Array.isArray(params.category) ? params.category[0] : params.category;
+  // A programme with no published courses yet gets an "opening soon" state, not "clear filters".
+  const emptyCategory =
+    categoryParam &&
+    !allCourses.some((course) => course.category?.toLowerCase() === categoryParam.toLowerCase())
+      ? categoryParam
+      : undefined;
+
   if (params.category) {
-    const categoryParam = Array.isArray(params.category) ? params.category[0] : params.category;
     if (categoryParam) {
       filteredCourses = filteredCourses.filter(course =>
         course.category?.toLowerCase() === categoryParam.toLowerCase()
@@ -81,7 +87,6 @@ export default async function PublicCoursesRoute({ searchParams }: Props) {
   }
 
   return (
-    <CourseComparisonProvider>
       <div className="min-h-screen bg-background font-sans text-foreground">
         {/* Clean Hero Section */}
         <section className="relative overflow-hidden bg-white dark:bg-black py-20 lg:py-28 border-b border-gray-100 dark:border-gray-800">
@@ -117,7 +122,9 @@ export default async function PublicCoursesRoute({ searchParams }: Props) {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-6">
               <div>
                 <h2 className="text-3xl font-bold tracking-tight text-[#011E21] dark:text-white">Browse Collection</h2>
-                <p className="text-muted-foreground mt-1">Showing {filteredCourses.length} results</p>
+                <p className="text-muted-foreground mt-1">
+                  Showing {filteredCourses.length} {filteredCourses.length === 1 ? "course" : "courses"}
+                </p>
               </div>
             </div>
 
@@ -138,13 +145,12 @@ export default async function PublicCoursesRoute({ searchParams }: Props) {
                     ))}
                   </div>
                 }>
-                  <AnimatedCoursesGrid courses={filteredCourses} userCountry={userCountry} />
+                  <AnimatedCoursesGrid courses={filteredCourses} userCountry={userCountry} category={emptyCategory} />
                 </Suspense>
               </div>
             </div>
           </div>
         </section>
       </div>
-    </CourseComparisonProvider>
   );
 }

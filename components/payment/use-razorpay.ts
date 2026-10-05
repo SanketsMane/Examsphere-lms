@@ -3,6 +3,12 @@
 import Script from 'next/script';
 import { useCallback, useRef } from 'react';
 
+export interface RazorpaySuccessResponse {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+}
+
 interface RazorpayCheckoutProps {
     orderId: string;
     keyId: string;
@@ -16,7 +22,7 @@ interface RazorpayCheckoutProps {
         email: string;
         contact?: string;
     };
-    onSuccess: (paymentId: string) => void;
+    onSuccess: (paymentId: string, response: RazorpaySuccessResponse) => void;
     onError?: (error: any) => void;
 }
 
@@ -57,7 +63,7 @@ export function useRazorpay() {
             image: options.image,
             order_id: options.orderId,
             handler: function (response: any) {
-                options.onSuccess(response.razorpay_payment_id);
+                options.onSuccess(response.razorpay_payment_id, response);
             },
             prefill: {
                 name: options.user.name,

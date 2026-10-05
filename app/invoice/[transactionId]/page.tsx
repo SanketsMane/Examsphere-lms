@@ -107,7 +107,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
                 {/* Footer */}
                 <div className="border-t pt-8 text-center text-sm text-slate-500">
                     <p>Thank you for choosing ExamSphere LMS!</p>
-                    <p>For any questions, please contact support@examsphere.com</p>
+                    <p>For any questions, please contact support@examsphere.online</p>
                 </div>
 
                 {/* Print Actions (Hidden in Print) */}

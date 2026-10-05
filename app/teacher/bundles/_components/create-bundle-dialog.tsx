@@ -33,7 +33,7 @@ import { createBundle } from "@/app/actions/bundles";
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  price: z.coerce.number().min(0, "Price must be non-negative"),
+  price: z.coerce.number().int("Price must be whole rupees").min(1, "Price must be at least ₹1"),
   sessionCount: z.coerce.number().min(1, "Must verify at least 1 session"),
 });
 
@@ -138,9 +138,9 @@ export function CreateBundleDialog() {
                 name="price"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Price</FormLabel>
+                    <FormLabel>Price (₹ INR)</FormLabel>
                     <FormControl>
-                        <Input type="number" min="0" {...field} />
+                        <Input type="number" min="1" step="1" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>

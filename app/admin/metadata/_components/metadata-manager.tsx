@@ -14,24 +14,45 @@ interface MetadataManagerProps {
     items: { id: string; name: string }[];
     onAdd: (name: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     onDelete: (id: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+    onImportDefaults?: () => Promise<{ success: boolean; message?: string; error?: string }>;
 }
 
 export function MetadataManager({
     title,
     items,
     onAdd,
-    onDelete
+    onDelete,
+    onImportDefaults
 }: MetadataManagerProps) {
     const [newItem, setNewItem] = useState("");
     const [isAdding, setIsAdding] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [isImporting, setIsImporting] = useState(false);
+
+    const handleImport = async () => {
+        if (!onImportDefaults) return;
+        setIsImporting(true);
+        try {
+            const res = await onImportDefaults();
+            if (res.success) {
+                toast.success(res.message);
+                router.refresh();
+            } else {
+                toast.error(res.error);
+            }
+        } catch {
+            toast.error("Failed to import defaults");
+        } finally {
+            setIsImporting(false);
+        }
+    };
     const router = useRouter();
 
     const handleAdd = async () => {
         if (!newItem.trim()) return;
         setIsAdding(true);
         try {
-            const res = await onAdd(newItem);
+            const res = await onAdd(newItem.trim());
             if (res.success) {
                 toast.success(res.message);
                 setNewItem("");
@@ -98,7 +119,15 @@ export function MetadataManager({
                         </Badge>
                     ))}
                     {items.length === 0 && (
-                        <p className="text-sm text-muted-foreground italic">No items found.</p>
+                        <div className="flex w-full flex-col items-start gap-2">
+                            <p className="text-sm text-muted-foreground italic">No items found.</p>
+                            {onImportDefaults && (
+                                <Button variant="outline" size="sm" onClick={handleImport} disabled={isImporting}>
+                                    {isImporting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                    Import ExamSphere defaults
+                                </Button>
+                            )}
+                        </div>
                     )}
                 </div>
             </CardContent>

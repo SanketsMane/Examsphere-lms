@@ -63,8 +63,16 @@ export async function GET(request: NextRequest) {
     if (lessonId) whereClause.lessonId = lessonId;
     if (published !== null) whereClause.isPublished = published === 'true';
 
-    // Students can only see published and active quizzes
-    if ((session.user as any).role === 'student') {
+    const role = (session.user as any).role;
+    const isStaff = role === 'teacher' || role === 'admin';
+
+    // Teachers only ever see their own quizzes (questions and answers included).
+    if (role === 'teacher') {
+      whereClause.createdById = session.user.id;
+    }
+
+    // Everyone else is treated as a student: published, active, enrolled courses only.
+    if (!isStaff) {
       whereClause.isPublished = true;
       whereClause.isActive = true;
 
@@ -78,13 +86,13 @@ export async function GET(request: NextRequest) {
                   }
               }
           });
-          if (!enrollment) {
+          if (!enrollment || enrollment.status !== 'Active') {
               return NextResponse.json({ error: "Forbidden: You must be enrolled in this course to view quizzes" }, { status: 403 });
           }
       } else {
           // If no specific courseId, only show quizzes for enrolled courses
           const myEnrollments = await prisma.enrollment.findMany({
-              where: { userId: session.user.id },
+              where: { userId: session.user.id, status: 'Active' },
               select: { courseId: true }
           });
           const myCourseIds = myEnrollments.map(e => e.courseId);
@@ -95,7 +103,7 @@ export async function GET(request: NextRequest) {
     const quizzes = await prisma.quiz.findMany({
       where: whereClause,
       include: {
-        questions: (session.user as any).role === 'student' ? false : {
+        questions: !isStaff ? false : {
           orderBy: { position: 'asc' }
         },
         course: {

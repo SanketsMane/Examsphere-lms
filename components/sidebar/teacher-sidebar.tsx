@@ -87,14 +87,27 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+// Until an admin approves the profile, only onboarding pages are useful; the rest
+// would just error or redirect (course/session creation is blocked server-side).
+const pendingApprovalGroups: NavGroup[] = [
+  {
+    items: [
+      { title: "Profile Verification", url: "/teacher/verification", icon: IconShieldCheck },
+      { title: "Profile", url: "/teacher/profile", icon: IconUserCircle },
+    ],
+  },
+];
+
 const secondaryNav = [
-  { title: "Student Dashboard", url: "/dashboard", icon: IconLayoutDashboard, highlight: true },
   { title: "Settings", url: "/teacher/settings", icon: IconSettings },
-  { title: "Support Tickets", url: "/dashboard/issues", icon: IconLifebuoy },
+  { title: "Contact Support", url: "/contact", icon: IconLifebuoy },
   { title: "Get Help", url: "/teacher/help", icon: IconHelp },
 ];
 
-export function TeacherSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function TeacherSidebar({
+  isApproved = true,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { isApproved?: boolean }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -116,7 +129,7 @@ export function TeacherSidebar({ ...props }: React.ComponentProps<typeof Sidebar
       </SidebarHeader>
 
       <SidebarContent>
-        <NavGroups groups={navGroups} />
+        <NavGroups groups={isApproved ? navGroups : pendingApprovalGroups} />
         <NavSecondary items={secondaryNav} className="mt-auto" />
       </SidebarContent>
 

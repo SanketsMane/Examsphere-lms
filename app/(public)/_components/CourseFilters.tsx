@@ -15,7 +15,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Search, X, Filter, Star } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
 import { authClient } from "@/lib/auth-client"; // To get user country if not passed
 
@@ -28,11 +28,6 @@ const levels = [
 ];
 
 // Price ranges are now generated dynamically - Author: Sanket
-const ratings = [
-  { label: "4.5 & up", value: "4.5" },
-  { label: "4.0 & up", value: "4.0" },
-  { label: "3.5 & up", value: "3.5" }
-];
 
 export function CourseFilters({ categories }: { categories: { id: string; label: string; count: number; parentId?: string | null }[] }) {
   const [userCountry, setUserCountry] = useState<string>("India");
@@ -66,7 +61,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
     categories: searchParams.getAll("category"),
     levels: searchParams.getAll("level"),
     priceRanges: searchParams.getAll("priceRange"),
-    minRating: searchParams.get("rating") || "",
   });
 
   const [localSearch, setLocalSearch] = useState(filters.search);
@@ -79,7 +73,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
     filters.categories.forEach(c => params.append("category", c));
     filters.levels.forEach(l => params.append("level", l));
     filters.priceRanges.forEach(p => params.append("priceRange", p));
-    if (filters.minRating) params.set("rating", filters.minRating);
 
     const queryString = params.toString();
     const newUrl = queryString ? `/courses?${queryString}` : "/courses";
@@ -108,7 +101,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
       categories: [],
       levels: [],
       priceRanges: [],
-      minRating: ""
     });
     setLocalSearch("");
     router.push("/courses");
@@ -118,7 +110,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
     filters.categories.length +
     filters.levels.length +
     filters.priceRanges.length +
-    (filters.minRating ? 1 : 0) +
     (filters.search ? 1 : 0);
 
   return (
@@ -154,7 +145,7 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           </div>
 
-          <Accordion type="multiple" defaultValue={["categories", "price", "levels", "ratings"]} className="w-full">
+          <Accordion type="multiple" defaultValue={["categories", "price", "levels"]} className="w-full">
 
             {/* Categories */}
             <AccordionItem value="categories" className="border-b-0">
@@ -253,34 +244,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
                       <Label htmlFor={`lvl-${level}`} className="text-sm font-normal cursor-pointer">
                         {level}
                       </Label>
-                    </div>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Ratings */}
-            <AccordionItem value="ratings" className="border-b-0 border-t border-border/50">
-              <AccordionTrigger className="font-semibold text-sm py-3 hover:no-underline hover:text-primary">
-                Ratings
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-3 pt-1">
-                  {ratings.map((rating) => (
-                    <div key={rating.value} className="flex items-center space-x-2">
-                      <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setFilters(prev => ({ ...prev, minRating: prev.minRating === rating.value ? "" : rating.value }))}>
-                        <div className={`w-4 h-4 rounded-full border border-primary flex items-center justify-center ${filters.minRating === rating.value ? 'bg-primary' : ''}`}>
-                          {filters.minRating === rating.value && <div className="w-2 h-2 rounded-full bg-white" />}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="flex text-amber-500">
-                            {[1, 2, 3, 4, 5].map(s => (
-                              <Star key={s} className={`w-3.5 h-3.5 ${s <= parseFloat(rating.value) ? 'fill-current' : 'text-slate-200 fill-slate-200'}`} />
-                            ))}
-                          </div>
-                          <span className="text-sm text-foreground group-hover:text-primary">{rating.label}</span>
-                        </div>
-                      </div>
                     </div>
                   ))}
                 </div>

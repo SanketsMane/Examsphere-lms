@@ -42,8 +42,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { updateSessionStatus } from "@/app/actions/teacher-sessions";
 import Link from "next/link";
 import { toast } from "sonner";
-import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
-import { authClient } from "@/lib/auth-client"; // Added to fetch user country - Author: Sanket
+import { formatPrice } from "@/lib/currency";
 
 interface Session {
   id: string;
@@ -79,17 +78,8 @@ export function SessionsList({ status, filter = 'all' }: SessionsListProps) {
   const [loading, setLoading] = useState(true);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [sessionToCancel, setSessionToCancel] = useState<string | null>(null);
-  const [userCountry, setUserCountry] = useState<string>("India");
-
   useEffect(() => {
     fetchSessions();
-    const fetchUser = async () => {
-      const { data: session } = await authClient.getSession();
-      if (session?.user) {
-        setUserCountry((session.user as any).country || "India");
-      }
-    };
-    fetchUser();
   }, [status, filter]);
 
   const fetchSessions = async () => {
@@ -179,8 +169,9 @@ export function SessionsList({ status, filter = 'all' }: SessionsListProps) {
     }
   };
 
-  const formatCurrency = (cents: number) => {
-    return formatPriceSimple(cents, userCountry);
+  // LiveSession.price is stored in paise; teachers always see INR.
+  const formatCurrency = (paise: number) => {
+    return formatPrice(paise, "India");
   };
 
   if (loading) {
@@ -263,15 +254,6 @@ export function SessionsList({ status, filter = 'all' }: SessionsListProps) {
                           </Link>
                         </DropdownMenuItem>
                         
-                        {!session.student && session.status.toLowerCase() === 'scheduled' && (
-                          <DropdownMenuItem asChild>
-                            <Link href={`/teacher/sessions/${session.id}/edit`}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </Link>
-                          </DropdownMenuItem>
-                        )}
-
                         {session.student && session.status === 'scheduled' && session.rescheduleCount < session.maxReschedules && (
                           <DropdownMenuItem asChild>
                             <Link href={`/teacher/sessions/${session.id}/reschedule`}>

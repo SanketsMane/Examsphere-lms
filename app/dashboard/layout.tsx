@@ -51,7 +51,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <SiteHeader />
         <div className="flex flex-1 flex-col h-[calc(100vh-var(--header-height))]">
           <div className="@container/main flex flex-1 flex-col gap-2 h-full">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6 h-full">
+            <div className="flex flex-col gap-4 pt-4 pb-20 md:gap-6 md:pt-6 lg:pb-6 px-4 lg:px-6 h-full">
               {children}
             </div>
           </div>

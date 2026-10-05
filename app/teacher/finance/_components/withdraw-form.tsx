@@ -4,36 +4,30 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 import { requestPayout } from "@/app/actions/teacher-payouts";
-import { formatPrice } from "@/lib/currency"; // Updated to use unified currency logic - Author: Sanket
+import { formatMoney } from "@/lib/money";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner"; // Switching to sonner if use-toast not standard or use user's prefered
+import { toast } from "sonner";
 
-import { getCurrencyData, convertPrice } from "@/lib/currency";
-
-export function WithdrawForm({ balance, userId, country }: { balance: number, userId: string, country?: string | null }) {
+// Balances and payouts are in rupees; teachers are paid out in INR only.
+export function WithdrawForm({ balance }: { balance: number, userId?: string }) {
     const [loading, setLoading] = useState(false);
-    const currency = getCurrencyData(country);
 
     async function onSubmit(formData: FormData) {
         setLoading(true);
 
-        const localAmount = Number(formData.get("amount"));
+        const amount = Number(formData.get("amount"));
         const bankAccountName = formData.get("bankAccountName") as string;
         const bankAccountNumber = formData.get("bankAccountNumber") as string;
         const bankName = formData.get("bankName") as string;
 
-        // Convert back to USD for the backend
-        const usdAmount = localAmount / currency.factor;
-
-        if (usdAmount <= 0) {
+        if (!Number.isFinite(amount) || amount <= 0) {
             toast.error("Invalid Amount", { description: "Amount must be greater than 0" });
             setLoading(false);
             return;
         }
 
-        if (usdAmount > balance) {
+        if (amount > balance) {
             toast.error("Insufficient Funds", { description: "Amount exceeds available balance" });
             setLoading(false);
             return;
@@ -41,7 +35,7 @@ export function WithdrawForm({ balance, userId, country }: { balance: number, us
 
         try {
             const result = await requestPayout({
-                amount: usdAmount,
+                amount,
                 bankAccountName,
                 bankAccountNumber,
                 bankName
@@ -59,20 +53,18 @@ export function WithdrawForm({ balance, userId, country }: { balance: number, us
         }
     }
 
-    const localBalance = convertPrice(balance, country);
-
     return (
         <form action={onSubmit} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="amount">Withdraw Amount ({currency.code})</Label>
+                <Label htmlFor="amount">Withdraw Amount (INR)</Label>
                 <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-gray-500">{currency.symbol}</span>
+                    <span className="absolute left-3 top-2.5 text-gray-500">₹</span>
                     <Input
                         id="amount"
                         name="amount"
                         type="number"
-                        min={convertPrice(10, country)}
-                        max={localBalance}
+                        min={50}
+                        max={balance}
                         step="0.01"
                         placeholder="0.00"
                         className="pl-7"
@@ -80,13 +72,13 @@ export function WithdrawForm({ balance, userId, country }: { balance: number, us
                     />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                    Available: {formatPrice(localBalance, currency.code)}
+                    Available: {formatMoney(balance, { showDecimals: true })}
                 </p>
             </div>
 
             <div className="space-y-2">
                 <Label htmlFor="bankName">Bank Name</Label>
-                <Input id="bankName" name="bankName" required placeholder="e.g. Chase Bank" />
+                <Input id="bankName" name="bankName" required placeholder="e.g. State Bank of India" />
             </div>
 
             <div className="space-y-2">

@@ -181,7 +181,7 @@ export const teacherProfileSchema = z.object({
   bio: z.string().min(10, { message: "Bio must be at least 10 characters" }).max(1000, { message: "Bio must be less than 1000 characters" }),
   expertise: z.array(z.string()).min(1, { message: "At least one expertise area is required" }).max(10, { message: "Maximum 10 expertise areas allowed" }),
   languages: z.array(z.string()).min(1, { message: "At least one language is required" }),
-  hourlyRate: z.coerce.number().int({ message: "Hourly rate must be a whole number" }).min(5, { message: "Hourly rate must be at least $5" }).optional(),
+  hourlyRate: z.coerce.number().int({ message: "Hourly rate must be a whole number" }).min(5, { message: "Hourly rate must be at least ₹5" }).optional(),
   experience: z.coerce.number().int({ message: "Experience must be a whole number" }).min(0, { message: "Years of experience must be 0 or greater" }).optional(),
   timezone: z.string().optional(),
   qualifications: z.array(z.string()).optional(),
@@ -203,7 +203,7 @@ export const liveSessionSchema = z.object({
   subject: z.string().optional(),
   scheduledAt: z.date({ message: "Scheduled time is required" }),
   duration: z.coerce.number().min(15, { message: "Duration must be at least 15 minutes" }).max(480, { message: "Duration must be at most 8 hours" }),
-  price: z.coerce.number().min(5, { message: "Price must be at least $5" }),
+  price: z.coerce.number().min(5, { message: "Price must be at least ₹5" }),
 });
 
 export const chapterSchema = z.object({

@@ -1,14 +1,6 @@
+import { redirect } from "next/navigation";
 
-import { getSubscriptionPlans } from "@/app/actions/subscriptions";
-import PricingPageClient from "./_components/PricingPageClient";
-
-export const metadata = {
-    title: "Pricing - ExamSphere LMS",
-    description: "Simple, transparent pricing for teachers and students."
-};
-
-export default async function PricingPage() {
-    const { plans } = await getSubscriptionPlans();
-
-    return <PricingPageClient plans={plans} />;
+// ExamSphere doesn't sell subscriptions: every course lists its own fee on the Courses page.
+export default function PricingPage() {
+    redirect("/courses");
 }

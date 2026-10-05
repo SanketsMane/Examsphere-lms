@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getActiveBroadcasts } from "../actions/broadcasts";
 import { AnimationWrapper } from "@/components/ui/animation-wrapper";
 import { BroadcastBanner } from "@/components/marketing/BroadcastBanner";
@@ -9,6 +10,13 @@ import {
 } from "@/components/marketing/examsphere/HomeSections";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "ExamSphere — JEE, NEET, Foundation & MBBS Preparation",
+  description:
+    "Online coaching for JEE (Main & Advanced), NEET, Foundation (Class 6–10) and MBBS — live classes, structured practice, mock tests and mentorship.",
+  alternates: { canonical: "/" },
+};
 
 /**
  * ExamSphere homepage — rebuilt to match the client's reference design.

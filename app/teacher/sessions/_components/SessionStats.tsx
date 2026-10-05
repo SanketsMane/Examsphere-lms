@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Video, DollarSign, Users, Star, TrendingUp, TrendingDown } from "lucide-react";
+import { Video, IndianRupee, Users, Star, TrendingUp, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice } from "@/lib/currency";
 
@@ -59,9 +59,9 @@ export function SessionStats() {
     );
   }
 
-  // Multi-currency support
-  const formatCurrency = (amountInBaseUnits: number) => {
-    return formatPrice(amountInBaseUnits);
+  // totalEarnings is paise (LiveSession.price); teachers always see INR.
+  const formatCurrency = (paise: number) => {
+    return formatPrice(paise, "India");
   };
 
   const statsCards = [
@@ -74,9 +74,9 @@ export function SessionStats() {
       change: stats?.growth?.sessions || 0
     },
     {
-      title: "Total Earnings",
+      title: "Completed Session Value",
       value: formatCurrency(stats?.totalEarnings || 0),
-      icon: DollarSign,
+      icon: IndianRupee,
       color: "text-green-600 dark:text-green-400",
       bgColor: "bg-green-100 dark:bg-green-950",
       change: stats?.growth?.earnings || 0
