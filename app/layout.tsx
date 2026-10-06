@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: SITE_URL,
+    // No site-wide og:url: inherited by every page, it made inner pages claim the homepage URL.
     siteName: "ExamSphere",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
