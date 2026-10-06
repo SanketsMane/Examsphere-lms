@@ -21,7 +21,7 @@ export default async function LayoutPublic({ children }: { children: ReactNode }
     // Spelling people also search for; the other "ExamSphere"s are different organizations.
     alternateName: "Exam Sphere",
     url: `${SITE_URL}/`,
-    logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` },
+    logo: `${SITE_URL}/logo.png`,
     description: ENTITY_DESCRIPTION,
     knowsAbout: ["JEE Main", "JEE Advanced", "NEET-UG", "Foundation (Class 6–10)", "MBBS"],
     email: contact.email,
