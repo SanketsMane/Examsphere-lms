@@ -45,15 +45,14 @@ export function Navbar({ settings }: { settings?: any }) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                     src={logoSrc} 
-                    // Decorative when the name is printed beside it; otherwise it is the link's label.
-                    alt={siteName ? "" : "ExamSphere"} 
+                    alt={siteName || "ExamSphere"} 
                     width={56}
                     height={56}
                     className="w-full h-full object-contain" 
                 />
             </div>
           {siteName && (
-            <span className="font-bold text-xl text-foreground hidden sm:block">
+            <span aria-hidden="true" className="font-bold text-xl text-foreground hidden sm:block">
               {siteName}
             </span>
           )}

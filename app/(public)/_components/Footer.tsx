@@ -57,9 +57,11 @@ export async function Footer() {
             <Link href="/" className="flex items-center gap-2">
               <div className="relative w-9 h-9">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={logoSrc} alt="" width={36} height={36} className="w-full h-full object-contain" />
+                <img src={logoSrc} alt={siteName} width={36} height={36} className="w-full h-full object-contain" />
               </div>
-              <span className="text-2xl font-extrabold text-white font-display tracking-tight">
+              {/* The logo's alt text names the link; hide the visible word from screen readers so it
+                  isn't announced twice. */}
+              <span aria-hidden="true" className="text-2xl font-extrabold text-white font-display tracking-tight">
                 {siteName}
               </span>
             </Link>
