@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
     alternates: { canonical: "/terms" },
     title: "Terms of Service | ExamSphere",
     description: "The terms that apply when you use ExamSphere's JEE, NEET, Foundation and MBBS courses and services.",
-};
+});
 
 export default function TermsPage() {
     return (

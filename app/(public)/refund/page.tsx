@@ -1,12 +1,14 @@
+import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ReceiptText } from "lucide-react";
 
-export const metadata = {
+export const metadata: Metadata = withSocial({
   alternates: { canonical: "/refund" },
   title: "Refund Policy — ExamSphere",
   description: "ExamSphere refund and cancellation policy for course enrolments.",
-};
+});
 
 export default function RefundPage() {
   return (

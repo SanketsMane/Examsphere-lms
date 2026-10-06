@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PROGRAMS } from "@/app/(public)/_data/programs-content";
 import { JsonLd, faqPage } from "@/components/seo/JsonLd";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
     alternates: { canonical: "/faq" },
     title: "FAQ | ExamSphere",
     description: "Answers to common questions about ExamSphere's JEE, NEET, Foundation, Class 11–12 and MBBS programmes, fees, enrolment and refunds.",
-};
+});
 
 // `text` is the plain version of each answer for structured data; keep the two in sync.
 const GENERAL_FAQS: { q: string; a: React.ReactNode; text: string }[] = [

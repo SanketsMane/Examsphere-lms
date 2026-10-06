@@ -9,12 +9,13 @@ import { constructS3Url } from "@/lib/s3-helper";
 export const dynamic = "force-dynamic";
 
 import { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
     alternates: { canonical: "/find-teacher" },
     title: "Find a Mentor | ExamSphere",
     description: "Book 1-on-1 sessions with ExamSphere-approved mentors for JEE, NEET, Foundation (Class 6–10) and MBBS.",
-};
+});
 
 export default async function FindTeacherPage() {
     const session = await auth.api.getSession({

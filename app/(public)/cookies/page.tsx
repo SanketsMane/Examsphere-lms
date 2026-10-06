@@ -2,12 +2,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Cookie } from "lucide-react";
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
   alternates: { canonical: "/cookies" },
   title: "Cookie Policy | ExamSphere",
   description: "How ExamSphere uses cookies for sign-in, security and your preferences.",
-};
+});
 
 export default function CookiesPage() {
   return (

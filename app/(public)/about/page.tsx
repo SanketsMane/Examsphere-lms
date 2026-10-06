@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -17,12 +18,12 @@ import { PROGRAM_GROUPS, programsByGroup } from "@/app/(public)/_data/programs-c
 import { EnquireButton } from "@/components/marketing/examsphere/EnquireButton";
 import { EnrollButton } from "@/components/marketing/examsphere/EnrollButton";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
   title: "About Us | ExamSphere",
   description:
     "ExamSphere is a focused coaching platform for JEE, NEET, Foundation and MBBS students — live classes, structured practice, mentorship and honest performance feedback.",
   alternates: { canonical: "/about" },
-};
+});
 
 const values = [
   {

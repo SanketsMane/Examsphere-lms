@@ -1,14 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Briefcase } from "lucide-react";
 import { getContactDetails } from "@/app/data/settings/get-contact-details";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
   alternates: { canonical: "/careers" },
   title: "Careers | ExamSphere",
   description: "Work with ExamSphere to help students prepare for JEE, NEET, Foundation and MBBS.",
-};
+});
 
 export default async function CareersPage() {
   const { email } = await getContactDetails();

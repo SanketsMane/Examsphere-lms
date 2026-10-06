@@ -23,6 +23,12 @@ export default async function LayoutPublic({ children }: { children: ReactNode }
     description:
       "Online coaching for JEE (Main & Advanced), NEET, Foundation (Class 6–10) and MBBS — live and recorded classes, practice, mock tests and mentorship.",
     email: contact.email,
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "admissions",
+      email: contact.email,
+      ...(contact.phone ? { telephone: contact.phone } : {}),
+    },
     ...(contact.phone ? { telephone: contact.phone } : {}),
     ...(contact.socials.length ? { sameAs: contact.socials.map((s) => s.href) } : {}),
   };

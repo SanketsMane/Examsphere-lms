@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { CourseAccent } from "@/app/(public)/_data/courses-content";
@@ -6,12 +7,12 @@ import { PROGRAM_GROUPS, programsByGroup } from "@/app/(public)/_data/programs-c
 import { EnquireButton } from "@/components/marketing/examsphere/EnquireButton";
 import { EnrollButton } from "@/components/marketing/examsphere/EnrollButton";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
   title: "Programs | ExamSphere",
   description:
     "Explore ExamSphere programmes — JEE (Main & Advanced), NEET (UG), Foundation (Class 9–10), Class 11–12 Boards Preparation, and MBBS medical subjects.",
   alternates: { canonical: "/programs" },
-};
+});
 
 const accent: Record<CourseAccent, { tagText: string; iconText: string; btn: string; chip: string }> = {
   navy: {

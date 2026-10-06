@@ -16,6 +16,7 @@ import {
     Lock,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import { CoursePurchaseButton } from "./_components/CoursePurchaseButton";
 import { EnquireButton } from "@/components/marketing/examsphere/EnquireButton";
 
@@ -38,11 +39,11 @@ export async function generateMetadata({
         return { title: "Course not found | ExamSphere" };
     }
 
-    return {
+    return withSocial({
         title: `${course.title} | ExamSphere`,
         description: course.smallDescription,
         alternates: { canonical: `/courses/${slug}` },
-    };
+    });
 }
 
 export default async function CourseDetailsPage({

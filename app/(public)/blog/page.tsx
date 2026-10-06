@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, BookOpen, Calendar, Clock } from "lucide-react";
@@ -13,12 +14,12 @@ export async function generateMetadata(): Promise<Metadata> {
   // An empty "articles coming soon" page shouldn't be indexed; it becomes indexable with the
   // first published post (the sitemap follows the same rule).
   const published = await prisma.blogPost.count({ where: { isPublished: true } }).catch(() => 0);
-  return {
+  return withSocial({
     alternates: { canonical: "/blog" },
     title: "Blog | ExamSphere",
     description: "Study tips and exam updates for JEE, NEET, Foundation (Class 6–10) and MBBS students from ExamSphere.",
     ...(published === 0 ? { robots: { index: false, follow: true } } : {}),
-  };
+  });
 }
 
 const PAGE_SIZE = 12;

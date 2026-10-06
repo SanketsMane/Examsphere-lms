@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import { getContactDetails } from "@/app/data/settings/get-contact-details";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
     alternates: { canonical: "/privacy" },
     title: "Privacy Policy | ExamSphere",
     description: "How ExamSphere collects, uses and protects the personal information of students, parents and mentors.",
-};
+});
 
 export default async function PrivacyPage() {
     const { email } = await getContactDetails();

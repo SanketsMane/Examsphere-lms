@@ -8,15 +8,16 @@ import { AnimatedCoursesGrid } from "@/components/marketing/AnimatedCoursesGrid"
 import { getAllCategories } from "@/app/data/marketing/get-marketing-data";
 import { getSessionWithRole } from "@/app/data/auth/require-roles"; // Added for localization - Author: Sanket
 import { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import { PROGRAM_CATEGORY_NAMES } from "@/lib/examsphere-taxonomy";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
   alternates: { canonical: "/courses" },
   title: "Courses | ExamSphere",
   description: "Browse ExamSphere courses for JEE, NEET, Foundation (Class 6–10) and MBBS, and enroll online.",
-};
+});
 
 interface SearchParams {
   category?: string;

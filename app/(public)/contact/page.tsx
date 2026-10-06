@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import Link from "next/link";
 import {
   Mail,
@@ -19,12 +20,12 @@ import { getContactDetails } from "@/app/data/settings/get-contact-details";
 import { PROGRAMS } from "@/app/(public)/_data/programs-content";
 import { ContactForm } from "./ContactForm";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
   title: "Contact Us | ExamSphere",
   description:
     "Get in touch with the ExamSphere team about JEE, NEET, Foundation and MBBS programmes — batch timings, fees and admissions.",
   alternates: { canonical: "/contact" },
-};
+});
 
 const socialIcons = { instagram: Instagram, linkedin: Linkedin, x: Twitter, facebook: Facebook, youtube: Youtube };
 

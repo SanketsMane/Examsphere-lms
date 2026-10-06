@@ -1,17 +1,18 @@
 import { FadeIn } from "@/components/ui/fade-in";
 import { Video, Users } from "lucide-react";
 import type { Metadata } from "next";
+import { withSocial } from "@/lib/seo-metadata";
 import { getAllSessions } from "@/app/data/live-session/get-all-sessions";
 import { LiveSessionFeatures } from "@/components/marketing/live-session-features";
 import { LiveSessionsClient } from "./_components/LiveSessionsClient";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocial({
   alternates: { canonical: "/live-sessions" },
   title: "Live Sessions | ExamSphere",
   description: "Live classes and doubt-solving sessions for JEE, NEET, Foundation (Class 6–10) and MBBS students.",
-};
+});
 
 export default async function LiveSessionsPage() {
   // Only used for the hero counts; the grid below fetches its own pages.
