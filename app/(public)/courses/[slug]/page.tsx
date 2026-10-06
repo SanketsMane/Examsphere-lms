@@ -192,7 +192,7 @@ export default async function CourseDetailsPage({
                     {/* Course Content */}
                     <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
                         <div className="p-6 border-b bg-muted/30">
-                            <h3 className="text-xl font-bold">Course Content</h3>
+                            <h2 className="text-xl font-bold">Course Content</h2>
                             <p className="text-sm text-muted-foreground mt-1">{course.chapter.length} chapters</p>
                         </div>
                         <div>
@@ -229,7 +229,7 @@ export default async function CourseDetailsPage({
 
                     {/* Description */}
                     <div className="bg-card border rounded-xl p-6 shadow-sm space-y-4">
-                        <h3 className="text-xl font-bold">Description</h3>
+                        <h2 className="text-xl font-bold">Description</h2>
                         <CourseDescription description={course.description} />
                     </div>
                 </div>
@@ -285,7 +285,7 @@ export default async function CourseDetailsPage({
                             )}
 
                             <div className="space-y-4 pt-4 border-t">
-                                <h4 className="font-semibold text-sm">This course includes:</h4>
+                                <h3 className="font-semibold text-sm">This course includes:</h3>
                                 <ul className="space-y-2 text-sm text-muted-foreground">
                                     <li className="flex items-center gap-2">
                                         <BookOpen className="h-4 w-4" />

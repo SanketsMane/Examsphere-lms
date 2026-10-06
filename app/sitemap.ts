@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Static pages
   const staticPages = [
-    '',
+    '/',
     '/courses',
     '/programs',
     ...PROGRAMS.map((program) => `/programs/${program.slug}`),
@@ -57,7 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: 'monthly' as const,
-    priority: route === '' ? 1.0 : 0.5,
+    priority: route === '/' ? 1.0 : 0.5,
   }));
 
   return [...staticPages, ...courseUrls, ...blogUrls];

@@ -37,8 +37,10 @@ export async function generateMetadata({
       description,
       url: `/programs/${program.slug}`,
       siteName: "ExamSphere",
+      // A page-level openGraph object replaces the root one, so re-attach the default image.
+      images: ["/opengraph-image"],
     },
-    twitter: { card: "summary_large_image", title, description },
+    twitter: { card: "summary_large_image", title, description, images: ["/opengraph-image"] },
   };
 }
 

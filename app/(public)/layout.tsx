@@ -25,7 +25,6 @@ export default async function LayoutPublic({ children }: { children: ReactNode }
     email: contact.email,
     ...(contact.phone ? { telephone: contact.phone } : {}),
     ...(contact.socials.length ? { sameAs: contact.socials.map((s) => s.href) } : {}),
-    areaServed: { "@type": "Country", name: "India" },
   };
   const website = {
     "@context": "https://schema.org",

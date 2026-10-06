@@ -5,14 +5,21 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, BookOpen, Calendar, Clock } from "lucide-react";
 import { getBlogPosts } from "@/app/actions/blog";
 import { format } from "date-fns";
+import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/blog" },
-  title: "Blog | ExamSphere",
-  description: "Study tips and exam updates for JEE, NEET, Foundation (Class 6–10) and MBBS students from ExamSphere.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // An empty "articles coming soon" page shouldn't be indexed; it becomes indexable with the
+  // first published post (the sitemap follows the same rule).
+  const published = await prisma.blogPost.count({ where: { isPublished: true } }).catch(() => 0);
+  return {
+    alternates: { canonical: "/blog" },
+    title: "Blog | ExamSphere",
+    description: "Study tips and exam updates for JEE, NEET, Foundation (Class 6–10) and MBBS students from ExamSphere.",
+    ...(published === 0 ? { robots: { index: false, follow: true } } : {}),
+  };
+}
 
 const PAGE_SIZE = 12;
 
