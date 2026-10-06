@@ -45,13 +45,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/courses',
     '/programs',
     ...PROGRAMS.map((program) => `/programs/${program.slug}`),
-    '/blog',
     '/about',
     '/contact',
     '/faq',
     '/terms',
     '/privacy',
     '/refund',
+    // An empty "articles coming soon" page isn't worth a crawl; list /blog once posts exist.
+    ...(blogUrls.length > 0 ? ['/blog'] : []),
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),

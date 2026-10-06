@@ -13,6 +13,7 @@ import { PROGRAM_CATEGORY_NAMES } from "@/lib/examsphere-taxonomy";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/courses" },
   title: "Courses | ExamSphere",
   description: "Browse ExamSphere courses for JEE, NEET, Foundation (Class 6–10) and MBBS, and enroll online.",
 };
@@ -21,7 +22,6 @@ interface SearchParams {
   category?: string;
   level?: string;
   search?: string;
-  priceRange?: string | string[];
 }
 
 interface Props {
@@ -70,21 +70,7 @@ export default async function PublicCoursesRoute({ searchParams }: Props) {
     );
   }
 
-  if (params.priceRange) {
-    const ranges = Array.isArray(params.priceRange) ? params.priceRange : [params.priceRange];
 
-    filteredCourses = filteredCourses.filter(course => {
-      const price = course.price || 0;
-      return ranges.some(range => {
-        if (range === 'free') return price === 0;
-        if (range === 'under-1000') return price < 1000;
-        if (range === '1000-5000') return price >= 1000 && price <= 5000;
-        if (range === '5000-10000') return price >= 5000 && price <= 10000;
-        if (range === 'over-10000') return price > 10000;
-        return false;
-      });
-    });
-  }
 
   return (
       <div className="min-h-screen bg-background font-sans text-foreground">

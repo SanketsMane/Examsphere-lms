@@ -63,7 +63,6 @@ export const metadata: Metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 import { getSiteSettings } from "@/app/actions/settings";
@@ -90,7 +89,7 @@ export default async function RootLayout({
   const siteName = settings?.siteName || "ExamSphere";
 
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${sora.variable}`}>
+    <html lang="en-IN" suppressHydrationWarning className={`${inter.variable} ${sora.variable}`}>
       <head>
         <link rel="icon" href={favicon} />
         <meta name="theme-color" content="#2563eb" />
@@ -115,9 +114,10 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <CurrencyProvider initialRates={settings?.currencyRates as Record<string, number>}>
-            <main className="min-h-screen pb-16 lg:pb-0">
+            {/* Not <main>: each section layout (public, dashboard…) renders its own main landmark. */}
+            <div className="min-h-screen pb-16 lg:pb-0">
               {children}
-            </main>
+            </div>
           </CurrencyProvider>
           <MobileBottomNavigation />
           <Toaster closeButton position="bottom-center" />

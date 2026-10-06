@@ -5,6 +5,7 @@ import { ArrowLeft, Briefcase } from "lucide-react";
 import { getContactDetails } from "@/app/data/settings/get-contact-details";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/careers" },
   title: "Careers | ExamSphere",
   description: "Work with ExamSphere to help students prepare for JEE, NEET, Foundation and MBBS.",
 };

@@ -12,9 +12,9 @@ import {
   ClipboardList,
   ShieldCheck,
   Clock,
-  Wallet,
   Gauge,
   Globe,
+  Languages,
 } from "lucide-react";
 import { PROGRAM_CARDS, type CourseAccent } from "@/app/(public)/_data/courses-content";
 
@@ -56,9 +56,9 @@ export function ProgramCards() {
                 <div className={`w-16 h-16 rounded-full ${a.icon} text-white flex items-center justify-center mb-5`}>
                   <Icon className="h-7 w-7" />
                 </div>
-                <h3 className="font-display text-xl font-extrabold text-navy-950 dark:text-white">
+                <h2 className="font-display text-xl font-extrabold text-navy-950 dark:text-white">
                   {card.title}
-                </h3>
+                </h2>
                 {card.subtitle && (
                   <div className="text-sm font-bold text-navy-700 dark:text-blue-300 mt-0.5 mb-4">
                     {card.subtitle}
@@ -134,7 +134,7 @@ export function WhyChoose() {
 const trustItems = [
   { icon: ShieldCheck, label: "Safe & Secure Learning Environment" },
   { icon: Clock, label: "Accessible Anytime, Anywhere" },
-  { icon: Wallet, label: "Affordable Fee Structure" },
+  { icon: Languages, label: "Classes in English & Hindi" },
   { icon: Gauge, label: "Regular Tests & Performance Tracking" },
   { icon: Globe, label: "Trusted by Students Across India" },
 ];

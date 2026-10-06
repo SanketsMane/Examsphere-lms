@@ -14,7 +14,7 @@ export const CONTACT = {
 };
 
 const FEES_LINE =
-  "• Fees: shown on each course on the Courses page (/courses), where you can enroll online.";
+  "• Fees: not published on the website — the admissions team shares them for the chosen batch.";
 
 function courseSummary(slug: string) {
   const p = PROGRAMS.find((x) => x.slug === slug);
@@ -50,7 +50,7 @@ requests, reply exactly with:
 
 RULES:
 • Keep replies under ~120 words. Be warm and concise; use short bullets.
-• FEES: each course's fee is shown on the Courses page (/courses), where students enroll online.
+• FEES: fees are NOT published on the website. Never state or estimate a fee; offer to pass the student's details to the admissions team, who share fees for the chosen batch.
   Do not quote, estimate or negotiate numbers yourself, and never promise discounts, offers or EMI —
   point the student to the Courses page, and offer that our team can help if they leave a query.
 • Never invent facts, prices, dates or policies that are not listed below.
@@ -63,7 +63,7 @@ ${courses}
 
 === ADMISSIONS / ENQUIRY ===
 To join: tap "Enroll Now" on a programme page, log in or sign up, then choose a course on the Courses
-page (fees are shown there) and enroll. For help choosing, share your details here or use the
+page and tap Enroll; the admissions team then shares fees and batch details. For help choosing, share your details here or use the
 "Have a Query?" form in the footer and our counselling team will reach out.
 
 === CONTACT ===
@@ -143,7 +143,7 @@ interface Intent {
 
 const courseAnswer = (slug: string) => () => {
   const s = courseSummary(slug);
-  return `${s}\n\nInterested? Tap **Enroll Now** on the ${PROGRAMS.find((p) => p.slug === slug)?.title} programme page to see the courses and fees, or ask me anything here.`;
+  return `${s}\n\nInterested? Tap **Enroll Now** on the ${PROGRAMS.find((p) => p.slug === slug)?.title} programme page to see the courses, or ask me anything here.`;
 };
 
 const intents: Intent[] = [
@@ -182,8 +182,7 @@ const intents: Intent[] = [
   {
     keywords: ["fee", "fees", "price", "pricing", "cost", "how much", "charges", "discount", "emi"],
     answer: () =>
-      `Fees depend on the course and batch, and each course shows its fee on the **Courses** page, ` +
-      `where you can enroll online. 😊\n\n` +
+      `Fees depend on the programme and batch and aren't listed on the website — our admissions team shares them for your batch. 😊\n\n` +
       `Which program are you interested in: **JEE, NEET, Foundation or MBBS**? I can point you to it.\n\n` +
       `Questions about a specific batch? Reach us at ${CONTACT.email}${CONTACT.phone ? ` or ${CONTACT.phone}` : ""}.`,
   },

@@ -4,6 +4,7 @@ import { ArrowLeft, Cookie } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/cookies" },
   title: "Cookie Policy | ExamSphere",
   description: "How ExamSphere uses cookies for sign-in, security and your preferences.",
 };

@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
+    alternates: { canonical: "/find-teacher" },
     title: "Find a Mentor | ExamSphere",
     description: "Book 1-on-1 sessions with ExamSphere-approved mentors for JEE, NEET, Foundation (Class 6–10) and MBBS.",
 };

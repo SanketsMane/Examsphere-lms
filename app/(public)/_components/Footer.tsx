@@ -56,7 +56,7 @@ export async function Footer() {
             <Link href="/" className="flex items-center gap-2">
               <div className="relative w-9 h-9">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={logoSrc} alt={siteName} className="w-full h-full object-contain" />
+                <img src={logoSrc} alt="" width={36} height={36} className="w-full h-full object-contain" />
               </div>
               <span className="text-2xl font-extrabold text-white font-display tracking-tight">
                 {siteName}
@@ -110,7 +110,7 @@ export async function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-white font-bold mb-5">Quick Links</h4>
+            <h2 className="text-base text-white font-bold mb-5">Quick Links</h2>
             <ul className="space-y-3 text-sm">
               {quickLinks.map((link) => (
                 <li key={link.name}>
@@ -124,7 +124,7 @@ export async function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="text-white font-bold mb-5">Legal</h4>
+            <h2 className="text-base text-white font-bold mb-5">Legal</h2>
             <ul className="space-y-3 text-sm">
               {legalLinks.map((link) => (
                 <li key={link.name}>
@@ -138,7 +138,7 @@ export async function Footer() {
 
           {/* Query Box */}
           <div>
-            <h4 className="text-white font-bold mb-5">Have a Query?</h4>
+            <h2 className="text-base text-white font-bold mb-5">Have a Query?</h2>
             <FooterQueryForm />
           </div>
         </div>

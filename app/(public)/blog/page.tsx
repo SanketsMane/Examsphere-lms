@@ -9,6 +9,7 @@ import { format } from "date-fns";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/blog" },
   title: "Blog | ExamSphere",
   description: "Study tips and exam updates for JEE, NEET, Foundation (Class 6–10) and MBBS students from ExamSphere.",
 };

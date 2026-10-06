@@ -200,7 +200,7 @@ export const PROGRAMS: ProgramData[] = [
       },
       {
         q: "What are the fees?",
-        a: "Fees depend on the duration and batch you choose, and are shown on each course on the Courses page. Pick the course that suits you and enroll online — if you have questions first, ask us in the chat.",
+        a: "Fees depend on the programme and batch and aren't listed on the website. Ask our admissions team through the chat, the query form or the Contact page and we'll share the details for your batch.",
       },
     ],
   },
@@ -303,7 +303,7 @@ export const PROGRAMS: ProgramData[] = [
       },
       {
         q: "What are the fees?",
-        a: "Fees vary by duration and batch, and are shown on each course on the Courses page. Pick the course for your target year and enroll online — if you have questions first, ask us in the chat.",
+        a: "Fees depend on the programme and batch and aren't listed on the website. Ask our admissions team through the chat, the query form or the Contact page and we'll share the details for your batch.",
       },
     ],
   },

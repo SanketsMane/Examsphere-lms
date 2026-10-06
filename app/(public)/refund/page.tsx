@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ReceiptText } from "lucide-react";
 
 export const metadata = {
+  alternates: { canonical: "/refund" },
   title: "Refund Policy — ExamSphere",
   description: "ExamSphere refund and cancellation policy for course enrolments.",
 };

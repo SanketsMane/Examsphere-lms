@@ -17,10 +17,11 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import { CoursePurchaseButton } from "./_components/CoursePurchaseButton";
-import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
+import { EnquireButton } from "@/components/marketing/examsphere/EnquireButton";
 
 import { CourseDescription } from "./_components/CourseDescription";
 import { constructS3Url } from "@/lib/s3-helper";
+import { JsonLd, ORG_ID, SITE_URL, breadcrumbList } from "@/components/seo/JsonLd";
 
 export async function generateMetadata({
     params,
@@ -40,6 +41,7 @@ export async function generateMetadata({
     return {
         title: `${course.title} | ExamSphere`,
         description: course.smallDescription,
+        alternates: { canonical: `/courses/${slug}` },
     };
 }
 
@@ -102,8 +104,31 @@ export default async function CourseDetailsPage({
     const canAccess = !!activeEnrollment || isOwner || isAdmin;
     const lessonCount = course.chapter.reduce((total, chapter) => total + chapter.lessons.length, 0);
 
+    // Mirrors what the page shows: title, summary and language. No offers/price — fees aren't published.
+    const courseSchema = {
+        "@context": "https://schema.org",
+        "@type": "Course",
+        name: course.title,
+        description: course.smallDescription || course.title,
+        url: `${SITE_URL}/courses/${course.slug}`,
+        provider: { "@id": ORG_ID },
+        inLanguage: course.language || "English",
+        ...(course.fileKey ? { image: constructS3Url(course.fileKey) } : {}),
+        hasCourseInstance: { "@type": "CourseInstance", courseMode: "Online" },
+    };
+
     return (
         <div className="min-h-screen bg-background pb-20">
+            <JsonLd
+                data={[
+                    courseSchema,
+                    breadcrumbList([
+                        { name: "Home", path: "/" },
+                        { name: "Courses", path: "/courses" },
+                        { name: course.title, path: `/courses/${course.slug}` },
+                    ]),
+                ]}
+            />
             {/* Hero Section */}
             <div className="relative bg-slate-900 text-white pt-12 pb-24 md:pt-16 md:pb-32 overflow-hidden">
                 {/* Background Banner */}
@@ -223,12 +248,6 @@ export default async function CourseDetailsPage({
                             {/* Play Button Overlay if Preview Video Exists (Future) */}
                         </div>
                         <div className="p-6 space-y-6">
-                            <div className="flex items-end gap-2">
-                                <span className="text-3xl font-bold text-foreground">
-                                    {formatPriceSimple(course.price || 0, (session?.user as any)?.country)}
-                                </span>
-                            </div>
-
                             {canAccess ? (
                                 <Button className="w-full text-lg h-12" asChild>
                                     <Link href={`/courses/${course.slug}/chapters/${course.chapter[0]?.id || ''}`}>
@@ -237,11 +256,25 @@ export default async function CourseDetailsPage({
                                 </Button>
                             ) : (
                                 <div className="space-y-3">
-                                    <CoursePurchaseButton
-                                        courseId={course.id}
-                                        price={course.price!}
-                                        country={(session?.user as any)?.country}
-                                    />
+                                    {course.price > 0 ? (
+                                        // Fees aren't published, so paid courses enrol through the admissions
+                                        // team rather than a checkout that would charge an unseen amount.
+                                        <>
+                                            <EnquireButton
+                                                label="Enroll Now"
+                                                className="w-full inline-flex items-center justify-center h-12 rounded-md bg-primary text-primary-foreground text-lg font-semibold hover:bg-primary/90 transition-colors"
+                                            />
+                                            <p className="text-xs text-center text-muted-foreground">
+                                                Our admissions team will share the fee and batch details.
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <CoursePurchaseButton
+                                            courseId={course.id}
+                                            price={course.price!}
+                                            country={(session?.user as any)?.country}
+                                        />
+                                    )}
                                     <p className="text-xs text-center text-muted-foreground">
                                         Refunds as per our{" "}
                                         <Link href="/refund" className="underline hover:text-primary">

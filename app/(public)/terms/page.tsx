@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+    alternates: { canonical: "/terms" },
     title: "Terms of Service | ExamSphere",
     description: "The terms that apply when you use ExamSphere's JEE, NEET, Foundation and MBBS courses and services.",
 };

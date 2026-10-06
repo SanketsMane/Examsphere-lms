@@ -150,7 +150,7 @@ export default function ProgramsIndexPage() {
           Not sure which program fits?
         </h2>
         <p className="text-ink-700 dark:text-muted-foreground mt-3 max-w-xl mx-auto">
-          Fees are listed on each course, and you can enroll online. Still deciding? Tell us your
+          Our admissions team shares fees and batch details when you enroll or enquire. Still deciding? Tell us your
           class and target exam and we&apos;ll recommend the right track.
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3.5">

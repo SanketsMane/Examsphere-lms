@@ -94,6 +94,14 @@ export function ProgramDetail({ program }: { program: ProgramData }) {
               <p className="mt-4 text-ink-700 dark:text-muted-foreground text-base leading-relaxed max-w-2xl">
                 {program.description}
               </p>
+              {/* One self-contained summary sentence, assembled from the details shown below, so the
+                  page answers "what is this programme?" in a single quotable line. */}
+              <p className="mt-3 text-sm text-ink-700 dark:text-muted-foreground max-w-2xl">
+                <span className="font-semibold text-ink-900 dark:text-foreground">At a glance:</span>{" "}
+                {program.title} is a {program.details.mode.toLowerCase()} programme for{" "}
+                {program.details.level} (duration: {program.details.duration}), taught in{" "}
+                {program.details.language.replace(" / ", " and ")}.
+              </p>
 
               <div className="flex flex-wrap gap-3.5 mt-8">
                 <EnrollButton
@@ -101,11 +109,13 @@ export function ProgramDetail({ program }: { program: ProgramData }) {
                   withArrow
                   className={`inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 cursor-pointer ${a.btn}`}
                 />
+                {/* Plain link to the course catalogue: Enroll sends logged-out visitors (and crawlers)
+                    to login, so this is the crawlable path from a programme to its courses. */}
                 <Link
-                  href="/programs"
+                  href={program.enrollCategory ? `/courses?category=${encodeURIComponent(program.enrollCategory)}` : "/courses"}
                   className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 ${a.btnSoft}`}
                 >
-                  All Programs
+                  View {program.navLabel} courses
                 </Link>
               </div>
             </div>
@@ -360,7 +370,7 @@ export function ProgramDetail({ program }: { program: ProgramData }) {
             Ready to start {program.navLabel}?
           </h2>
           <p className="text-ink-700 dark:text-muted-foreground mt-3 max-w-xl mx-auto">
-            Enroll to see the available courses and fees, or contact us for help choosing the
+            Enroll to see the available courses — our team shares fees and batch details — or contact us for help choosing the
             right plan for your target year.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3.5">

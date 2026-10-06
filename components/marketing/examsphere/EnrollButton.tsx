@@ -14,7 +14,7 @@ interface EnrollButtonProps {
 }
 
 /**
- * Enroll → (login / sign up if needed) → Browse Courses with prices, where the student enrolls.
+ * Enroll → (login / sign up if needed) → Browse Courses, where the student enrolls.
  * Logged-out visitors go to /login carrying the courses page as `callbackUrl`, and the login and
  * signup pages send them back there afterwards (BUG-0001).
  */

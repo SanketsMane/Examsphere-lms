@@ -8,6 +8,7 @@ import { LiveSessionsClient } from "./_components/LiveSessionsClient";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/live-sessions" },
   title: "Live Sessions | ExamSphere",
   description: "Live classes and doubt-solving sessions for JEE, NEET, Foundation (Class 6–10) and MBBS students.",
 };

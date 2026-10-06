@@ -16,8 +16,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Search, Filter } from "lucide-react";
-import { getCurrencyConfig } from "@/lib/currency"; // Added for localization - Author: Sanket
-import { authClient } from "@/lib/auth-client"; // To get user country if not passed
 
 
 
@@ -27,32 +25,8 @@ const levels = [
   "Advanced"
 ];
 
-// Price ranges are now generated dynamically - Author: Sanket
 
 export function CourseFilters({ categories }: { categories: { id: string; label: string; count: number; parentId?: string | null }[] }) {
-  const [userCountry, setUserCountry] = useState<string>("India");
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: session } = await authClient.getSession();
-      if (session?.user) {
-        setUserCountry((session.user as any).country || "India");
-      }
-    };
-    fetchUser();
-  }, []);
-
-  const config = getCurrencyConfig(userCountry);
-  const s = config.symbol;
-  const rate = config.exchangeRate;
-
-  const priceRanges = [
-    { label: "Free", value: "free" },
-    { label: `Under ${s}${Math.round(1000 * rate)}`, value: "under-1000" },
-    { label: `${s}${Math.round(1000 * rate)} - ${s}${Math.round(5000 * rate)}`, value: "1000-5000" },
-    { label: `${s}${Math.round(5000 * rate)} - ${s}${Math.round(10000 * rate)}`, value: "5000-10000" },
-    { label: `${s}${Math.round(10000 * rate)}+`, value: "over-10000" }
-  ];
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -60,7 +34,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
     search: searchParams.get("search") || "",
     categories: searchParams.getAll("category"),
     levels: searchParams.getAll("level"),
-    priceRanges: searchParams.getAll("priceRange"),
   });
 
   const [localSearch, setLocalSearch] = useState(filters.search);
@@ -72,7 +45,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
     if (filters.search) params.set("search", filters.search);
     filters.categories.forEach(c => params.append("category", c));
     filters.levels.forEach(l => params.append("level", l));
-    filters.priceRanges.forEach(p => params.append("priceRange", p));
 
     const queryString = params.toString();
     const newUrl = queryString ? `/courses?${queryString}` : "/courses";
@@ -81,7 +53,7 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
     router.replace(newUrl, { scroll: false });
   }, [filters, router]);
 
-  const toggleFilter = (type: 'categories' | 'levels' | 'priceRanges', value: string) => {
+  const toggleFilter = (type: 'categories' | 'levels', value: string) => {
     setFilters(prev => {
       const current = prev[type];
       const updated = current.includes(value)
@@ -100,7 +72,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
       search: "",
       categories: [],
       levels: [],
-      priceRanges: [],
     });
     setLocalSearch("");
     router.push("/courses");
@@ -109,7 +80,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
   const activeFilterCount =
     filters.categories.length +
     filters.levels.length +
-    filters.priceRanges.length +
     (filters.search ? 1 : 0);
 
   return (
@@ -197,29 +167,6 @@ export function CourseFilters({ categories }: { categories: { id: string; label:
                       <Label htmlFor={`cat-${orphan.id}`} className="text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 flex justify-between">
                         <span>{orphan.label}</span>
                         {orphan.count > 0 && <span className="text-xs text-muted-foreground">({orphan.count})</span>}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Price */}
-            <AccordionItem value="price" className="border-b-0 border-t border-border/50">
-              <AccordionTrigger className="font-semibold text-sm py-3 hover:no-underline hover:text-primary">
-                Price
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-3 pt-1">
-                  {priceRanges.map((range) => (
-                    <div key={range.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`price-${range.value}`}
-                        checked={filters.priceRanges.includes(range.value)}
-                        onCheckedChange={() => toggleFilter('priceRanges', range.value)}
-                      />
-                      <Label htmlFor={`price-${range.value}`} className="text-sm font-normal cursor-pointer">
-                        {range.label}
                       </Label>
                     </div>
                   ))}

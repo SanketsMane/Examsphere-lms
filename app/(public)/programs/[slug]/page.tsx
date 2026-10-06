@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PROGRAMS, getProgram } from "@/app/(public)/_data/programs-content";
 import { ProgramDetail } from "@/components/marketing/examsphere/ProgramDetail";
+import { JsonLd, ORG_ID, SITE_URL, breadcrumbList, faqPage } from "@/components/seo/JsonLd";
 
 /** Programme content is static, so every page can be prerendered at build time. */
 export function generateStaticParams() {
@@ -51,5 +52,38 @@ export default async function ProgramPage({
 
   if (!program) notFound();
 
-  return <ProgramDetail program={program} />;
+  // Everything below is already visible on the page: title, description, mode, language, FAQs.
+  const course = {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: program.title,
+    description: program.description,
+    url: `${SITE_URL}/programs/${program.slug}`,
+    provider: { "@id": ORG_ID },
+    educationalLevel: program.details.level,
+    inLanguage: program.details.language.includes("Hindi") ? ["en", "hi"] : ["en"],
+    hasCourseInstance: {
+      "@type": "CourseInstance",
+      courseMode: "Online",
+      description: `${program.details.mode} classes, ${program.details.duration}`,
+    },
+    teaches: program.curriculum.map((m) => m.title),
+  };
+
+  return (
+    <>
+      <JsonLd
+        data={[
+          course,
+          breadcrumbList([
+            { name: "Home", path: "/" },
+            { name: "Programs", path: "/programs" },
+            { name: program.navLabel, path: `/programs/${program.slug}` },
+          ]),
+          ...(program.faqs.length ? [faqPage(program.faqs)] : []),
+        ]}
+      />
+      <ProgramDetail program={program} />
+    </>
+  );
 }

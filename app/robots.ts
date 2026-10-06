@@ -12,7 +12,6 @@ export default function robots(): MetadataRoute.Robots {
         '/teacher/',
         '/dashboard/',
         '/api/',
-        '/_next/',
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

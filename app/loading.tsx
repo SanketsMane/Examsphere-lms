@@ -9,7 +9,7 @@ export default function GlobalLoading() {
         {/* Logo on a clean white chip so it reads on any theme */}
         <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-[0_10px_30px_-8px_rgba(10,27,61,0.35)] ring-1 ring-black/[0.06]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="ExamSphere" className="h-9 w-9 object-contain" />
+          <img src="/logo.png" alt="ExamSphere" width={36} height={36} className="h-9 w-9 object-contain" />
         </div>
 
         {/* Wordmark */}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getContactDetails } from "@/app/data/settings/get-contact-details";
 
 export const metadata: Metadata = {
+    alternates: { canonical: "/privacy" },
     title: "Privacy Policy | ExamSphere",
     description: "How ExamSphere collects, uses and protects the personal information of students, parents and mentors.",
 };

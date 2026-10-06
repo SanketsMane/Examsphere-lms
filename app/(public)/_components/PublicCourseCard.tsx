@@ -9,8 +9,6 @@ import { useConstructUrl } from "@/hooks/use-construct-url";
 import { TimerIcon, Play } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { formatPriceSimple } from "@/lib/currency"; // Added for localization - Author: Sanket
-import { useCurrency } from "@/components/providers/CurrencyProvider";
 
 interface iAppProps {
   data: PublicCourseType;
@@ -26,7 +24,6 @@ interface iAppProps {
 import { motion } from "framer-motion";
 
 export function PublicCourseCard({ data, userCountry, hrefBase }: iAppProps) {
-  const { rates } = useCurrency();
   const thumbnailUrl = useConstructUrl(data.fileKey || "");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -129,11 +126,12 @@ export function PublicCourseCard({ data, userCountry, hrefBase }: iAppProps) {
         )}
 
         <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-end">
-          <span className="text-xl font-bold text-[#011E21] dark:text-white">
+          {/* No prices on the site: fees are shared by the admissions team. */}
+          <span className="text-sm font-semibold">
             {data.isEnrolled ? (
-              <span className="text-emerald-600 text-sm">Owned</span>
+              <span className="text-emerald-600">Enrolled</span>
             ) : (
-              formatPriceSimple(data.price || 0, userCountry, rates)
+              <span className="text-primary">View details →</span>
             )}
           </span>
         </div>

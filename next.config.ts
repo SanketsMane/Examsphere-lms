@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // Don't advertise the framework in every response.
+  poweredByHeader: false,
 
   // Ensure the dynamically-imported `openai` SDK is traced into the standalone
   // bundle for the public chatbot route (Next misses dynamic imports otherwise).
@@ -118,6 +120,12 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
+          {
+            // HTTPS only (the site already redirects http → https). No preload: that's a separate,
+            // hard-to-undo opt-in for the owner to decide.
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains',
+          },
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
