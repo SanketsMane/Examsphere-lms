@@ -65,9 +65,12 @@ export async function Footer() {
                 {siteName}
               </span>
             </Link>
+            {/* Plain "what is ExamSphere" statement on every page: the name is shared by other
+                products, so search engines and AI answers need an explicit, extractable definition. */}
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
-              Expert guidance, smart strategies and personalized mentorship for JEE, NEET,
-              Foundation and MBBS aspirants.
+              ExamSphere is an online coaching platform for students preparing for JEE (Main &amp;
+              Advanced), NEET-UG, Foundation (Class 6–10) and MBBS exams, with live and recorded
+              classes in English and Hindi.
             </p>
 
             <ul className="space-y-3 text-sm">

@@ -5,7 +5,7 @@ import { PublicChatbot } from "@/components/ai/PublicChatbot";
 
 import { getSiteSettings } from "@/app/data/settings/get-site-settings";
 import { getContactDetails } from "@/app/data/settings/get-contact-details";
-import { JsonLd, ORG_ID, SITE_URL } from "@/components/seo/JsonLd";
+import { ENTITY_DESCRIPTION, JsonLd, ORG_ID, SITE_URL, WEBSITE_ID } from "@/components/seo/JsonLd";
 
 export default async function LayoutPublic({ children }: { children: ReactNode }) {
   const settings = await getSiteSettings();
@@ -18,10 +18,12 @@ export default async function LayoutPublic({ children }: { children: ReactNode }
     "@type": "EducationalOrganization",
     "@id": ORG_ID,
     name: "ExamSphere",
-    url: SITE_URL,
-    logo: `${SITE_URL}/logo.png`,
-    description:
-      "Online coaching for JEE (Main & Advanced), NEET, Foundation (Class 6–10) and MBBS — live and recorded classes, practice, mock tests and mentorship.",
+    // Spelling people also search for; the other "ExamSphere"s are different organizations.
+    alternateName: "Exam Sphere",
+    url: `${SITE_URL}/`,
+    logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` },
+    description: ENTITY_DESCRIPTION,
+    knowsAbout: ["JEE Main", "JEE Advanced", "NEET-UG", "Foundation (Class 6–10)", "MBBS"],
     email: contact.email,
     contactPoint: {
       "@type": "ContactPoint",
@@ -35,8 +37,10 @@ export default async function LayoutPublic({ children }: { children: ReactNode }
   const website = {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": WEBSITE_ID,
     name: "ExamSphere",
-    url: SITE_URL,
+    alternateName: "Exam Sphere",
+    url: `${SITE_URL}/`,
     inLanguage: "en-IN",
     publisher: { "@id": ORG_ID },
   };

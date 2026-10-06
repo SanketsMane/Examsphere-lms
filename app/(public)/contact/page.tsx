@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { withSocial } from "@/lib/seo-metadata";
+import { JsonLd, webPage } from "@/components/seo/JsonLd";
 import Link from "next/link";
 import {
   Mail,
@@ -61,6 +62,7 @@ export default async function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <JsonLd data={webPage("/contact", "Contact ExamSphere", "ContactPage")} />
       {/* Header */}
       <section className="border-b border-border bg-bg-soft dark:bg-muted/30">
         <div className="max-w-[1240px] mx-auto px-6 py-14 md:py-16">

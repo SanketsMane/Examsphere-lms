@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { withSocial } from "@/lib/seo-metadata";
+import { JsonLd, webPage } from "@/components/seo/JsonLd";
 import { getActiveBroadcasts } from "../actions/broadcasts";
 import { AnimationWrapper } from "@/components/ui/animation-wrapper";
 import { BroadcastBanner } from "@/components/marketing/BroadcastBanner";
@@ -35,6 +36,7 @@ export default async function Home() {
 
   return (
     <AnimationWrapper className="min-h-screen bg-background">
+      <JsonLd data={webPage("/", "ExamSphere — JEE, NEET, Foundation & MBBS Preparation")} />
       <BroadcastBanner broadcasts={broadcasts} />
 
       <HeroExamSphere />

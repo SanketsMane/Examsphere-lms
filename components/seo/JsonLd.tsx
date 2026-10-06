@@ -13,6 +13,24 @@ export function JsonLd({ data }: { data: Record<string, unknown> | Record<string
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://examsphere.online").replace(/\/$/, "");
 export const ORG_ID = `${SITE_URL}/#organization`;
+export const WEBSITE_ID = `${SITE_URL}/#website`;
+export const ENTITY_DESCRIPTION =
+  "ExamSphere is an online coaching platform for students preparing for JEE (Main & Advanced), NEET-UG, Foundation (Class 6–10) and MBBS exams, with live and recorded classes in English and Hindi.";
+
+/** WebPage node tying a page into the site/organization graph. */
+export function webPage(path: string, name: string, type: "WebPage" | "AboutPage" | "ContactPage" = "WebPage") {
+  const url = `${SITE_URL}${path === "/" ? "/" : path}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": type,
+    "@id": `${url}#webpage`,
+    url,
+    name,
+    isPartOf: { "@id": WEBSITE_ID },
+    about: { "@id": ORG_ID },
+    inLanguage: "en-IN",
+  };
+}
 
 export function breadcrumbList(items: { name: string; path: string }[]) {
   return {
