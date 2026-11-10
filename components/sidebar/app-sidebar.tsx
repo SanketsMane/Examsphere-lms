@@ -78,6 +78,8 @@ const navGroups: NavGroup[] = [
         items: [
           { title: "All Notes", url: "/admin/notes", icon: IconListDetails },
           { title: "Sales & Analytics", url: "/admin/notes/analytics", icon: IconChartBar },
+          { title: "Notes Refunds", url: "/admin/notes/refunds", icon: IconReceiptRefund },
+          { title: "Notes Settings", url: "/admin/notes/settings", icon: IconSettings },
         ],
       },
       { title: "Categories", url: "/admin/categories", icon: IconFolder },

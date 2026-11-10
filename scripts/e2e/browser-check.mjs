@@ -31,10 +31,15 @@ sock.on("open", async () => {
   await send("Runtime.enable", {}, sessionId);
   await send("Network.enable", {}, sessionId);
   const mobile = process.env.MOBILE === "1";
-  await send("Emulation.setDeviceMetricsOverride", mobile ? { width: 390, height: 1400, deviceScaleFactor: 2, mobile: true } : { width: 1280, height: 1800, deviceScaleFactor: 1, mobile: false }, sessionId);
+  await send("Emulation.setDeviceMetricsOverride", mobile ? { width: 390, height: 1400, deviceScaleFactor: 2, mobile: true } : { width: Number(process.env.WIDTH || 1280), height: Number(process.env.HEIGHT || 1800), deviceScaleFactor: 1, mobile: false }, sessionId);
   if (cookie) await send("Network.setExtraHTTPHeaders", { headers: { Cookie: cookie } }, sessionId);
   await send("Page.navigate", { url }, sessionId);
   await new Promise((r) => setTimeout(r, Number(waitMs)));
+  // Optional: click a button by its visible text (e.g. a tab), then wait again.
+  if (process.env.CLICK_TEXT) {
+    await send("Runtime.evaluate", { expression: `[...document.querySelectorAll("button")].find(b => b.textContent.trim().startsWith(${JSON.stringify(process.env.CLICK_TEXT)}))?.click()` }, sessionId);
+    await new Promise((r) => setTimeout(r, Number(process.env.CLICK_WAIT || 4000)));
+  }
   const probe = await send("Runtime.evaluate", {
     expression: `JSON.stringify({ canvases: [...document.querySelectorAll('canvas')].map(c => c.width + 'x' + c.height), pageLabel: document.body.innerText.match(/Page\\s+\\d*\\s*of\\s+\\d+/)?.[0] ?? null, opening: document.body.innerText.includes('Opening notes'), errorText: document.body.innerText.match(/could not be opened|Something went wrong/)?.[0] ?? null })`,
     returnByValue: true,

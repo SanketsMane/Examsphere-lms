@@ -38,5 +38,26 @@ module.exports = {
         NEXT_DIST_DIR: liveSlot(),
       },
     },
+    {
+      // Notes AI worker: generates drafts and renders PDFs from the note_generation_jobs queue.
+      // Separate from the website so slow AI calls and Chromium never block page requests.
+      name: "examsphere-worker",
+      cwd: "/root/examsphere",
+      script: "node_modules/.bin/tsx",
+      args: "--env-file=.env --conditions=react-server scripts/notes-worker.ts",
+      interpreter: "none",
+      instances: 1,
+      exec_mode: "fork",
+      autorestart: true,
+      max_memory_restart: "1500M",
+      kill_timeout: 30000, // let the current step finish on restart
+      time: true,
+      merge_logs: true,
+      out_file: "/root/.pm2/logs/examsphere-worker-out.log",
+      error_file: "/root/.pm2/logs/examsphere-worker-error.log",
+      env: {
+        NODE_ENV: "production",
+      },
+    },
   ],
 };

@@ -20,7 +20,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const lastPage = Math.min(page, auth.version.pageCount);
   await prisma.noteEntitlement.update({
     where: { id: auth.entitlement.id },
-    data: { lastReadPage: lastPage, lastReadAt: new Date() },
+    data: {
+      lastReadPage: lastPage,
+      lastReadAt: new Date(),
+      // Furthest page ever reached: used for refund eligibility, so jumping back to page 1 doesn't reset it.
+      maxReadPage: Math.max(lastPage, auth.entitlement.maxReadPage ?? 0),
+    },
   });
   return NextResponse.json({ ok: true, lastReadPage: lastPage });
 }

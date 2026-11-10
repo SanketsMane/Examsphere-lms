@@ -85,7 +85,13 @@ async function rebuildPreview(versionId: string) {
 }
 
 /** Store a new PDF as the next version and make it current. */
-export async function uploadNoteVersion(noteId: string, adminId: string, bytes: Buffer, changelog?: string) {
+export async function uploadNoteVersion(
+  noteId: string,
+  adminId: string,
+  bytes: Buffer,
+  changelog?: string,
+  extra: { origin?: "UPLOAD" | "AI"; contentJson?: unknown } = {}
+) {
   const note = await prisma.note.findUnique({ where: { id: noteId } });
   if (!note) throw new NoteAdminError("Note not found.");
 
@@ -117,7 +123,8 @@ export async function uploadNoteVersion(noteId: string, adminId: string, bytes: 
         fileSize: info.size,
         pageCount: info.pageCount,
         sha256: info.sha256,
-        origin: "UPLOAD",
+        origin: extra.origin ?? "UPLOAD",
+        contentJson: extra.contentJson === undefined ? undefined : (extra.contentJson as Prisma.InputJsonValue),
         changelog: changelog?.slice(0, 1000) || null,
         createdById: adminId,
       },

@@ -2254,12 +2254,14 @@ model Note {
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
-  author         User              @relation("NoteAuthor", fields: [authorId], references: [id])
-  currentVersion NoteVersion?      @relation("NoteCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
-  versions       NoteVersion[]     @relation("NoteVersions")
+  author         User                @relation("NoteAuthor", fields: [authorId], references: [id])
+  currentVersion NoteVersion?        @relation("NoteCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  versions       NoteVersion[]       @relation("NoteVersions")
   courses        CourseNote[]
   entitlements   NoteEntitlement[]
   events         NoteEvent[]
+  jobs           NoteGenerationJob[]
+  refundRequests NoteRefundRequest[]
 
   @@index([status, accessType])
   @@index([program, subject])
@@ -2317,6 +2319,7 @@ model NoteEntitlement {
   grantedById       String?
   downloadCount     Int                   @default(0)
   lastReadPage      Int?
+  maxReadPage       Int? // furthest page reached (refund eligibility)
   lastReadAt        DateTime?
   activatedAt       DateTime?
   revokedAt         DateTime?
@@ -2324,8 +2327,9 @@ model NoteEntitlement {
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  refundRequest NoteRefundRequest?
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note          Note               @relation(fields: [noteId], references: [id], onDelete: Cascade)
 
   @@unique([userId, noteId])
   @@index([noteId, status])
@@ -2347,4 +2351,119 @@ model NoteEvent {
   @@index([noteId, type, createdAt])
   @@index([userId])
   @@map("note_events")
+}
+
+// ---- Notes: AI generation (phase 2) and settings / refund policy -----------------------
+
+enum NoteJobType {
+  GENERATE // sources -> extraction -> notes draft -> fact-check (stops at REVIEW)
+  RENDER // reviewed draft -> handwritten PDF -> new note version
+}
+
+enum NoteJobStatus {
+  QUEUED
+  RUNNING
+  REVIEW // draft ready for the admin
+  DONE
+  FAILED
+  CANCELLED
+}
+
+enum NoteSourceKind {
+  PDF
+  IMAGE
+}
+
+enum NoteRefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model NoteGenerationJob {
+  id              String        @id @default(cuid())
+  noteId          String
+  type            NoteJobType
+  status          NoteJobStatus @default(QUEUED)
+  stage           String?       @db.VarChar(30) // intake | extract | write | check | render
+  progress        Int           @default(0) // 0-100
+  message         String?       @db.Text
+  options         Json
+  draftDoc        Json? // structured notes (lib/notes/ai/doc-schema.ts)
+  reviewIssues    Json? // fact-check findings
+  provider        String?       @db.VarChar(30)
+  model           String?       @db.VarChar(60)
+  inputTokens     Int           @default(0)
+  outputTokens    Int           @default(0)
+  costUsdMicros   Int           @default(0) // estimated, millionths of a US dollar
+  error           String?       @db.Text
+  attempts        Int           @default(0)
+  lockedBy        String?       @db.VarChar(100)
+  lockedAt        DateTime?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  resultVersionId String?
+  createdById     String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  note    Note         @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  sources NoteSource[]
+
+  @@index([status, createdAt])
+  @@index([noteId, createdAt])
+  @@map("note_generation_jobs")
+}
+
+model NoteSource {
+  id           String         @id @default(cuid())
+  jobId        String
+  kind         NoteSourceKind
+  fileKey      String         @db.Text // private storage
+  mimeType     String         @db.VarChar(100)
+  originalName String         @db.VarChar(255)
+  size         Int
+  pageCount    Int            @default(1)
+  sha256       String         @db.VarChar(64)
+  sortOrder    Int            @default(0)
+  extraction   Json? // cached per-page transcription (re-used by re-runs)
+  createdAt    DateTime       @default(now())
+
+  job NoteGenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, sortOrder])
+  @@map("note_sources")
+}
+
+/// Single row (id "default"): refund policy and AI settings for the notes module.
+model NotesSettings {
+  id                       String   @id @default("default")
+  refundWindowHours        Int      @default(48) // 0 = no refunds
+  refundMaxReadPercent     Int      @default(20)
+  refundRequiresNoDownload Boolean  @default(true)
+  autoApproveRefunds       Boolean  @default(false)
+  aiModel                  String   @default("claude-opus-5-5") @db.VarChar(60)
+  aiMonthlyBudgetUsd       Int      @default(50) // generation stops once this month's estimated spend reaches it
+  updatedAt                DateTime @updatedAt
+
+  @@map("notes_settings")
+}
+
+model NoteRefundRequest {
+  id            String           @id @default(cuid())
+  entitlementId String           @unique
+  userId        String
+  noteId        String
+  reason        String           @db.Text
+  status        NoteRefundStatus @default(PENDING)
+  adminNote     String?          @db.Text
+  decidedById   String?
+  decidedAt     DateTime?
+  createdAt     DateTime         @default(now())
+
+  entitlement NoteEntitlement @relation(fields: [entitlementId], references: [id], onDelete: Cascade)
+  note        Note            @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@map("note_refund_requests")
 }

@@ -102,6 +102,9 @@ log "New build passed"
 log "Switching $APP to $CANDIDATE"
 switch_to "$CANDIDATE"
 if wait_ready "http://127.0.0.1:$LIVE_PORT" && check_site "http://127.0.0.1:$LIVE_PORT"; then
+  # Restart the notes AI worker on the new code (it runs the TypeScript sources directly).
+  pm2 delete examsphere-worker >/dev/null 2>&1 || true
+  pm2 start ecosystem.config.js --only examsphere-worker >/dev/null
   pm2 save >/dev/null
   # Keep the previous slot for a manual rollback; drop the pre-slot .next once off it.
   [ "$LIVE" != .next ] || rm -rf .next

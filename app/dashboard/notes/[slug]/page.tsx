@@ -5,6 +5,8 @@ import { requireUser } from "@/app/data/user/require-user";
 import { getNoteAccess, ensureReaderEntitlement } from "@/lib/notes/access";
 import { getNoteBySlug } from "@/lib/notes/queries";
 import { NoteReader } from "./NoteReader";
+import { prisma } from "@/lib/db";
+import { describeRefundPolicy, getNotesSettings, refundEligibility } from "@/lib/notes/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,21 @@ export default async function ReadNotePage({ params }: { params: Promise<{ slug:
 
   const entitlement = await ensureReaderEntitlement(user!.id, note.id, access);
   const isAdmin = access.via === "ADMIN";
+
+  // Refund option for paid purchases, under the notes refund policy.
+  let refund: { eligible: boolean; message: string; deadline: string | null } | null = null;
+  if (entitlement && (entitlement.source === "PURCHASE" || entitlement.source === "WALLET")) {
+    const [settings, request] = await Promise.all([
+      getNotesSettings(),
+      prisma.noteRefundRequest.findUnique({ where: { entitlementId: entitlement.id }, select: { status: true } }),
+    ]);
+    const check = refundEligibility({ ...entitlement, refundRequest: request }, note.currentVersion.pageCount, settings);
+    refund = check.eligible
+      ? { eligible: true, message: describeRefundPolicy(settings), deadline: check.deadline.toISOString() }
+      : request
+        ? { eligible: false, message: check.reason, deadline: null }
+        : null; // not eligible and never asked: don't clutter the reader
+  }
   const downloadsLeft = isAdmin ? null : Math.max(0, note.maxDownloads - (entitlement?.downloadCount ?? 0));
 
   return (
@@ -41,6 +58,7 @@ export default async function ReadNotePage({ params }: { params: Promise<{ slug:
         allowDownload={note.allowDownload || isAdmin}
         trackProgress={!isAdmin}
         overlayText={user!.email}
+        refund={refund}
       />
     </div>
   );

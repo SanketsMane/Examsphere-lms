@@ -16,6 +16,9 @@ import {
   updateNote,
 } from "@/lib/notes/admin";
 import { grantNoteAccess, NotePurchaseError, refundNotePurchase, revokeNoteAccess } from "@/lib/notes/purchase";
+import { updateNotesSettings } from "@/lib/notes/settings";
+import { decideNoteRefund } from "@/lib/notes/refunds";
+import { SELECTABLE_MODELS } from "@/lib/notes/ai/pricing";
 
 function fail(err: unknown, action: string): ApiResponse {
   if (err instanceof NoteAdminError) {
@@ -136,5 +139,37 @@ export async function deleteNoteAction(noteId: string): Promise<ApiResponse> {
     return { status: "success", message: "Note deleted." };
   } catch (err) {
     return fail(err, "delete");
+  }
+}
+
+// ---- Notes settings (refund policy, AI) and refund requests ------------------------------
+
+const settingsSchema = z.object({
+  refundWindowHours: z.coerce.number<string | number>().int().min(0).max(720),
+  refundMaxReadPercent: z.coerce.number<string | number>().int().min(0).max(100),
+  refundRequiresNoDownload: z.boolean(),
+  autoApproveRefunds: z.boolean(),
+  aiModel: z.enum(SELECTABLE_MODELS.map((m) => m.id) as [string, ...string[]]),
+  aiMonthlyBudgetUsd: z.coerce.number<string | number>().int().min(0).max(10_000),
+});
+
+export async function updateNotesSettingsAction(values: z.input<typeof settingsSchema>): Promise<ApiResponse> {
+  await requireAdmin();
+  const parsed = settingsSchema.safeParse(values);
+  if (!parsed.success) return { status: "error", message: "Please correct the highlighted fields.", fieldErrors: toFieldErrors(parsed.error) };
+  await updateNotesSettings(parsed.data);
+  revalidatePath("/admin/notes/settings");
+  revalidatePath("/notes");
+  return { status: "success", message: "Settings saved." };
+}
+
+export async function decideRefundAction(requestId: string, approve: boolean, adminNote: string): Promise<ApiResponse> {
+  const session = await requireAdmin();
+  try {
+    await decideNoteRefund(requestId, approve, session.user.id, adminNote.trim() || undefined);
+    revalidatePath("/admin/notes/refunds");
+    return { status: "success", message: approve ? "Refund approved and processed." : "Request declined." };
+  } catch (err) {
+    return fail(err, "refund-decision");
   }
 }

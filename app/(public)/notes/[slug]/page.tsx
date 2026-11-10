@@ -11,6 +11,7 @@ import { PdfViewerClient } from "@/components/notes/PdfViewerClient";
 import { getNoteAccess } from "@/lib/notes/access";
 import { coverUrl, getNoteBySlug } from "@/lib/notes/queries";
 import { effectiveNotePricePaise } from "@/lib/notes/validation";
+import { describeRefundPolicy, getNotesSettings } from "@/lib/notes/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,8 @@ export default async function NoteDetailPage({ params }: Props) {
   const user = session?.user ?? null;
   if (!note || (note.status !== "PUBLISHED" && user?.role !== "admin")) notFound();
 
-  const access = await getNoteAccess(user, note);
+  const [access, settings] = await Promise.all([getNoteAccess(user, note), getNotesSettings()]);
+  const refundPolicy = describeRefundPolicy(settings);
   let state: NoteBuyState;
   if (access.allowed) state = access.via === "FREE" ? "free" : "owned";
   else if (access.reason === "REVOKED") state = "revoked";
@@ -122,6 +124,11 @@ export default async function NoteDetailPage({ params }: Props) {
                   </li>
                 )}
               </ul>
+              {note.accessType === "PAID" && (
+                <p className="border-t border-border pt-4 text-xs text-muted-foreground">
+                  <span className="font-semibold">Refunds:</span> {refundPolicy}
+                </p>
+              )}
             </div>
           </aside>
 

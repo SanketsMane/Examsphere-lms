@@ -14,9 +14,10 @@ interface Props {
   downloadsLeft: number | null;
   trackProgress: boolean;
   overlayText: string;
+  refund?: { eligible: boolean; message: string; deadline: string | null } | null;
 }
 
-export function NoteReader({ noteId, initialPage, canDownload, allowDownload, downloadsLeft, trackProgress, overlayText }: Props) {
+export function NoteReader({ noteId, initialPage, canDownload, allowDownload, downloadsLeft, trackProgress, overlayText, refund }: Props) {
   const [left, setLeft] = useState(downloadsLeft);
   const [downloading, setDownloading] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,9 +73,64 @@ export function NoteReader({ noteId, initialPage, canDownload, allowDownload, do
         </div>
       )}
       <PdfViewerClient url={`/api/notes/${noteId}/read`} initialPage={initialPage} onPageChange={onPageChange} overlayText={overlayText} />
+      {refund && <RefundBox noteId={noteId} refund={refund} />}
       <p className="text-center text-xs text-muted-foreground">
         This copy is licensed to you and marked with your account details. Please don&apos;t share it.
       </p>
+    </div>
+  );
+}
+
+function RefundBox({ noteId, refund }: { noteId: string; refund: NonNullable<Props["refund"]> }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
+
+  if (!refund.eligible || done) {
+    return <p className="rounded-xl border border-border bg-muted/30 p-3 text-center text-sm text-muted-foreground">{done ?? refund.message}</p>;
+  }
+
+  async function submit() {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/notes/${noteId}/refund-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not send the request");
+      setDone(data.message);
+      setOpen(false);
+      toast.success(data.message);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const until = refund.deadline ? new Date(refund.deadline).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : null;
+  return (
+    <div className="rounded-xl border border-border p-3 text-sm">
+      {!open ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-muted-foreground">{refund.message}{until ? ` You can ask until ${until}.` : ""}</span>
+          <Button size="sm" variant="outline" onClick={() => setOpen(true)}>Request a refund</Button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="refund-reason">Why do you want a refund?</label>
+          <textarea id="refund-reason" className="w-full rounded-md border border-border bg-background p-2 text-sm" rows={3} maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Bought the wrong chapter" />
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
+            <Button size="sm" onClick={submit} disabled={busy || reason.trim().length < 3}>
+              {busy && <Loader2 className="mr-2 size-4 animate-spin" />} Send request
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

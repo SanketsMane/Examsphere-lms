@@ -25,6 +25,7 @@ NEXT_PUBLIC_S3_BUCKET_NAME_IMAGES=local-test-bucket
 NEXT_PUBLIC_AWS_REGION=auto
 RAZORPAY_WEBHOOK_SECRET=whsec_local_test_only
 PRIVATE_STORAGE_DIR=/tmp/examsphere-e2e/private-storage
+NOTES_AI_PROVIDER=mock
 ```
 
 ## Run
@@ -36,6 +37,9 @@ node scripts/e2e/make-fixtures.mjs        # PDFs/images used by notes-e2e.sh
 npm run build && npx next start -p 3399 &
 EXPECT_CSRF=1 bash scripts/e2e/site-smoke.sh   # pages, auth, CSRF, admin, course create (34 checks)
 bash scripts/e2e/notes-e2e.sh                  # notes: create, upload, sell, read, refund, webhook (71 checks)
+# AI notes + refund policy (needs NOTES_AI_PROVIDER=mock and the worker running):
+node_modules/.bin/tsx --conditions=react-server scripts/notes-worker.ts &
+bash scripts/e2e/notes-ai-e2e.sh               # generate, review, edit, rewrite, render, budget, refunds (37 checks)
 ```
 
 ## Browser check

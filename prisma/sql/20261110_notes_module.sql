@@ -1,7 +1,8 @@
--- Notes module (phase 1): notes, versions, course links, entitlements, events,
--- plus NOTE_PURCHASE in TransactionType / WalletTransactionType.
--- Additive only: new tables and two enum values; no existing data changes.
--- Generated with: prisma migrate diff --from-schema-datamodel <before> --to-schema-datamodel prisma/schema.prisma --script
+-- Notes module: notes, versions, course links, entitlements, events (phase 1); AI generation
+-- jobs and sources (phase 2); notes settings (refund policy, AI budget) and refund requests.
+-- Also NOTE_PURCHASE in TransactionType / WalletTransactionType and REFUNDED in TransactionStatus.
+-- Additive only: new tables and enum values; no existing data changes.
+-- Generated with: prisma migrate diff --from-schema-datamodel <schema at 02e9e2d> --to-schema-datamodel prisma/schema.prisma --script
 -- Apply after a backup:
 --   docker exec -i examsphere-mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" examsphere_lms' < prisma/sql/20261110_notes_module.sql
 
@@ -93,6 +94,7 @@ CREATE TABLE `note_entitlements` (
     `grantedById` VARCHAR(191) NULL,
     `downloadCount` INTEGER NOT NULL DEFAULT 0,
     `lastReadPage` INTEGER NULL,
+    `maxReadPage` INTEGER NULL,
     `lastReadAt` DATETIME(3) NULL,
     `activatedAt` DATETIME(3) NULL,
     `revokedAt` DATETIME(3) NULL,
@@ -118,6 +120,90 @@ CREATE TABLE `note_events` (
 
     INDEX `note_events_noteId_type_createdAt_idx`(`noteId`, `type`, `createdAt`),
     INDEX `note_events_userId_idx`(`userId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `note_generation_jobs` (
+    `id` VARCHAR(191) NOT NULL,
+    `noteId` VARCHAR(191) NOT NULL,
+    `type` ENUM('GENERATE', 'RENDER') NOT NULL,
+    `status` ENUM('QUEUED', 'RUNNING', 'REVIEW', 'DONE', 'FAILED', 'CANCELLED') NOT NULL DEFAULT 'QUEUED',
+    `stage` VARCHAR(30) NULL,
+    `progress` INTEGER NOT NULL DEFAULT 0,
+    `message` TEXT NULL,
+    `options` JSON NOT NULL,
+    `draftDoc` JSON NULL,
+    `reviewIssues` JSON NULL,
+    `provider` VARCHAR(30) NULL,
+    `model` VARCHAR(60) NULL,
+    `inputTokens` INTEGER NOT NULL DEFAULT 0,
+    `outputTokens` INTEGER NOT NULL DEFAULT 0,
+    `costUsdMicros` INTEGER NOT NULL DEFAULT 0,
+    `error` TEXT NULL,
+    `attempts` INTEGER NOT NULL DEFAULT 0,
+    `lockedBy` VARCHAR(100) NULL,
+    `lockedAt` DATETIME(3) NULL,
+    `startedAt` DATETIME(3) NULL,
+    `finishedAt` DATETIME(3) NULL,
+    `resultVersionId` VARCHAR(191) NULL,
+    `createdById` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `note_generation_jobs_status_createdAt_idx`(`status`, `createdAt`),
+    INDEX `note_generation_jobs_noteId_createdAt_idx`(`noteId`, `createdAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `note_sources` (
+    `id` VARCHAR(191) NOT NULL,
+    `jobId` VARCHAR(191) NOT NULL,
+    `kind` ENUM('PDF', 'IMAGE') NOT NULL,
+    `fileKey` TEXT NOT NULL,
+    `mimeType` VARCHAR(100) NOT NULL,
+    `originalName` VARCHAR(255) NOT NULL,
+    `size` INTEGER NOT NULL,
+    `pageCount` INTEGER NOT NULL DEFAULT 1,
+    `sha256` VARCHAR(64) NOT NULL,
+    `sortOrder` INTEGER NOT NULL DEFAULT 0,
+    `extraction` JSON NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `note_sources_jobId_sortOrder_idx`(`jobId`, `sortOrder`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `notes_settings` (
+    `id` VARCHAR(191) NOT NULL DEFAULT 'default',
+    `refundWindowHours` INTEGER NOT NULL DEFAULT 48,
+    `refundMaxReadPercent` INTEGER NOT NULL DEFAULT 20,
+    `refundRequiresNoDownload` BOOLEAN NOT NULL DEFAULT true,
+    `autoApproveRefunds` BOOLEAN NOT NULL DEFAULT false,
+    `aiModel` VARCHAR(60) NOT NULL DEFAULT 'claude-opus-5-5',
+    `aiMonthlyBudgetUsd` INTEGER NOT NULL DEFAULT 50,
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `note_refund_requests` (
+    `id` VARCHAR(191) NOT NULL,
+    `entitlementId` VARCHAR(191) NOT NULL,
+    `userId` VARCHAR(191) NOT NULL,
+    `noteId` VARCHAR(191) NOT NULL,
+    `reason` TEXT NOT NULL,
+    `status` ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+    `adminNote` TEXT NULL,
+    `decidedById` VARCHAR(191) NULL,
+    `decidedAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `note_refund_requests_entitlementId_key`(`entitlementId`),
+    INDEX `note_refund_requests_status_createdAt_idx`(`status`, `createdAt`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -147,4 +233,16 @@ ALTER TABLE `note_events` ADD CONSTRAINT `note_events_noteId_fkey` FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE `note_events` ADD CONSTRAINT `note_events_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `note_generation_jobs` ADD CONSTRAINT `note_generation_jobs_noteId_fkey` FOREIGN KEY (`noteId`) REFERENCES `notes`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `note_sources` ADD CONSTRAINT `note_sources_jobId_fkey` FOREIGN KEY (`jobId`) REFERENCES `note_generation_jobs`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `note_refund_requests` ADD CONSTRAINT `note_refund_requests_entitlementId_fkey` FOREIGN KEY (`entitlementId`) REFERENCES `note_entitlements`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `note_refund_requests` ADD CONSTRAINT `note_refund_requests_noteId_fkey` FOREIGN KEY (`noteId`) REFERENCES `notes`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
