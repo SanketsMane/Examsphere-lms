@@ -2,9 +2,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  // Production runs `next start` under pm2, which doesn't support a standalone build and
+  // warned on every boot. Opt in with NEXT_OUTPUT=standalone for hosts that run
+  // `node .next/standalone/server.js` instead (e.g. the old cPanel bundle).
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   // Don't advertise the framework in every response.
   poweredByHeader: false,
+
+  // Load Better Auth from node_modules instead of bundling it. Bundled, it was compiled into
+  // both the route-handler and the RSC/SSR chunks, so one server process evaluated it twice
+  // ("Better Auth was already imported. This breaks async local storage instance") and
+  // per-request auth state could go out of sync between the two copies.
+  serverExternalPackages: ['better-auth'],
 
   // Ensure the dynamically-imported `openai` SDK is traced into the standalone
   // bundle for the public chatbot route (Next misses dynamic imports otherwise).
@@ -107,16 +116,10 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
+    // (A Cache-Control rule for /_next/image used to sit here. The custom loader in
+    // lib/image-loader.ts returns image URLs directly, so that route is never hit, and
+    // Next 16.4 warns that overriding its Cache-Control breaks dev behaviour.)
     return [
-      {
-        source: '/_next/image(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
       {
         source: '/(.*)',
         headers: [

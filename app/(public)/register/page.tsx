@@ -20,6 +20,9 @@ import { MotionWrapper } from "@/components/ui/motion-wrapper";
 import { AuthHeroPanel } from "@/components/marketing/examsphere/AuthHeroPanel";
 import { setTeacherRole } from "@/app/actions/auth-actions";
 
+// Matches Better Auth's default `minPasswordLength` (lib/auth.ts doesn't override it).
+const MIN_PASSWORD_LENGTH = 8;
+
 export default function RegisterPage() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
@@ -46,6 +49,12 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Better Auth rejects passwords under 8 characters. Check before submitting so people
+    // aren't sent back with a bare "Password too short" after filling in the whole form.
+    if (formData.password.length < MIN_PASSWORD_LENGTH) {
+      toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
     setIsLoading(true);
     signingUp.current = true;
 
@@ -196,11 +205,16 @@ export default function RegisterPage() {
                   autoComplete="new-password"
                   placeholder="••••••••"
                   required
+                  minLength={MIN_PASSWORD_LENGTH}
+                  aria-describedby="password-hint"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="pl-10 bg-secondary/20"
                 />
               </div>
+              <p id="password-hint" className="text-xs text-muted-foreground">
+                At least {MIN_PASSWORD_LENGTH} characters.
+              </p>
             </div>
 
             <Button type="submit" className="w-full h-11 font-bold shadow-lg shadow-primary/20" disabled={isLoading}>

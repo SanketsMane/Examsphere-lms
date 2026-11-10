@@ -133,6 +133,17 @@ export async function getTeacherAuthoringBlock(user: { id: string; role?: string
   return null;
 }
 
+const COURSE_FIELD_LABELS: Record<string, string> = {
+  title: "The title",
+  description: "The description",
+  smallDescription: "The short description",
+  prerequisites: "The prerequisites",
+  slug: "The URL slug",
+  category: "The category",
+  language: "The language",
+  fileKey: "The thumbnail file name",
+};
+
 /**
  * Map a Prisma write failure onto a message the user can act on.
  *
@@ -159,6 +170,25 @@ export function handleCourseWriteError(
     }
     if (error.code === "P2025") {
       return { status: "error", message: "Course not found." };
+    }
+    if (error.code === "P2000") {
+      // Value longer than the DB column allows. Before the TEXT-column fix this hit every
+      // course description over 191 chars, and the generic message below made admins retry
+      // the same save over and over. Name the field so they know what to shorten.
+      const column =
+        (error.meta?.column_name as string | undefined) ??
+        /Column: (\w+)/.exec(error.message)?.[1];
+      const label = (column && COURSE_FIELD_LABELS[column]) || "One of the fields";
+      logger.error?.(`${context.action} failed: value too long`, {
+        userId: context.userId,
+        slug: context.slug,
+        column,
+      });
+      return {
+        status: "error",
+        message: `${label} is too long to save. Please shorten it and try again.`,
+        ...(column ? { fieldErrors: { [column]: "This is too long" } } : {}),
+      };
     }
     if (error.code === "P2003") {
       return { status: "error", message: "Invalid category selected." };
