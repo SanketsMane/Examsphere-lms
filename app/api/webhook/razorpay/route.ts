@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { sendReceiptEmail, sendNotificationEmail } from "@/lib/email-notifications";
 import { getRazorpayConfig, getRazorpayInstance } from "@/lib/razorpay";
 import { activatePaidEnrollment } from "@/lib/course-purchase";
+import { activateNoteEntitlement, findEntitlementForPayment } from "@/lib/notes/purchase";
 import { toPaise } from "@/lib/money";
 import crypto from "crypto";
 import { calculatePlatformCommission } from "@/lib/finance";
@@ -71,9 +72,13 @@ export async function POST(req: NextRequest) {
 
         // Handle 'payment.captured' or 'order.paid'
         // Ideally we listen to order.paid to ensure full amount matches
-        if (event.event === "payment.captured" || event.event === "order.paid") {
+        // Every lookup below filters on the order id. Prisma drops `undefined` filters, so
+        // without this guard a payment with no order id matched an ARBITRARY row and
+        // fulfilled someone else's enrollment/booking.
+        const capturedOrderId = payload.payment?.entity?.order_id;
+        if ((event.event === "payment.captured" || event.event === "order.paid") && typeof capturedOrderId === "string" && capturedOrderId) {
             const payment = payload.payment.entity;
-            const orderId = payment.order_id; // Razorpay Order ID
+            const orderId: string = capturedOrderId; // Razorpay Order ID
 
             // 1. Check if this is a Course Enrollment
             const enrollment = await prisma.enrollment.findFirst({
@@ -93,6 +98,30 @@ export async function POST(req: NextRequest) {
                 });
                 if (result.found && result.underpaid) {
                     // Acknowledge so Razorpay stops retrying; it is logged for manual review.
+                    return NextResponse.json({ status: "ignored" });
+                }
+                return NextResponse.json({ status: "ok" });
+            }
+
+            // 1b. Notes purchase. Matched by order id, or by the entitlement id in the order
+            // notes when a later checkout attempt replaced the stored order id.
+            const orderNotes = (payload.order?.entity?.notes || payment.notes || {}) as Record<string, string>;
+            const noteEntitlement = await findEntitlementForPayment(
+                orderId,
+                orderNotes.type === "NOTE_PURCHASE" ? orderNotes.entitlementId : null
+            );
+            if (noteEntitlement) {
+                const result = await activateNoteEntitlement({
+                    orderId,
+                    paymentId: payment.id,
+                    amountPaise: payment.amount,
+                    currency: payment.currency,
+                    method: payment.method,
+                    email: payment.email,
+                    contact: payment.contact ? String(payment.contact) : null,
+                    entitlementId: orderNotes.entitlementId || null,
+                });
+                if (result.found && result.underpaid) {
                     return NextResponse.json({ status: "ignored" });
                 }
                 return NextResponse.json({ status: "ok" });
@@ -170,9 +199,13 @@ export async function POST(req: NextRequest) {
             }
 
             // 3. Check if this is a Session Booking (LiveSession)
-            const sessionBooking = await prisma.sessionBooking.findFirst({
-                 where: { id: payment.notes.bookingId } 
-            }) || await prisma.sessionBooking.findFirst({
+            // Only look up by bookingId when the payment carries one: an undefined id filter
+            // matched an arbitrary booking, so gift card / group / bundle payments confirmed
+            // some unrelated session and returned before their own branch ran.
+            const notesBookingId = typeof payment.notes?.bookingId === "string" && payment.notes.bookingId ? payment.notes.bookingId : null;
+            const sessionBooking = (notesBookingId ? await prisma.sessionBooking.findFirst({
+                 where: { id: notesBookingId }
+            }) : null) || await prisma.sessionBooking.findFirst({
                  where: { razorpayOrderId: orderId } // Backup for Razorpay Order ID
             });
             

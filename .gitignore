@@ -18,6 +18,8 @@
 # Build slots used by scripts/redeploy.sh, and its live-slot marker
 /.next-*/
 /.live-slot
+# Local private storage used in development (notes PDFs)
+/.private-storage/
 /out/
 
 # production

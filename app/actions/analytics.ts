@@ -336,7 +336,9 @@ export async function getPlatformAnalytics() {
     prisma.user.count(),
     prisma.course.count(),
     prisma.enrollment.count(),
+    // Revenue = Active enrollments only (Pending = unpaid checkouts), plus paid note sales.
     prisma.enrollment.aggregate({
+      where: { status: "Active" },
       _sum: { amount: true }
     }),
     prisma.liveSession.count(),
@@ -413,7 +415,7 @@ export async function getPlatformAnalytics() {
       totalUsers,
       totalCourses,
       totalEnrollments,
-      totalRevenue: totalRevenue._sum.amount || 0,
+      totalRevenue: (totalRevenue._sum.amount || 0) + (await paidNotesRevenueRupees()),
       totalSessions,
       totalBlogPosts,
       activeUsers,
@@ -658,6 +660,7 @@ async function getUserGrowthData() {
 async function getPlatformRevenueData() {
   const enrollments = await prisma.enrollment.findMany({
     where: {
+      status: "Active",
       createdAt: {
         gte: new Date(Date.now() - 12 * 30 * 24 * 60 * 60 * 1000)
       }
@@ -676,8 +679,33 @@ async function getPlatformRevenueData() {
     monthlyRevenue[month] = (monthlyRevenue[month] || 0) + (enrollment.amount || 0);
   });
 
-  return Object.entries(monthlyRevenue).map(([month, revenue]) => ({
-    month,
-    revenue
-  }));
+  // Paid note sales (paise -> rupees) in the same months.
+  const noteSales = await prisma.noteEntitlement.findMany({
+    where: {
+      status: "ACTIVE",
+      source: { in: ["PURCHASE", "WALLET"] },
+      activatedAt: { gte: new Date(Date.now() - 12 * 30 * 24 * 60 * 60 * 1000) },
+    },
+    select: { amountPaise: true, activatedAt: true },
+  });
+  noteSales.forEach((sale) => {
+    const month = new Date(sale.activatedAt!).toISOString().slice(0, 7);
+    monthlyRevenue[month] = (monthlyRevenue[month] || 0) + sale.amountPaise / 100;
+  });
+
+  return Object.entries(monthlyRevenue)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, revenue]) => ({
+      month,
+      revenue
+    }));
+}
+
+/** Paid note sales still in force (refunds excluded), in rupees. */
+async function paidNotesRevenueRupees(): Promise<number> {
+  const r = await prisma.noteEntitlement.aggregate({
+    where: { status: "ACTIVE", source: { in: ["PURCHASE", "WALLET"] } },
+    _sum: { amountPaise: true },
+  });
+  return (r._sum.amountPaise ?? 0) / 100;
 }

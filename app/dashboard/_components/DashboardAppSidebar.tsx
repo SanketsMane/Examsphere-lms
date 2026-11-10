@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
+  IconNotebook,
   IconLayoutDashboard,
   IconBook,
   IconBooks,
@@ -53,6 +54,7 @@ const navGroups: NavGroup[] = [
       // Browse = every course; My Courses = enrolled only, with progress and resources (BUG-0005).
       { title: "Browse Courses", url: "/dashboard/browse", icon: IconBooks },
       { title: "My Courses", url: "/dashboard/courses", icon: IconBook },
+      { title: "My Notes", url: "/dashboard/notes", icon: IconNotebook },
       { title: "Live Sessions", url: "/dashboard/sessions", icon: IconVideo },
       { title: "ExamSphere AI", url: "/dashboard/ai", icon: IconSparkles },
     ],

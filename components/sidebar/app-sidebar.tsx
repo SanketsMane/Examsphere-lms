@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   IconLayoutDashboard,
+  IconNotebook,
   IconUsers,
   IconSchool,
   IconUserCircle,
@@ -70,6 +71,15 @@ const navGroups: NavGroup[] = [
     label: "Catalog",
     items: [
       { title: "Courses", url: "/admin/courses", icon: IconBook },
+      {
+        title: "Notes",
+        url: "/admin/notes",
+        icon: IconNotebook,
+        items: [
+          { title: "All Notes", url: "/admin/notes", icon: IconListDetails },
+          { title: "Sales & Analytics", url: "/admin/notes/analytics", icon: IconChartBar },
+        ],
+      },
       { title: "Categories", url: "/admin/categories", icon: IconFolder },
       { title: "Subjects", url: "/admin/subjects", icon: IconBooks },
       { title: "Live Sessions", url: "/admin/live-sessions", icon: IconVideo },

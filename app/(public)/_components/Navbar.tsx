@@ -15,6 +15,7 @@ import { CoursesMegaMenu, CoursesMobileGroup } from "./CoursesMegaMenu";
 const navigationItems = [
   { id: 1, title: "Home", url: "/" },
   { id: 4, title: "Courses", url: "/courses" },
+  { id: 5, title: "Notes", url: "/notes" },
   { id: 2, title: "About Us", url: "/about" },
   { id: 3, title: "Contact", url: "/contact" },
 ];
@@ -72,6 +73,12 @@ export function Navbar({ settings }: { settings?: any }) {
             className="px-4 py-2 rounded font-semibold text-[15px] text-ink-700 dark:text-foreground hover:text-navy-900 dark:hover:text-white transition-colors"
           >
             Courses
+          </Link>
+          <Link
+            href="/notes"
+            className="px-4 py-2 rounded font-semibold text-[15px] text-ink-700 dark:text-foreground hover:text-navy-900 dark:hover:text-white transition-colors"
+          >
+            Notes
           </Link>
           <Link
             href="/about"

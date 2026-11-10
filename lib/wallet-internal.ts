@@ -38,7 +38,7 @@ function assertAmount(amount: number) {
 export async function deductFromWallet(
     userId: string,
     amount: number,
-    type: 'COURSE_PURCHASE' | 'SESSION_BOOKING' | 'GROUP_ENROLLMENT',
+    type: 'COURSE_PURCHASE' | 'SESSION_BOOKING' | 'GROUP_ENROLLMENT' | 'NOTE_PURCHASE',
     description: string,
     metadata?: any,
     tx?: Db

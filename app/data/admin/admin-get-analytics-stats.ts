@@ -17,7 +17,9 @@ export async function adminGetAnalyticsStats() {
     monthlyStats
   ] = await Promise.all([
     // Calculate total revenue from enrollments
+    // Only Active enrollments are paid; Pending ones are abandoned or in-progress checkouts.
     prisma.enrollment.aggregate({
+      where: { status: "Active" },
       _sum: {
         amount: true,
       },

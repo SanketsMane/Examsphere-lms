@@ -50,7 +50,7 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <AdminChartSection
-            data={revenueOverTime.map((item) => ({ date: item.month, revenue: item.revenue / 100 }))}
+            data={revenueOverTime.map((item) => ({ date: item.month, revenue: item.revenue }))} // already rupees
           />
         </div>
 
