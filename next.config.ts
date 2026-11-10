@@ -9,11 +9,10 @@ const nextConfig: NextConfig = {
   // Don't advertise the framework in every response.
   poweredByHeader: false,
 
-  // Load Better Auth from node_modules instead of bundling it. Bundled, it was compiled into
-  // both the route-handler and the RSC/SSR chunks, so one server process evaluated it twice
-  // ("Better Auth was already imported. This breaks async local storage instance") and
-  // per-request auth state could go out of sync between the two copies.
-  serverExternalPackages: ['better-auth'],
+  // Do NOT add better-auth to serverExternalPackages. It silences the "Better Auth was
+  // already imported" warning, but better-auth/react then loads React from node_modules
+  // while Next SSR uses its own bundled React, so every page calling authClient.useSession()
+  // crashed with "Cannot read properties of null (reading 'useRef')" (outage 2026-11-10).
 
   // Ensure the dynamically-imported `openai` SDK is traced into the standalone
   // bundle for the public chatbot route (Next misses dynamic imports otherwise).
