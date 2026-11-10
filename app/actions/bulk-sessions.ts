@@ -47,7 +47,7 @@ export async function validateSessionsBatch(sessions: any[]) {
             // 1. Schema Validation (Author: Sanket)
             const validation = bulkSessionSchema.element.safeParse(sessionData);
             if (!validation.success) {
-                errors.push(...validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
+                errors.push(...validation.error.issues.map(e => `${e.path.join('.')}: ${e.message}`));
             }
 
             const scheduledDate = new Date(sessionData.scheduledAt);

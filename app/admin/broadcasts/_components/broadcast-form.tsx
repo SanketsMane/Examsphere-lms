@@ -50,7 +50,7 @@ const formSchema = z.object({
   link: z.string().optional(),
   buttonText: z.string().optional(),
   couponCode: z.string().optional(),
-  priority: z.coerce.number().default(0),
+  priority: z.coerce.number<string | number>().default(0),
 });
 
 interface BroadcastFormProps {
@@ -62,7 +62,7 @@ export function BroadcastForm({ initialData, onSuccess }: BroadcastFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm({
+  const form = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       text: initialData?.text || "",

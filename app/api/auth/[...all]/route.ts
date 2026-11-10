@@ -68,35 +68,15 @@ const authHandlers = toNextJsHandler(auth.handler);
 
 export const { GET } = authHandlers;
 
-// Wrap the POST handler with custom security protections
 export const POST = async (req: NextRequest) => {
   try {
     const pathname = req.nextUrl.pathname;
-    
-    // Auth-Handshake Stabilization: 
-    // Force the Origin to match the server's own Host header.
-    // This creates a "Same-Origin" state that satisfies Better Auth's strict check 
-    // without needing to guess the baseURL mismatch.
-    const origin = req.headers.get("origin") || "";
-    const hostHeader = req.headers.get("host") || "localhost:3000";
-    const xProtocol = req.headers.get("x-forwarded-proto") || (origin.startsWith("https") ? "https" : "http");
-    
-    // Force HTTPS in production environments if the origin says so
-    const effectiveProtocol = (xProtocol === "https" || origin.startsWith("https")) ? "https" : "http";
-    const derivedOrigin = `${effectiveProtocol}://${hostHeader}`;
-    
-    const modifiedHeaders = new Headers(req.headers);
-    modifiedHeaders.set("origin", derivedOrigin);
-    modifiedHeaders.set("referer", derivedOrigin + "/");
-    
-    const targetReq = new NextRequest(req, {
-        headers: modifiedHeaders
-    });
-    
 
-    // Pass the original request with modified headers to the Better Auth handler.
-    // Better Auth will use the URL from the request to determine the correct route.
-    const response = await authHandlers.POST(targetReq);
+    // Pass the request through untouched. This used to overwrite the Origin and Referer
+    // headers with this server's own host, which made every request look same-origin and
+    // silently defeated Better Auth's CSRF/origin protection: any website could submit
+    // sign-in, sign-out or account-change requests with a visitor's cookies.
+    const response = await authHandlers.POST(req);
     
     if (response.status >= 400) {
         const clonedRes = response.clone();

@@ -33,8 +33,8 @@ import { createBundle } from "@/app/actions/bundles";
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  price: z.coerce.number().int("Price must be whole rupees").min(1, "Price must be at least ₹1"),
-  sessionCount: z.coerce.number().min(1, "Must verify at least 1 session"),
+  price: z.coerce.number<string | number>().int("Price must be whole rupees").min(1, "Price must be at least ₹1"),
+  sessionCount: z.coerce.number<string | number>().min(1, "Must verify at least 1 session"),
 });
 
 export function CreateBundleDialog() {
@@ -42,7 +42,7 @@ export function CreateBundleDialog() {
   const [isLoading, setIsLoading] = useState(false);
 //   const router = useRouter();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",

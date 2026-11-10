@@ -1,5 +1,18 @@
 // pm2 config for production (examsphere.online). Used by scripts/redeploy.sh.
 // Lives in the repo so a server rebuild doesn't lose it (it used to exist only on the box).
+const fs = require("fs");
+const path = require("path");
+
+// Which build directory is live. scripts/redeploy.sh builds the next release into the
+// other slot, tests it, then writes its name here and restarts pm2 from this file.
+function liveSlot() {
+  try {
+    const slot = fs.readFileSync(path.join(__dirname, ".live-slot"), "utf8").trim();
+    if (/^\.next(-[a-z])?$/.test(slot)) return slot;
+  } catch {}
+  return ".next";
+}
+
 module.exports = {
   apps: [
     {
@@ -22,6 +35,7 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: "3300",
+        NEXT_DIST_DIR: liveSlot(),
       },
     },
   ],

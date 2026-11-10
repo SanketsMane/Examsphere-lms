@@ -7,7 +7,15 @@ import { sendEmail } from "./email";
 import { admin } from "better-auth/plugins";
 import twilio from "twilio";
 
+const isProduction = process.env.NODE_ENV === "production";
 
+// Local/LAN origins used while developing the web and Expo apps. Never trusted in production.
+const DEV_ORIGINS = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://192.168.1.37:3000",
+  "http://192.168.1.37",
+];
 
 const authOptions = {
   database: prismaAdapter(prisma, {
@@ -16,41 +24,28 @@ const authOptions = {
   basePath: "/api/auth",
   baseURL: (process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").trim().replace(/['"]/g, ""),
   secret: process.env.BETTER_AUTH_SECRET || (process.env.NODE_ENV === "production" ? (() => { throw new Error("BETTER_AUTH_SECRET is missing in production"); })() : "dummy_secret_for_dev_only"),
-  trustHost: true,
+  // baseURL's own origin is always trusted. These are the extra origins allowed to make
+  // cookie-carrying auth requests and to appear in callbackURL / redirectTo.
   trustedOrigins: [
-    "http://localhost:3000",
-    "http://localhost:3000/",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3000/",
-    "http://192.168.1.37:3000",
-    "http://192.168.1.37:3000/",
-    "http://192.168.1.37",
-    "http://192.168.1.37/",
-    ...(process.env.TRUSTED_ORIGINS ? process.env.TRUSTED_ORIGINS.replace(/['"]/g, "").split(",").map(o => [o.trim(), o.trim() + "/"]).flat() : []),
+    "https://examsphere.online",
+    "https://www.examsphere.online",
+    ...(isProduction ? [] : DEV_ORIGINS),
+    ...(process.env.TRUSTED_ORIGINS
+      ? process.env.TRUSTED_ORIGINS.replace(/['"]/g, "").split(",").map((o) => o.trim().replace(/\/+$/, "")).filter(Boolean)
+      : []),
   ],
+  // CSRF and origin checks are ON in production. Both used to be disabled everywhere,
+  // which let any website submit auth requests with the visitor's cookies and accepted
+  // callbackURL/redirectTo pointing at any domain (an open redirect after sign-in).
+  // They stay off in local development so the Expo app (mobile/, which talks to a LAN
+  // dev server and sends no Origin header) keeps working.
   advanced: {
-    disableCSRFCheck: true,
-    disableOriginCheck: true,
+    disableCSRFCheck: !isProduction,
+    disableOriginCheck: !isProduction,
   },
-  onRequest: async (request: Request) => {
-    const origin = request.headers.get("origin");
-    const host = request.headers.get("host");
-    const cleanBaseURL = (process.env.BETTER_AUTH_URL || "http://localhost:3000").trim().replace(/['"]/g, "");
-    
-    // Handshake Debugger:
-    // If we still get 403, we need to know exactly what Better Auth is seeing.
-    if (!origin || origin === "null" || origin.includes("192.168") || origin.includes("localhost")) {
-       request.headers.set("origin", cleanBaseURL);
-    }
-
-    return undefined;
-  },
-  onResponse: async (response: Response) => {
-    if (response.status >= 400) {
-        console.error(`[BetterAuth Error Response] Status: ${response.status}`);
-    }
-    return undefined;
-  },
+  // (The old `trustHost`, `onRequest` and `onResponse` keys were removed: they are not
+  // Better Auth options, so they never ran — including the onRequest "fix" that rewrote
+  // missing Origin headers.)
   socialProviders: {},
   
   emailAndPassword: {
@@ -247,15 +242,19 @@ const authOptions = {
 
 // Singleton pattern for Better Auth - Absolutely strictly enforced - Author: Sanket
 // Multiple instances can cause 403 Origin errors due to internal state mismatch.
-const globalForAuth = globalThis as unknown as {
-  __BETTER_AUTH_SINGLETON_PROTECTED__: ReturnType<typeof betterAuth> | undefined;
-};
-
-if (!globalForAuth.__BETTER_AUTH_SINGLETON_PROTECTED__) {
+function createAuth() {
   console.log(`[Auth Singleton] Initializing core instance for: ${authOptions.baseURL}`);
-  globalForAuth.__BETTER_AUTH_SINGLETON_PROTECTED__ = betterAuth(authOptions);
-} else {
-  // Silent reuse to avoid log spam, but ensures only one instance exists
+  return betterAuth(authOptions);
 }
 
-export const auth = globalForAuth.__BETTER_AUTH_SINGLETON_PROTECTED__;
+// Typed from these exact options (not the generic `Auth<BetterAuthOptions>`), so plugin
+// endpoints such as auth.api.listUsers are typed and `auth` is never `undefined`.
+type AuthInstance = ReturnType<typeof createAuth>;
+
+const globalForAuth = globalThis as unknown as {
+  __BETTER_AUTH_SINGLETON_PROTECTED__?: AuthInstance;
+};
+
+export const auth: AuthInstance =
+  globalForAuth.__BETTER_AUTH_SINGLETON_PROTECTED__ ??
+  (globalForAuth.__BETTER_AUTH_SINGLETON_PROTECTED__ = createAuth());

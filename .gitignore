@@ -15,6 +15,9 @@
 
 # next.js
 /.next/
+# Build slots used by scripts/redeploy.sh, and its live-slot marker
+/.next-*/
+/.live-slot
 /out/
 
 # production

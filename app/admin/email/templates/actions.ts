@@ -29,7 +29,7 @@ export async function createTemplate(formData: FormData) {
     const result = templateSchema.safeParse(rawData);
 
     if (!result.success) {
-      return { error: result.error.errors[0].message };
+      return { error: result.error.issues[0].message };
     }
 
     // Check availability

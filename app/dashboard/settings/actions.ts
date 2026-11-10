@@ -29,7 +29,7 @@ const profileSchema = z.object({
     currentClass: optionalChoice(CURRENT_CLASSES),
     targetYear: z
         .union([z.literal(""), z.coerce.number().int().min(currentYear - 1).max(currentYear + 8)], {
-            errorMap: () => ({ message: "Please choose a valid target year" }),
+            error: "Please choose a valid target year",
         })
         .optional()
         .transform((v) => (v === "" || v === undefined ? null : v)),
@@ -69,7 +69,7 @@ export async function updateProfile(prevState: any, formData: FormData) {
     if (!validation.success) {
         return {
             status: "error",
-            message: validation.error.errors[0].message,
+            message: validation.error.issues[0].message,
         };
     }
 

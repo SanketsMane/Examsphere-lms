@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   // warned on every boot. Opt in with NEXT_OUTPUT=standalone for hosts that run
   // `node .next/standalone/server.js` instead (e.g. the old cPanel bundle).
   output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
+
+  // scripts/redeploy.sh builds into a fresh directory (.next-a / .next-b) while the live
+  // build keeps serving, tests it on a spare port, and only then switches pm2 over.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   // Don't advertise the framework in every response.
   poweredByHeader: false,
 

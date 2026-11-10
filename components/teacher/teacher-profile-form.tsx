@@ -53,7 +53,7 @@ export function TeacherProfileForm({ existingProfile, onSave }: TeacherProfileFo
   const [qualificationInput, setQualificationInput] = useState("");
   const [certificationInput, setCertificationInput] = useState("");
 
-  const form = useForm<TeacherProfileFormData>({
+  const form = useForm<z.input<typeof teacherProfileSchema>, unknown, TeacherProfileFormData>({
     resolver: zodResolver(teacherProfileSchema),
     defaultValues: {
       bio: existingProfile?.bio || "",

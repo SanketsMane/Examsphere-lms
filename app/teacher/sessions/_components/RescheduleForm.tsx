@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 
 const rescheduleSchema = z.object({
   scheduledDate: z.date({
-    required_error: "Please select a date",
+    error: "Please select a date",
   }),
   scheduledTime: z.string().min(1, "Please select a time"),
   reason: z.string().min(10, "Please provide a reason (min 10 characters)"),

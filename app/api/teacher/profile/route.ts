@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
     console.error("Error creating/updating teacher profile:", error);
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
 
     if (error instanceof Error && "code" in error && error.code === "P2002") {
@@ -204,7 +204,7 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     console.error("Error updating teacher profile:", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

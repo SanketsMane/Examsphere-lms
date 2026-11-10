@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 const createElementSchema = z.object({
   type: z.enum(['PEN', 'SHAPE', 'TEXT', 'STICKY_NOTE', 'IMAGE', 'LINE', 'ARROW']),
-  data: z.record(z.any()),
+  data: z.record(z.string(), z.any()),
   x: z.number(),
   y: z.number(),
   width: z.number().optional(),
@@ -203,7 +203,7 @@ export async function POST(
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation error", details: error.errors },
+        { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }

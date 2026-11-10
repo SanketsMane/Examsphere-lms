@@ -23,10 +23,10 @@ const templateSchema = z.object({
     title: z.string().min(5, "Title must be at least 5 characters"),
     description: z.string().optional(),
     subject: z.string().min(2, "Subject is required"),
-    duration: z.coerce.number().min(15).max(180),
-    price: z.coerce.number().min(100),
+    duration: z.coerce.number<string | number>().min(15).max(180),
+    price: z.coerce.number<string | number>().min(100),
     recurrenceType: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY"]),
-    dayOfWeek: z.coerce.number().min(0).max(6).optional(),
+    dayOfWeek: z.coerce.number<string | number>().min(0).max(6).optional(),
     startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format (HH:mm)"),
 });
 
@@ -47,7 +47,7 @@ const RECURRENCE_TYPES = [
 export function CreateTemplateForm({ onSuccess, subjects = [] }: { onSuccess: () => void, subjects?: { id: string, name: string }[] }) {
     const [loading, setLoading] = useState(false);
 
-    const form = useForm<TemplateFormData>({
+    const form = useForm<z.input<typeof templateSchema>, unknown, TemplateFormData>({
         resolver: zodResolver(templateSchema),
         defaultValues: {
             recurrenceType: "NONE",
