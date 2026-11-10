@@ -14,7 +14,9 @@ module.exports = {
       // Timestamp every log line. Without this the error log had no dates, so failures
       // could only be dated by cross-referencing nginx.
       time: true,
-      // Stable paths (pm2's default adds the process id, which changes on delete/start).
+      // Stable paths. pm2 appends "-<process id>" to these unless merge_logs is set, and the
+      // id changes on every delete/start in scripts/redeploy.sh.
+      merge_logs: true,
       out_file: "/root/.pm2/logs/examsphere-out.log",
       error_file: "/root/.pm2/logs/examsphere-error.log",
       env: {
